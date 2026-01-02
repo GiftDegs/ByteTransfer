@@ -330,7 +330,7 @@ export function mostrarPaso1() {
     const btn = document.createElement("button");
     btn.textContent = `${p.emoji} ${p.nombre}`;
     btn.className = "ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105 " +
-  "bg-white/80 text-[#0066FF] border-[#0066FF]/50 " +
+  "bg-white/80 text-brandBlue border-brandBlue/50 " +
   "dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40 " +
   "backdrop-blur-sm dark:hover:bg-white/15";
     btn.onclick = () => { origenSeleccionado = p.codigo; mostrarPaso2(); };
@@ -351,7 +351,7 @@ function mostrarPaso2() {
     btn.textContent = `${p.emoji} ${p.nombre}`;
     btn.className = "ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105 " +
   "bg-white/80 text-[#0066FF] border-[#0066FF]/50 " +
-  "dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40 " +
+  "dark:bg-white/10 dark:text-brandTeal dark:border-brandTeal/40 " +
   "backdrop-blur-sm dark:hover:bg-white/15";
     btn.onclick = () => { destinoSeleccionado = p.codigo; DOM.step2Destino.classList.add("hidden"); mostrarPaso3(); };
     DOM.destinoBtns.appendChild(btn);

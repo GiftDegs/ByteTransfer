@@ -6,20 +6,33 @@
   <title>Calculadora de Cambios</title>
 
   <!-- Tema oscuro automático desde localStorage -->
-  <script>
-    (function () {
-      try {
-        const saved = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const shouldDark = saved ? saved === 'dark' : prefersDark;
-        if (shouldDark) document.documentElement.classList.add('dark');
-        else document.documentElement.classList.remove('dark');
-      } catch (_) {}
-    })();
-  </script>
+<script>
+  (function () {
+    try {
+      const saved = localStorage.getItem('bt_theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldDark = saved ? saved === 'dark' : prefersDark;
+      document.documentElement.classList.toggle('dark', shouldDark);
+    } catch (_) {}
+  })();
+</script>
+
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script> tailwind.config = { darkMode: 'class' };</script>
+  <script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          brandBlue: '#1F6BFF',
+          brandTeal: '#13E6C6',
+        }
+      }
+    }
+  }
+</script>
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script type="module" src="src/main.js" defer></script>
 
@@ -238,7 +251,7 @@ body.modal-activo *:not(#modalMontoGrande):not(#modalMontoGrande *) {
     btn.addEventListener("click", () => {
       const html = document.documentElement;
       const nuevoModo = html.classList.toggle("dark") ? 'dark' : 'light';
-      localStorage.setItem('theme', nuevoModo);
+      localStorage.setItem('bt_theme', nuevoModo);
       actualizarToggle();
     });
     actualizarToggle();
@@ -254,7 +267,7 @@ body.modal-activo *:not(#modalMontoGrande):not(#modalMontoGrande *) {
 
         <!-- Título con tamaño fluido -->
         <h1 class="transition-colors duration-500 font-bold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full
-                   text-[clamp(1.6rem,4.5vw,2.25rem)] text-[#0066FF] dark:text-[#66AAFF]">
+                   text-[clamp(1.6rem,4.5vw,2.25rem)] text-brandBlue dark:text-brandTeal">
           Calculadora de Cambios
         </h1>
 
@@ -337,7 +350,7 @@ body.modal-activo *:not(#modalMontoGrande):not(#modalMontoGrande *) {
        focus:outline-none focus:ring-2 focus:ring-blue-300 transition">
 
         <div class="flex gap-4">
-          <button id="btnCalcular" class="bg-gradient-to-r from-[#0066FF] to-purple-600 text-white px-6 py-2 rounded-xl shadow hover:scale-105 transition-all">Calcular</button>
+          <button id="btnCalcular" class="bg-gradient-to-r from-brandTeal to-brandBlue text-white px-6 py-2 rounded-xl shadow hover:scale-105 transition-all">Calcular</button>
         </div>
       </section>
 
