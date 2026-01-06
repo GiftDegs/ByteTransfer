@@ -25,14 +25,24 @@ export const DOM = {
   tasaConfirmacion: document.getElementById('tasaConfirmacion'),
   tasaConfirmacionTexto: document.getElementById('tasaConfirmacionTexto'),
 
+  // BCV UI
+  bcvBox: document.getElementById("bcvBox"),
+  bcvTitulo: document.getElementById("bcvTitulo"),
+  btnBcvUsd: document.getElementById("btnBcvUsd"),
+  btnBcvEur: document.getElementById("btnBcvEur"),
+  btnBcvCustom: document.getElementById("btnBcvCustom"),
+  bcvCustomRow: document.getElementById("bcvCustomRow"),
+  bcvTasaCustom: document.getElementById("bcvTasaCustom"),
+  bcvCustomHelp: document.getElementById("bcvCustomHelp"),
+
   // Botones principales
   btnEnviar: document.getElementById('btnEnviar'),
   btnLlegar: document.getElementById('btnLlegar'),
+  btnLlegarBCV: document.getElementById("btnLlegarBCV"),
   btnCalcular: document.getElementById('btnCalcular'),
   btnRecalcular: document.getElementById('btnRecalcular'),
   btnWhats: document.getElementById('btnWhats'),
   btnVolverGlobal: document.getElementById('btnVolverGlobal'),
-  btnToggleDark: document.getElementById("modoToggle"),
 
   // Inputs / ayudas
   inputMonto: document.getElementById('inputMonto'),

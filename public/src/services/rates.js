@@ -26,3 +26,21 @@ export async function obtenerTasa(origen, destino) {
     return { tasa: null, compra: null, fecha: null };
   }
 }
+
+export async function obtenerBCV() {
+  try {
+    const data = await fetchWithTimeout('/api/snapshot');
+
+    const usd = Number(data?.referencias?.bcv?.usd) || null;
+    const eur = Number(data?.referencias?.bcv?.eur) || null;
+    const fecha = normalizarTimestamp(data?.timestamp);
+
+    const min = usd;
+    const max = eur ? eur * 2.5 : null;
+
+    return { usd, eur, min, max, fecha };
+  } catch (err) {
+    console.error('Error al obtener BCV:', err);
+    return { usd: null, eur: null, min: null, max: null, fecha: null };
+  }
+}

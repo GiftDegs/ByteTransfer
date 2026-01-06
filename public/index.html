@@ -328,6 +328,15 @@ body.modal-activo *:not(#modalMontoGrande):not(#modalMontoGrande *) {
        bg-white/80 text-[#0066FF] border-[#0066FF]/50
        dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
        backdrop-blur-sm dark:hover:bg-white/15">¿Cuánto bolívares quieres que lleguen?</button>
+<button id="btnLlegarBCV"
+  class="hidden ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105
+         bg-white/80 text-[#0066FF] border-[#0066FF]/50
+         dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
+         backdrop-blur-sm dark:hover:bg-white/15">
+  💵 ¿Cuántos dólares quieres que lleguen?
+</button>
+
+
       </section>
 
 
@@ -341,6 +350,56 @@ body.modal-activo *:not(#modalMontoGrande):not(#modalMontoGrande *) {
   <span class="block">🕒 Hoy: 11:00–23:00</span>
 </p>
 
+<!-- === BCV MODE (solo cuando destino = VES y se activa el modo) === -->
+<div id="bcvBox" class="hidden mt-4 space-y-3">
+
+  <div id="bcvTitulo" class="text-center font-semibold text-gray-800 dark:text-gray-100">
+    ¿A qué tasa quieres calcular?
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <button id="btnBcvUsd"
+      class="ripple-button border rounded-xl px-4 py-3 font-semibold shadow transition hover:scale-105
+             bg-white/80 text-[#0066FF] border-[#0066FF]/50
+             dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
+             backdrop-blur-sm dark:hover:bg-white/15">
+      Dólar BCV
+    </button>
+
+    <button id="btnBcvEur"
+      class="ripple-button border rounded-xl px-4 py-3 font-semibold shadow transition hover:scale-105
+             bg-white/80 text-[#0066FF] border-[#0066FF]/50
+             dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
+             backdrop-blur-sm dark:hover:bg-white/15">
+      Euro BCV
+    </button>
+
+    <button id="btnBcvCustom"
+      class="ripple-button border rounded-xl px-4 py-3 font-semibold shadow transition hover:scale-105
+             bg-white/80 text-[#0066FF] border-[#0066FF]/50
+             dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
+             backdrop-blur-sm dark:hover:bg-white/15">
+      Personalizada
+    </button>
+  </div>
+
+  <!-- Personalizada: input de tasa -->
+  <div id="bcvCustomRow" class="hidden rounded-xl border border-white/20 bg-white/40 dark:bg-white/10 backdrop-blur p-3 space-y-2">
+    <div class="text-sm text-gray-700 dark:text-gray-200 font-medium">
+      Ingresa la tasa personalizada (VES por USD)
+    </div>
+
+    <input id="bcvTasaCustom"
+      type="number" inputmode="decimal" step="0.01"
+      class="w-full rounded-xl border border-blue-300 bg-white/80 dark:bg-white/10 px-4 py-3 text-center text-lg font-semibold
+             focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-white"
+      placeholder="Ej: 320.50"
+    />
+
+    <div id="bcvCustomHelp" class="text-xs text-gray-600 dark:text-gray-400 text-center"></div>
+  </div>
+
+</div>
 
         <input id="inputMonto" type="text" inputmode="decimal" placeholder="Ingresa el monto"
           class="w-72 text-center text-2xl font-semibold px-6 py-4 rounded-xl border
