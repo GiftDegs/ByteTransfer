@@ -7,6 +7,7 @@ import { obtenerStatus } from "../services/status.js";
 import { mostrarToast } from "./toasts.js";
 import { showBanner, hideBanner, mostrarConfirmacionVerdeAutoOcultar } from "./banners.js";
 import { evaluateOps, openingTextTodayLocal } from "../core/time.js";
+import { getState, setState } from "../state/appState.js";
 
 let origenSeleccionado = null;
 let destinoSeleccionado = null;
@@ -395,6 +396,18 @@ async function mostrarPaso3() {
   updateHorarioPill();
   updateWhatsButton();
 
+  setState({
+  origen: origenSeleccionado,
+  destino: destinoSeleccionado,
+  mode,
+  tasa: (Number.isFinite(Number(tasaCruda)) && Number(tasaCruda) > 0) ? Number(tasaCruda) : null,
+  tasaCompraUSD: Number.isFinite(Number(compra)) ? Number(compra) : null,
+  tasaDesactualizada: !ops.fresh,
+  snapshotTs: fecha,
+  ops
+});
+
+
   // UI de banners segun estado
   if (tieneTasa) {
     tasa = tNum;
@@ -444,6 +457,7 @@ async function mostrarPaso3() {
 
 function cambiarPaso(tipo) {
   mode = tipo;
+  setState({ mode: tipo });
   const { preguntaEnviar, preguntaLlegar } = textosSegunPaises();
   DOM.preguntaMonto.textContent = tipo === "enviar" ? preguntaEnviar : preguntaLlegar;
 
@@ -559,6 +573,8 @@ function ejecutarCalculo() {
   }, 1200);
 }
 
+setState({ lastCalc });
+
 const btn = document.getElementById("modoToggle");
 
 function actualizarToggle() {
@@ -576,12 +592,11 @@ btn.addEventListener("click", () => {
 actualizarToggle();
 
 export function wireEvents() {
-  const btn = DOM.btnToggleDark;
+const btn = document.getElementById("modoToggle");
+if (btn) {
+  // ... (si quieres dejar el toggle acá) 
+}
 
-  // Si el botón no existe (por alguna razón), evitamos errores
-  if (!btn) return;
-
-  // Al cargar, actualizar texto del botón según el modo actual
   (() => {
     const isDark = document.documentElement.classList.contains("dark");
     btn.textContent = isDark ? "🌙 Oscuro" : "🌞 Claro";

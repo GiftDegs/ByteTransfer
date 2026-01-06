@@ -7,8 +7,11 @@ const state = {
   tasa: null,
   tasaCompraUSD: null,
   tasaDesactualizada: true,
-  lastCalc: null
+  lastCalc: null,
+  snapshotTs: null,
+  ops: { open: false, fresh: false, allowWhats: false, message: '' }
 };
+
 
 export function getState() {
   return { ...state };

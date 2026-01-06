@@ -1,100 +1,160 @@
-// sharing.js (sin imports para no romper el flujo por rutas/export inexistentes)
+// sharing.js (flujo directo)
+// - Móvil: comparte IMAGEN (share nativo)
+// - PC: descarga IMAGEN
+// Sin menú, sin compartir texto
 
-function isMobileShareAvailable() {
-  return typeof navigator !== "undefined" && !!navigator.share;
+function buildImageFilename(getLastCalc) {
+  const last = getLastCalc?.();
+
+  const o = last?.origen?.codigo || "XX";
+  const d = last?.destino?.codigo || "XX";
+  const mode = last?.mode || "calc";
+
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mi = String(now.getMinutes()).padStart(2, "0");
+
+  return `ByteTransfer_${o}-${d}_${mode}_${yyyy}-${mm}-${dd}_${hh}-${mi}.png`;
 }
 
-function nombreMonedaBasica(codigo) {
-  const map = {
-    ARS: "Pesos argentinos",
-    COP: "Pesos colombianos",
-    VES: "Bolívares",
-    CLP: "Pesos chilenos",
-    PEN: "Soles",
-    MXN: "Pesos mexicanos",
-    BRL: "Reales",
-    USD: "Dólares",
-    EUR: "Euros",
-  };
-  return map[codigo] || codigo;
+function toastLite(DOM, msg) {
+  const el = DOM?.toastMensaje;
+  if (!el) { alert(msg); return; }
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  el.style.opacity = "1";
+  el.style.transform = "scale(1)";
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "scale(0.95)";
+    setTimeout(() => el.classList.add("hidden"), 250);
+  }, 2200);
 }
 
-export function initSharing(DOM, getLastCalc) {
-  const canShare = isMobileShareAvailable();
+// Detecta "móvil real" (no solo que exista navigator.share)
+// Porque en Windows también existe share y te abre ese panel.
+function isLikelyMobileDevice() {
+  const ua = (navigator.userAgent || "").toLowerCase();
+  const isUA = /android|iphone|ipad|ipod|iemobile|windows phone|mobile/.test(ua);
+  const hasTouch = ("maxTouchPoints" in navigator) && navigator.maxTouchPoints > 0;
+  const smallScreen = Math.min(window.innerWidth, window.innerHeight) <= 820; // umbral razonable
+  // Móvil si userAgent dice móvil O (touch + pantalla chica)
+  return isUA || (hasTouch && smallScreen);
+}
 
-  // Regla:
-  // - Móvil (hay share sheet): mostramos botón imagen (share icon) y menú
-  // - PC (no hay share sheet): ocultamos share icon y mostramos WhatsApp
-  if (DOM.btnCompartir) DOM.btnCompartir.classList.toggle("hidden", !canShare);
-  if (DOM.btnWhats) DOM.btnWhats.classList.toggle("hidden", canShare);
+// === html2canvas loader (como antes) ===
+function ensureHtml2Canvas() {
+  return new Promise((resolve, reject) => {
+    if (window.html2canvas) return resolve(window.html2canvas);
 
-  const menu = DOM.menuCompartir;
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+    s.async = true;
+    s.onload = () => resolve(window.html2canvas);
+    s.onerror = () => reject(new Error("No se pudo cargar html2canvas"));
+    document.head.appendChild(s);
+  });
+}
 
-  // --- Menu toggle (solo si existe el botón de compartir) ---
-  if (DOM.btnCompartir && menu) {
-    DOM.btnCompartir.addEventListener("click", (e) => {
-      e.stopPropagation();
-      menu.classList.toggle("hidden");
-    });
+function waitNextFrame() {
+  return new Promise((r) => requestAnimationFrame(() => r()));
+}
 
-    document.addEventListener("click", (e) => {
-      if (!menu.contains(e.target) && e.target !== DOM.btnCompartir) {
-        menu.classList.add("hidden");
-      }
-    });
+// Captura EXACTAMENTE el resultado real visible (resTextContainer)
+// y lo convierte a Blob PNG.
+async function captureResultBlobFromDOM(DOM) {
+  const target =
+    DOM?.resTextContainer ||
+    document.getElementById("resTextContainer") ||
+    document.getElementById("resText");
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") menu.classList.add("hidden");
-    });
-  }
+  if (!target) throw new Error("No se encontró #resTextContainer para capturar.");
 
-  function buildText() {
-    const last = getLastCalc?.();
-    if (!last) return "ByteTransfer";
+  const html2canvas = await ensureHtml2Canvas();
 
-    // Tu lastCalc real (en steps.js) tiene: { origen, destino, montoIngresado, montoCalculado, tasa, fecha, mode }
-    const oCode = last.origen?.codigo || "";
-    const dCode = last.destino?.codigo || "";
-    const oName = nombreMonedaBasica(oCode);
-    const dName = nombreMonedaBasica(dCode);
+  // Clonamos a un wrapper oculto para capturar “como antes”
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-99999px";
+  wrapper.style.top = "0";
+  wrapper.style.zIndex = "-1";
+  wrapper.style.pointerEvents = "none";
 
-    const nf0 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-    const nf2 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+  const w = target.getBoundingClientRect().width || target.offsetWidth || 700;
+  wrapper.style.width = `${Math.ceil(w)}px`;
 
-    const montoIn = Number.isFinite(last.montoIngresado) ? nf2.format(last.montoIngresado) : last.montoIngresado;
-    const montoOut = Number.isFinite(last.montoCalculado) ? nf0.format(last.montoCalculado) : last.montoCalculado;
+  const clone = target.cloneNode(true);
+  // Por si algún día hay botones dentro del resultado:
+  clone.querySelectorAll("button, #btnCompartir, #shareMenu, .share-menu, .btn-share").forEach((el) => el.remove());
 
-    const tasa = last.tasa ?? "";
-    const fecha = last.fecha ?? "";
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  await waitNextFrame();
 
-    // Texto simple para cliente
-    return `ByteTransfer
-Envío: ${montoIn} ${oName}
-Recibe: ${montoOut} ${dName}
-Tasa: ${tasa} (${fecha})`;
-  }
+  const canvas = await html2canvas(clone, {
+    backgroundColor: null,
+    useCORS: true,
+    scale: 2,
+    logging: false,
+  });
 
-  async function shareText() {
+  wrapper.remove();
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
+  if (!blob) throw new Error("No se pudo generar PNG.");
+  return blob;
+}
+
+async function downloadBlob(blob, filename = "bytetransfer.png") {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1200);
+}
+
+export function initSharing(DOM, getLastCalc /*, getOpsState */) {
+  // Ocultamos el menú y opciones si existen (ya no se usan)
+  if (DOM.menuCompartir) DOM.menuCompartir.classList.add("hidden");
+  if (DOM.opcionTexto) DOM.opcionTexto.classList.add("hidden");
+  if (DOM.opcionImagen) DOM.opcionImagen.classList.add("hidden");
+
+  // Mostramos SIEMPRE el botón compartir (si existe)
+  // (y dejamos el WhatsApp solo si tú lo quieres para texto aparte)
+  if (DOM.btnCompartir) DOM.btnCompartir.classList.remove("hidden");
+
+  if (!DOM.btnCompartir) return;
+
+  DOM.btnCompartir.addEventListener("click", async () => {
     try {
-      await navigator.share({ text: buildText() });
-    } catch (_) {
-      // cancelado / no disponible
+      const last = getLastCalc?.();
+      if (!last) {
+        toastLite(DOM, "⚠️ Primero realiza un cálculo.");
+        return;
+      }
+
+      const blob = await captureResultBlobFromDOM(DOM);
+      const file = new File([blob], "bytetransfer.png", { type: "image/png" });
+
+      // MÓVIL: compartir imagen nativa
+      if (isLikelyMobileDevice() && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+        await navigator.share({ files: [file], title: "ByteTransfer" });
+        return;
+      }
+
+      // PC (o móvil sin soporte): descargar
+      const filename = buildImageFilename(getLastCalc);
+      await downloadBlob(blob, filename);
+      toastLite(DOM, "📷 Imagen descargada.");
+    } catch (e) {
+      console.error(e);
+      toastLite(DOM, "No se pudo generar la imagen.");
     }
-  }
-
-  // Share (móvil)
-  if (DOM.opcionTexto) {
-    DOM.opcionTexto.addEventListener("click", async () => {
-      if (menu) menu.classList.add("hidden");
-      await shareText();
-    });
-  }
-
-  // WhatsApp (PC)
-  if (DOM.btnWhats) {
-    DOM.btnWhats.addEventListener("click", () => {
-      const url = `https://wa.me/?text=${encodeURIComponent(buildText())}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-    });
-  }
+  });
 }
