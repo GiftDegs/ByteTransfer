@@ -1,4 +1,4 @@
-// main.js — Panel Admin ByteTransfer (reemplazo completo)
+// main.js — Panel Admin ByteTransfer (con monitoreo + drawer configurar)
 // ------------------------------------------------------
 "use strict";
 
@@ -9,52 +9,55 @@ console.log("✅ Admin cargado");
 // -------------------------
 const paises = [
   { fiat: "ARS", nombre: "Argentina", emoji: "🇦🇷" },
-  { fiat: "COP", nombre: "Colombia", emoji: "🇨🇴" },
-  { fiat: "MXN", nombre: "México", emoji: "🇲🇽" },
-  { fiat: "PEN", nombre: "Perú", emoji: "🇵🇪" },
-  { fiat: "CLP", nombre: "Chile", emoji: "🇨🇱" },
-  { fiat: "BRL", nombre: "Brasil", emoji: "🇧🇷" },
+  { fiat: "COP", nombre: "Colombia",  emoji: "🇨🇴" },
+  { fiat: "MXN", nombre: "México",    emoji: "🇲🇽" },
+  { fiat: "PEN", nombre: "Perú",      emoji: "🇵🇪" },
+  { fiat: "CLP", nombre: "Chile",     emoji: "🇨🇱" },
+  { fiat: "BRL", nombre: "Brasil",    emoji: "🇧🇷" },
   { fiat: "VES", nombre: "Venezuela", emoji: "🇻🇪" }
 ];
 
 const ajustesPorDefecto = { ARS: 8, COP: 8, MXN: 15, PEN: 7, CLP: 7, BRL: 8, VES: 4 };
 
-// Estado en memoria
-let datosPaises = {};          // { ARS:{compra,venta,ajuste}, ... }
+// Estado configuración (snapshot)
+let referenciasExternas = null;
+let datosPaises = {};          // { ARS:{compra,venta,ajuste}, ... } (lo que editas y guardas)
 let snapshotPrevio = {};       // snapshot cargado de /api/snapshot
-let crucesAnteriores = {};     // { "ARS-COP": tasa, ... } (histórico previo para variación)
+let crucesAnteriores = {};     // histórico previo para variación en UI
 let modoEdicionActivo = false;
-let filtroPais = null;         // ej. "ARS" para filtrar
-let rolVista = "origen";       // "origen" | "destino"
+
+let filtroPais = null;         // ej. "ARS" para filtrar (config)
+let rolVista = "origen";       // "origen" | "destino" (config)
+
 let llamadasPendientes = 0;
 let timerAdvertencia = null;
 
+// Estado monitoreo (NO toca snapshot)
+let mercadoPaises = {};        // { ARS:{compra,venta}, ... } (solo lectura)
+let referenciasMercado = null; // referencias actuales del mercado (solo lectura)
+let pollingActivo = true;
+let pollingInterval = null;
+let ultimoTick = null;
+
+// Monitoreo - cruces
+let monRolVista = "origen";
+let monBuscar = "";
+
 // -------------------------
-// Utilidades
+// Utilidades (UI/format)
 // -------------------------
-function formatearTasa(v) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return null;
-  if (n >= 10) return +n.toFixed(1);
-  if (n >= 1) return +n.toFixed(2);
-  if (n >= 0.01) return +n.toFixed(3);
-  if (n >= 0.001) return +n.toFixed(4);
-  if (n >= 0.00099) return +n.toFixed(5);
-  return +n.toFixed(6);
+function ensureToast() {
+  if (document.getElementById("toastMensaje")) return;
+
+  const div = document.createElement("div");
+  div.id = "toastMensaje";
+  div.className =
+    "fixed top-4 right-4 z-[999] hidden bg-black/80 text-white px-4 py-2 rounded-lg shadow-lg text-sm";
+  document.body.appendChild(div);
 }
-function iconoCambio(n, p) {
-  if (p == null || !Number.isFinite(p)) return "⏺";
-  if (n > p) return "🔼";
-  if (n < p) return "🔽";
-  return "⏺";
-}
-function claseCambio(n, p) {
-  if (p == null || !Number.isFinite(p)) return "text-blue-600";
-  if (n > p) return "text-green-600";
-  if (n < p) return "text-red-600";
-  return "text-blue-600";
-}
+
 function mostrarToast(msg) {
+  ensureToast();
   const el = document.getElementById("toastMensaje");
   if (!el) return;
   el.textContent = msg;
@@ -67,19 +70,117 @@ function mostrarToast(msg) {
     setTimeout(() => {
       el.classList.add("hidden");
       el.textContent = "";
-    }, 300);
-  }, 3500);
+    }, 250);
+  }, 2600);
 }
+
+function formatearTasa(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  if (n >= 10) return +n.toFixed(1);
+  if (n >= 1) return +n.toFixed(2);
+  if (n >= 0.01) return +n.toFixed(3);
+  if (n >= 0.001) return +n.toFixed(4);
+  if (n >= 0.00099) return +n.toFixed(5);
+  return +n.toFixed(6);
+}
+
+function pintarDelta(el, marketVal, snapVal, labelSnapshot) {
+  if (!el) return;
+
+  const m = Number(marketVal);
+  const s = Number(snapVal);
+
+  // Si no hay datos completos, solo pinta el valor market
+  if (!Number.isFinite(m)) {
+    el.textContent = "—";
+    el.title = "";
+    return;
+  }
+
+  const mInt = Math.round(m);
+
+  if (!Number.isFinite(s) || s === 0) {
+    el.textContent = String(mInt);
+    el.title = labelSnapshot ? `${labelSnapshot}: —` : "";
+    return;
+  }
+
+  const sInt = Math.round(s);
+  const dAbs = m - s;
+  const dAbsInt = Math.round(dAbs);
+  const dPct = (dAbs / s) * 100;
+
+  const cls =
+    dPct > 0 ? "text-green-600" :
+    dPct < 0 ? "text-red-600" :
+    "text-blue-600";
+
+  const signAbs = dAbsInt > 0 ? `+${dAbsInt}` : `${dAbsInt}`;
+  const signPct = dPct > 0 ? `+${dPct.toFixed(2)}` : `${dPct.toFixed(2)}`;
+
+  el.innerHTML = `
+    <div class="leading-none">${mInt}</div>
+    <div class="mt-1 text-xs ${cls} font-semibold tabular-nums">
+      ${signAbs} (${signPct}%)
+    </div>
+  `;
+
+  el.title = labelSnapshot ? `${labelSnapshot}: ${sInt}` : `Snapshot: ${sInt}`;
+}
+
+function iconoCambio(n, p) {
+  if (p == null || !Number.isFinite(p)) return "⏺";
+  if (n > p) return "🔼";
+  if (n < p) return "🔽";
+  return "⏺";
+}
+
+function claseCambio(n, p) {
+  if (p == null || !Number.isFinite(p)) return "text-blue-600";
+  if (n > p) return "text-green-600";
+  if (n < p) return "text-red-600";
+  return "text-blue-600";
+}
+
 function mostrarAdvertenciaPendiente(mostrar = true) {
   const adv = document.getElementById("advertencia-pendiente");
   if (adv) adv.classList.toggle("hidden", !mostrar);
 }
+
 function manejarFinDeLlamadas() {
   if (llamadasPendientes === 0) {
     if (timerAdvertencia) clearTimeout(timerAdvertencia);
     timerAdvertencia = setTimeout(() => {
       mostrarAdvertenciaPendiente(true);
     }, 250);
+  }
+}
+
+// -------------------------
+// Referencias (BCV / USDT-VES)
+// -------------------------
+async function obtenerReferencias() {
+  const res = await fetch("/api/referencias", { cache: "no-store" });
+  if (!res.ok) throw new Error("No referencias");
+  return await res.json();
+}
+
+function renderReferencias() {
+  if (!referenciasExternas) return;
+  const usdEl = document.getElementById("ref-bcv-usd");
+  const eurEl = document.getElementById("ref-bcv-eur");
+  const usdtEl = document.getElementById("ref-usdt-ves");
+  const fechaEl = document.getElementById("ref-fecha");
+
+  if (usdEl) usdEl.textContent = referenciasExternas.bcv?.usd ?? "—";
+  if (eurEl) eurEl.textContent = referenciasExternas.bcv?.eur ?? "—";
+  if (usdtEl) usdtEl.textContent = referenciasExternas.usdt_ves?.mid ?? "—";
+
+  if (fechaEl) {
+    fechaEl.textContent = referenciasExternas.actualizado_en
+      ? `Actualizado: ${new Date(referenciasExternas.actualizado_en).toLocaleString()}`
+      : "—";
   }
 }
 
@@ -93,6 +194,7 @@ async function cargarSnapshot() {
     const json = await res.json();
 
     snapshotPrevio = json || {};
+
     // Copiamos países existentes y aseguramos estructura
     datosPaises = {};
     for (const p of paises) {
@@ -103,12 +205,22 @@ async function cargarSnapshot() {
         ajuste: Number.isFinite(sp.ajuste) ? sp.ajuste : (sp.ajuste ?? ajustesPorDefecto[p.fiat])
       };
     }
+
+    // Cruces anteriores
     crucesAnteriores = snapshotPrevio.cruces || {};
 
+    // Referencias guardadas dentro del snapshot (si existen)
+    referenciasExternas = snapshotPrevio.referencias || null;
+    renderReferencias();
+
+    // UI timestamp
     if (json.timestamp) {
       const f = new Date(json.timestamp);
       const el = document.getElementById("ultima-actualizacion");
       if (el) el.textContent = `🕒 Última actualización: ${f.toLocaleString()}`;
+
+      const monSnap = document.getElementById("mon-snapshot-time");
+      if (monSnap) monSnap.textContent = `Snapshot: ${f.toLocaleString()}`;
     }
   } catch (err) {
     console.error("❌ cargarSnapshot", err);
@@ -133,7 +245,7 @@ async function guardarSnapshot(datos) {
 }
 
 // -------------------------
-// Binance
+// Binance (para configurar y para monitoreo)
 // -------------------------
 async function fetchPrecio(fiat, tipo) {
   // BRL con fallback estático (opcional)
@@ -154,6 +266,7 @@ async function fetchPrecio(fiat, tipo) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fiat, tradeType: tipo, rows: 100 })
     });
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const j = await res.json();
     const comerciales = j.data || [];
@@ -187,12 +300,11 @@ async function fetchPrecio(fiat, tipo) {
 }
 
 // -------------------------
-// Render tarjetas (compra/venta/ajuste)
+// Render tarjetas (configurar)
 // -------------------------
 function renderTarjetasPaises(modoEdicion = false) {
-  const cont = document.getElementById("tarjetas-paises") || document.createElement("div");
-  cont.id = "tarjetas-paises";
-  cont.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 mb-8";
+  const cont = document.getElementById("tarjetas-paises");
+  if (!cont) return;
 
   // si existe tabla vieja, la removemos (por migraciones anteriores)
   const tablaAntigua = document.getElementById("tabla-paises-body")?.parentElement?.parentElement;
@@ -200,23 +312,22 @@ function renderTarjetasPaises(modoEdicion = false) {
 
   cont.innerHTML = "";
 
-const renderInput = (valor, color, tipo, fiat) => {
-  const claseColor = color === "green" ? "text-green-900" : "text-red-900";
-  const texto = formatearTasa(valor);
-  if (!modoEdicion) {
-    return `<div class="mt-1 font-bold text-xl sm:text-2xl leading-tight ${claseColor} break-words truncate max-w-full">${texto}</div>`;
-  }
-  return `
-    <input type="number"
-      step="any"
-      data-fi="${fiat}"
-      data-tipo="${tipo}"
-      value="${valor ?? ""}"
-      class="w-full px-2 py-1 mt-1 border border-gray-300 rounded-md text-center text-black bg-white ${claseColor}
-             text-sm truncate focus:outline-none focus:ring-2 focus:ring-blue-400" />
-  `;
-};
-
+  const renderInput = (valor, color, tipo, fiat) => {
+    const claseColor = color === "green" ? "text-green-900" : "text-red-900";
+    const texto = formatearTasa(valor);
+    if (!modoEdicion) {
+      return `<div class="mt-1 font-bold text-xl sm:text-2xl leading-tight ${claseColor} break-words truncate max-w-full">${texto}</div>`;
+    }
+    return `
+      <input type="number"
+        step="any"
+        data-fi="${fiat}"
+        data-tipo="${tipo}"
+        value="${valor ?? ""}"
+        class="w-full px-2 py-1 mt-1 border border-gray-300 rounded-md text-center text-black bg-white ${claseColor}
+               text-sm truncate focus:outline-none focus:ring-2 focus:ring-blue-400" />
+    `;
+  };
 
   paises.forEach(p => {
     const datos = datosPaises[p.fiat] || {};
@@ -251,9 +362,7 @@ const renderInput = (valor, color, tipo, fiat) => {
                  data-fi="${p.fiat}"
                  data-tipo="ajuste"
                  value="${ajuste}"
-                 class="w-24 text-center font-semibold text-sm px-2 py-1.5 rounded-md border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
- 
- />`
+                 class="w-24 text-center font-semibold text-sm px-2 py-1.5 rounded-md border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />`
             : `<div class="w-12 text-right font-semibold text-gray-800">${ajuste} %</div>`
         }
       </div>
@@ -268,23 +377,25 @@ const renderInput = (valor, color, tipo, fiat) => {
       input.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
     });
   }, 0);
-
-  // insertar si no estaba en el DOM
-  const wrapper = document.querySelector(".max-w-5xl");
-  if (wrapper && !wrapper.contains(cont)) wrapper.appendChild(cont);
 }
 
 // -------------------------
-// Cálculo de cruces
+// Cálculo de cruces (configurar) usando datosPaises
 // -------------------------
 function escribirCruces() {
   const cont = document.getElementById("cruces-container");
+  const header = document.getElementById("cruce-encabezado");
   if (!cont) return;
-  cont.innerHTML = "";
-  cont.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-5 mt-8";
 
-  // aseguramos que datosPaises tenga entradas solo para los países definidos
+  cont.innerHTML = "";
+  cont.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-5";
+
   const activos = new Set(paises.map(p => p.fiat));
+  if (header) {
+    header.textContent = filtroPais
+      ? (rolVista === "origen" ? `Mostrando cruces desde ${filtroPais}` : `Mostrando cruces hacia ${filtroPais}`)
+      : "Mostrando todos los cruces";
+  }
 
   activos.forEach(origen => {
     activos.forEach(destino => {
@@ -294,17 +405,13 @@ function escribirCruces() {
       const d = datosPaises[destino];
       if (!o || !d || !o.compra || !d.venta) return;
 
-      // ajuste por país origen (si falta, usa por defecto)
       const ajuste = Number.isFinite(o.ajuste) ? o.ajuste : ajustesPorDefecto[origen];
       datosPaises[origen].ajuste = ajuste;
 
-      // tasa base: normalmente d.venta / o.compra
-      // excepción COP->VES: invertir relación base
       let tasaBase = (destino === "VES" && origen === "COP")
         ? 1 / (d.venta / o.compra)
         : d.venta / o.compra;
 
-      // aplicar ajuste: COP->VES suma %, resto resta %
       const factor =
         (origen === "COP" && destino === "VES")
           ? (1 + ajuste / 100)
@@ -363,7 +470,7 @@ function escribirCruces() {
 }
 
 // -------------------------
-// Popover y filtros
+// Popover y filtros (configurar)
 // -------------------------
 function openPopover() {
   const pop = document.getElementById("popover-paises");
@@ -374,10 +481,12 @@ function openPopover() {
   pop.style.left = `${rect.left}px`;
   pop.classList.remove("hidden");
 }
+
 function closePopover() {
   const pop = document.getElementById("popover-paises");
   if (pop) pop.classList.add("hidden");
 }
+
 function resetFiltros() {
   filtroPais = null;
   rolVista = "origen";
@@ -389,9 +498,11 @@ function resetFiltros() {
   if (tabD) tabD.className = "px-4 py-2 bg-gray-100 text-gray-600";
   escribirCruces();
 }
+
 function initPopover() {
   const ul = document.getElementById("lista-paises");
   if (!ul) return;
+
   ul.innerHTML = "";
   paises.forEach(p => {
     const li = document.createElement("li");
@@ -414,191 +525,538 @@ function initPopover() {
     const pop = document.getElementById("popover-paises");
     const btn = document.getElementById("btn-seleccionar-pais");
     if (!pop || !btn) return;
-    if (!pop.contains(e.target) && !btn.contains(e.target)) {
-      closePopover();
-    }
+    if (!pop.contains(e.target) && !btn.contains(e.target)) closePopover();
   });
 }
 
-// -------------------------
-// Eventos UI (panel admin)
-// -------------------------
-document.getElementById("btn-seleccionar-pais")?.addEventListener("click", e => {
-  e.stopPropagation();
-  openPopover();
-});
-document.getElementById("btn-resetear")?.addEventListener("click", resetFiltros);
-
-document.getElementById("tab-origen")?.addEventListener("click", () => {
-  rolVista = "origen";
-  const tabO = document.getElementById("tab-origen");
-  const tabD = document.getElementById("tab-destino");
-  if (tabO) tabO.className = "px-4 py-2 bg-white text-blue-600 font-semibold";
-  if (tabD) tabD.className = "px-4 py-2 bg-gray-100 text-gray-600";
-  escribirCruces();
-});
-document.getElementById("tab-destino")?.addEventListener("click", () => {
-  rolVista = "destino";
-  const tabO = document.getElementById("tab-origen");
-  const tabD = document.getElementById("tab-destino");
-  if (tabD) tabD.className = "px-4 py-2 bg-white text-blue-600 font-semibold";
-  if (tabO) tabO.className = "px-4 py-2 bg-gray-100 text-gray-600";
-  escribirCruces();
-});
-
-document.getElementById("btn-toggle-edicion")?.addEventListener("click", () => {
-  modoEdicionActivo = !modoEdicionActivo;
-  renderTarjetasPaises(modoEdicionActivo);
-  mostrarAdvertenciaPendiente(false);
-  const btn = document.getElementById("btn-toggle-edicion");
-  if (btn) btn.textContent = modoEdicionActivo ? "🔒 Finalizar Edición" : "✏️ Editar Precios";
-});
-
-document.getElementById("btn-refrescar")?.addEventListener("click", () => {
-  document.getElementById("modal-confirmacion")?.classList.remove("hidden");
-});
-function cerrarModalConfirmacion() {
-  document.getElementById("modal-confirmacion")?.classList.add("hidden");
-}
-document.getElementById("btn-cancelar-binance")?.addEventListener("click", cerrarModalConfirmacion);
-
-document.getElementById("btn-confirmar-binance")?.addEventListener("click", async () => {
-  cerrarModalConfirmacion();
-
-  // 1) Persistimos ajustes escritos en inputs (si estamos en edición)
-  for (const p of paises) {
-    const fiat = p.fiat;
-    if (!datosPaises[fiat]) datosPaises[fiat] = {};
-    const inputAjuste = document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`);
-    const ajusteNuevo = inputAjuste ? parseFloat(inputAjuste.value) : null;
-    const ajustePrevio = datosPaises[fiat].ajuste;
-    datosPaises[fiat].ajuste =
-      Number.isFinite(ajusteNuevo) ? ajusteNuevo : (Number.isFinite(ajustePrevio) ? ajustePrevio : ajustesPorDefecto[fiat]);
-    // limpiar compra/venta para rellenar con nuevos valores
-    datosPaises[fiat].compra = null;
-    datosPaises[fiat].venta  = null;
-  }
-  renderTarjetasPaises(modoEdicionActivo);
-
-  // 2) Traemos precios (secuencial, robusto) y solo renderizamos al final
-  llamadasPendientes = paises.length * 2;
+// ======================================================
+// MONITOREO (NO guarda / NO modifica datosPaises)
+// ======================================================
+async function obtenerMercadoLive() {
+  const resultado = {};
   for (const p of paises) {
     const fiat = p.fiat;
     const compra = await fetchPrecio(fiat, "BUY");
-    llamadasPendientes--;
-    const venta  = await fetchPrecio(fiat, "SELL");
-    llamadasPendientes--;
-    datosPaises[fiat].compra = compra;
-    datosPaises[fiat].venta  = venta;
+    const venta = await fetchPrecio(fiat, "SELL");
+    resultado[fiat] = { compra, venta };
   }
-  manejarFinDeLlamadas();
-  renderTarjetasPaises(modoEdicionActivo);
-  escribirCruces();
-});
+  mercadoPaises = resultado;
 
-document.getElementById("btn-aplicar-ajustes")?.addEventListener("click", () => {
+  try {
+    referenciasMercado = await obtenerReferencias();
+  } catch {
+    referenciasMercado = null;
+  }
+
+  ultimoTick = new Date();
+  const monMarket = document.getElementById("mon-market-time");
+  if (monMarket) monMarket.textContent = `Market: ${ultimoTick.toLocaleString()}`;
+
+  return resultado;
+}
+
+function renderMonitoreo() {
+  // Referencias (monitoreo)
+const snapRefs = snapshotPrevio?.referencias || null;
+
+// BCV USD/EUR
+{
+  const usdEl = document.getElementById("mon-bcv-usd");
+  const eurEl = document.getElementById("mon-bcv-eur");
+
+  const marketUsd = referenciasMercado?.bcv?.usd ?? null;
+  const marketEur = referenciasMercado?.bcv?.eur ?? null;
+
+  const snapUsd = snapRefs?.bcv?.usd ?? null;
+  const snapEur = snapRefs?.bcv?.eur ?? null;
+
+  pintarDelta(usdEl, marketUsd, snapUsd, "Snapshot BCV USD");
+  pintarDelta(eurEl, marketEur, snapEur, "Snapshot BCV EUR");
+}
+
+// USDT → VES
+{
+  const usdtEl = document.getElementById("mon-usdt-ves");
+
+  const marketUsdtVes = referenciasMercado?.usdt_ves?.mid ?? null;
+  const snapUsdtVes = snapRefs?.usdt_ves?.mid ?? null;
+
+  pintarDelta(usdtEl, marketUsdtVes, snapUsdtVes, "Snapshot USDT→VES");
+}
+
+  const refFecha = document.getElementById("mon-ref-fecha");
+  if (refFecha) {
+    refFecha.textContent = referenciasMercado?.actualizado_en
+      ? `Refs: ${new Date(referenciasMercado.actualizado_en).toLocaleString()}`
+      : "—";
+  }
+
+  // Grid monedas (comparación snapshot vs market)
+  const cont = document.getElementById("mon-grid-monedas");
+  if (!cont) return;
+  cont.innerHTML = "";
+
+  let top = { fiat: null, delta: 0, snap: null, market: null };
+
   for (const p of paises) {
-    const fiat = p.fiat;
-    const ajuste = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`)?.value);
-    const compra = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="compra"]`)?.value);
-    const venta  = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value);
+    const s = snapshotPrevio?.[p.fiat];
+    const m = mercadoPaises?.[p.fiat];
+    if (!s || !m) continue;
 
-    if (!datosPaises[fiat]) datosPaises[fiat] = {};
-    if (Number.isFinite(ajuste)) datosPaises[fiat].ajuste = ajuste;
-    else datosPaises[fiat].ajuste = datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat];
+    const sC = Number(s.compra);
+    const sV = Number(s.venta);
+    const mC = Number(m.compra);
+    const mV = Number(m.venta);
 
-    if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
-    if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
+    if (!Number.isFinite(sC) || !Number.isFinite(sV) || !Number.isFinite(mC) || !Number.isFinite(mV)) continue;
+
+    const midSnap = (sC + sV) / 2;
+    const midMarket = (mC + mV) / 2;
+    const deltaPct = ((midMarket - midSnap) / midSnap) * 100;
+
+    if (Math.abs(deltaPct) > Math.abs(top.delta)) {
+      top = { fiat: p.fiat, delta: deltaPct, snap: midSnap, market: midMarket };
+    }
+
+    const card = document.createElement("div");
+    card.className = "backdrop-card p-3 text-sm";
+    const cls = deltaPct > 0 ? "text-green-600" : deltaPct < 0 ? "text-red-600" : "";
+    card.innerHTML = `
+      <div class="font-semibold">${p.emoji} ${p.fiat}</div>
+      <div class="mt-1 text-xs opacity-70">Snapshot</div>
+      <div class="font-mono">${Math.round(midSnap)}</div>
+      <div class="mt-1 text-xs opacity-70">Market</div>
+      <div class="font-mono">${Math.round(midMarket)}</div>
+      <div class="mt-2 font-semibold ${cls}">
+        ${deltaPct.toFixed(2)} %
+      </div>
+    `;
+    cont.appendChild(card);
   }
-  renderTarjetasPaises(modoEdicionActivo);
-  escribirCruces();
-  mostrarAdvertenciaPendiente(true);
-});
 
-document.getElementById("btn-guardar-ajustes")?.addEventListener("click", async () => {
-  // Actualizamos datosPaises desde inputs (si están)
+  // Estado global + recomendación (basado en riesgo de margen)
+  const estado = document.getElementById("mon-estado");
+  const rec = document.getElementById("mon-recomendacion");
+  const recSub = document.getElementById("mon-recomendacion-sub");
+  const topMov = document.getElementById("mon-top-mov");
+  const topMovSub = document.getElementById("mon-top-mov-sub");
+
+  // Reglas de negocio:
+  // - PEN/CLP suelen trabajarse con ganancia mínima 6%  -> caída crítica ≈ 1.5%
+  // - resto mínimo 8%                                  -> caída crítica ≈ 3.5%
+  // - subidas no molestan salvo "absurdo" >= +10%
+  // Margen mínimo por ORIGEN (cuando esa moneda es el origen de la operación)
+  // Ej: si el ORIGEN es PEN o CLP, trabajas con mínimo 6%. En el resto mínimo 8%.
+  const MARGEN_MIN_POR_ORIGEN = { PEN: 6, CLP: 6 };
+  const MARGEN_MIN_DEFAULT = 8;
+
+  function umbralCaidaCritica(origenFiat) {
+    const margen = MARGEN_MIN_POR_ORIGEN[origenFiat] ?? MARGEN_MIN_DEFAULT;
+
+    const crit = margen - 4.5; // 6->1.5 ; 8->3.5
+    // por si alguien cambia reglas a futuro y queda muy bajo
+    return Math.max(1.0, crit);
+  }
+
+  const UMBRAL_SUBIDA_ABSURDA = 10.0;
+
+  // Para mostrar "top movimiento" informativo (abs)
+  let topAbs = { fiat: null, delta: 0, snap: null, market: null };
+
+  // Para decidir el estado global (prioridad: caídas)
+  let peorEstado = { sev: -1, fiat: null, delta: null, crit: null }; // sev: 3 red, 2 yellow, 1 purple, 0 ok
+  function evaluarEstado(fiat, deltaPct) {
+    if (!Number.isFinite(deltaPct)) return { sev: -1 };
+    const crit = umbralCaidaCritica(fiat);
+    const warn = Math.max(1.0, crit - 0.5); // franja amarilla antes del crítico
+
+    if (deltaPct <= -crit) return { sev: 3, crit, label: "🔥 Riesgo margen", rec: "Actualizar snapshot YA" };
+    if (deltaPct <= -warn) return { sev: 2, crit, label: "⚠️ Bajando", rec: "Vigilar / preparar update" };
+    if (deltaPct >= UMBRAL_SUBIDA_ABSURDA) return { sev: 1, crit, label: "🟣 Subida absurda", rec: "Actualizar por control" };
+    return { sev: 0, crit, label: "✅ Estable", rec: "No requiere acción" };
+  }
+
+  // Recorremos otra vez las monedas ya renderizadas (usamos mismos datos)
   for (const p of paises) {
-    const fiat = p.fiat;
-    const ajuste = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`)?.value);
-    const compra = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="compra"]`)?.value);
-    const venta  = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value);
+    const s = snapshotPrevio?.[p.fiat];
+    const m = mercadoPaises?.[p.fiat];
+    if (!s || !m) continue;
 
-    if (!datosPaises[fiat]) datosPaises[fiat] = {};
-    datosPaises[fiat].ajuste = Number.isFinite(ajuste) ? ajuste : (datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat]);
-    if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
-    if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
+    const sC = Number(s.compra);
+    const sV = Number(s.venta);
+    const mC = Number(m.compra);
+    const mV = Number(m.venta);
+    if (!Number.isFinite(sC) || !Number.isFinite(sV) || !Number.isFinite(mC) || !Number.isFinite(mV)) continue;
+
+    const midSnap = (sC + sV) / 2;
+    const midMarket = (mC + mV) / 2;
+    const deltaPct = ((midMarket - midSnap) / midSnap) * 100;
+
+    // top ABS (solo informativo)
+    if (Math.abs(deltaPct) > Math.abs(topAbs.delta)) {
+      topAbs = { fiat: p.fiat, delta: deltaPct, snap: midSnap, market: midMarket };
+    }
+
+    // estado por riesgo (prioriza caídas por fiat)
+    const st = evaluarEstado(p.fiat, deltaPct);
+    if (st.sev > peorEstado.sev) {
+      peorEstado = { ...st, fiat: p.fiat, delta: deltaPct };
+    } else if (st.sev === peorEstado.sev && st.sev >= 2) {
+      // si ambos son amarillos/rojos, nos quedamos con el más negativo
+      if (deltaPct < (peorEstado.delta ?? 999)) peorEstado = { ...st, fiat: p.fiat, delta: deltaPct };
+    }
   }
 
-  await guardarSnapshot({ ...datosPaises, timestamp: new Date().toISOString() });
-  snapshotPrevio = JSON.parse(JSON.stringify({ ...datosPaises, cruces: crucesAnteriores }));
-  const el = document.getElementById("ultima-actualizacion");
-  if (el) el.textContent = `🕒 Última actualización: ${new Date().toLocaleString()}`;
+  // Pintar top ABS
+  if (topMov) topMov.textContent = topAbs.fiat ? `${topAbs.fiat} ${topAbs.delta.toFixed(2)}%` : "—";
+  if (topMovSub) topMovSub.textContent = topAbs.fiat
+    ? `Snapshot ~${Math.round(topAbs.snap)} | Market ~${Math.round(topAbs.market)}`
+    : "—";
 
-  renderTarjetasPaises(modoEdicionActivo);
-  escribirCruces();
-  mostrarAdvertenciaPendiente(false);
-});
-
-// -------------------------
-// Login (placeholder simple)
-// -------------------------
-const btnLogin = document.getElementById("btnLogin");
-const loginEmail = document.getElementById("loginEmail");
-const loginPass = document.getElementById("loginPass");
-const loginSeccion = document.getElementById("loginSeccion");
-const contenidoPrivado = document.getElementById("contenidoPrivado");
-
-function verificarSesion() {
-  const token = localStorage.getItem("token");
-  if (token) {
-    loginSeccion?.classList.add("hidden");
-    contenidoPrivado?.classList.remove("hidden");
+  // Pintar estado global
+  if (!peorEstado.fiat) {
+    if (estado) estado.textContent = "Estado: —";
+    if (rec) rec.textContent = "—";
+    if (recSub) recSub.textContent = "—";
   } else {
-    loginSeccion?.classList.remove("hidden");
-    contenidoPrivado?.classList.add("hidden");
+    const crit = peorEstado.crit;
+    if (estado) estado.textContent = peorEstado.label;
+    if (rec) rec.textContent = peorEstado.rec;
+
+    // Mensaje explicando el umbral por país
+       const margen = (MARGEN_MIN_POR_ORIGEN[peorEstado.fiat] ?? MARGEN_MIN_DEFAULT);
+      const critTxt = `Umbral caída crítica ~${crit.toFixed(1)}% (margen mín ${margen}%)`;
+
+    if (recSub) {
+      recSub.textContent =
+        `Peor caso: ${peorEstado.fiat} (${peorEstado.delta.toFixed(2)}%). ${critTxt}.`;
+    }
+  }
+
+  // Poll UI
+  const pollStatus = document.getElementById("mon-poll-status");
+  const pollNext = document.getElementById("mon-poll-next");
+  if (pollStatus) pollStatus.textContent = pollingActivo ? "Activo" : "Pausado";
+  if (pollNext) pollNext.textContent = pollingActivo ? "• cada 60s" : "• detenido";
+
+  // Cruces consulta rápida (usa snapshot actual)
+  renderMonCruces();
+}
+
+async function tickMonitoreo() {
+  if (!pollingActivo) return;
+  try {
+    await obtenerMercadoLive();
+    renderMonitoreo();
+  } catch (e) {
+    console.error("❌ tickMonitoreo", e);
   }
 }
-btnLogin && (btnLogin.onclick = async () => {
-  const email = loginEmail?.value.trim();
-  const password = loginPass?.value.trim();
-  if (!email || !password) return mostrarToast("⚠️ Completa ambos campos");
-  try {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-    if (!res.ok) {
-      mostrarToast("❌ Usuario o clave incorrecta");
-      return;
-    }
-    const data = await res.json();
-    localStorage.setItem("token", data.token);
-    mostrarToast("✅ Sesión iniciada");
-    verificarSesion();
-  } catch (e) {
-    console.error(e);
-    mostrarToast("❌ Error de conexión");
+
+function iniciarPolling() {
+  if (pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = setInterval(tickMonitoreo, 60000);
+}
+
+function detenerPolling() {
+  if (pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = null;
+}
+
+// -------------------------
+// Cruces MONITOREO (consulta rápida) - usa datos del snapshot (datosPaises)
+// -------------------------
+function renderMonCruces() {
+  const cont = document.getElementById("mon-cruces-container");
+  const header = document.getElementById("mon-cruce-encabezado");
+  if (!cont) return;
+
+  cont.innerHTML = "";
+
+  const activos = new Set(paises.map(p => p.fiat));
+
+  const buscar = (monBuscar || "").trim().toUpperCase();
+  if (header) {
+    header.textContent = buscar
+      ? `Filtro: "${buscar}"`
+      : (monRolVista === "origen" ? "Cruces por origen" : "Cruces por destino");
   }
-});
-document.getElementById("btnLogout")?.addEventListener("click", () => {
-  localStorage.removeItem("token");
-  mostrarToast("🔒 Sesión cerrada");
-  verificarSesion();
-});
+
+  const matches = (fiat) => !buscar || fiat.includes(buscar);
+
+  activos.forEach(origen => {
+    activos.forEach(destino => {
+      if (origen === destino) return;
+
+      if (monRolVista === "origen" && buscar && !matches(origen) && !matches(destino)) return;
+      if (monRolVista === "destino" && buscar && !matches(destino) && !matches(origen)) return;
+
+      const o = datosPaises[origen];
+      const d = datosPaises[destino];
+      if (!o || !d || !o.compra || !d.venta) return;
+
+      const ajuste = Number.isFinite(o.ajuste) ? o.ajuste : ajustesPorDefecto[origen];
+
+      let tasaBase = (destino === "VES" && origen === "COP")
+        ? 1 / (d.venta / o.compra)
+        : d.venta / o.compra;
+
+      const factor =
+        (origen === "COP" && destino === "VES")
+          ? (1 + ajuste / 100)
+          : (1 - ajuste / 100);
+
+      const tasaFinal = parseFloat((tasaBase * factor).toFixed(6));
+
+      const flagOrigen  = paises.find(p => p.fiat === origen)?.emoji || "";
+      const flagDestino = paises.find(p => p.fiat === destino)?.emoji || "";
+
+      const card = document.createElement("div");
+      card.className = "backdrop-card p-3 text-sm";
+      card.innerHTML = `
+        <div class="text-xs font-semibold opacity-90 text-center">
+          ${flagOrigen} ${origen} → ${flagDestino} ${destino}
+        </div>
+        <div class="mt-2 text-center font-mono text-xl font-extrabold">
+          ${formatearTasa(tasaFinal)}
+        </div>
+      `;
+      cont.appendChild(card);
+    });
+  });
+}
+
+// ======================================================
+// EVENTOS UI (configurar + monitoreo)
+// ======================================================
+function bindUI() {
+  // --- Configurar ---
+  document.getElementById("btn-seleccionar-pais")?.addEventListener("click", e => {
+    e.stopPropagation();
+    openPopover();
+  });
+  document.getElementById("btn-resetear")?.addEventListener("click", resetFiltros);
+
+  document.getElementById("tab-origen")?.addEventListener("click", () => {
+    rolVista = "origen";
+    const tabO = document.getElementById("tab-origen");
+    const tabD = document.getElementById("tab-destino");
+    if (tabO) tabO.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
+    if (tabD) tabD.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
+    escribirCruces();
+  });
+
+  document.getElementById("tab-destino")?.addEventListener("click", () => {
+    rolVista = "destino";
+    const tabO = document.getElementById("tab-origen");
+    const tabD = document.getElementById("tab-destino");
+    if (tabD) tabD.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
+    if (tabO) tabO.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
+    escribirCruces();
+  });
+
+  document.getElementById("btn-toggle-edicion")?.addEventListener("click", () => {
+    modoEdicionActivo = !modoEdicionActivo;
+    renderTarjetasPaises(modoEdicionActivo);
+    mostrarAdvertenciaPendiente(false);
+    const btn = document.getElementById("btn-toggle-edicion");
+    if (btn) btn.textContent = modoEdicionActivo ? "🔒 Finalizar Edición" : "✏️ Editar Precios";
+  });
+
+  // Modal confirmación (Actualizar precios)
+  document.getElementById("btn-refrescar")?.addEventListener("click", () => {
+    document.getElementById("modal-confirmacion")?.classList.remove("hidden");
+  });
+
+  window.cerrarModalConfirmacion = function cerrarModalConfirmacion() {
+    document.getElementById("modal-confirmacion")?.classList.add("hidden");
+  };
+
+  // Confirmar Binance: actualiza datosPaises (config), luego referencias (sin guardar), marca pendiente
+  document.getElementById("btn-confirmar-binance")?.addEventListener("click", async () => {
+    window.cerrarModalConfirmacion?.();
+
+    // 1) Persistir ajuste desde inputs (si hay)
+    for (const p of paises) {
+      const fiat = p.fiat;
+      if (!datosPaises[fiat]) datosPaises[fiat] = {};
+      const inputAjuste = document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`);
+      const ajusteNuevo = inputAjuste ? parseFloat(inputAjuste.value) : null;
+      const ajustePrevio = datosPaises[fiat].ajuste;
+      datosPaises[fiat].ajuste =
+        Number.isFinite(ajusteNuevo) ? ajusteNuevo : (Number.isFinite(ajustePrevio) ? ajustePrevio : ajustesPorDefecto[fiat]);
+
+      // Limpiar compra/venta para rellenar con nuevos valores
+      datosPaises[fiat].compra = null;
+      datosPaises[fiat].venta  = null;
+    }
+
+    renderTarjetasPaises(modoEdicionActivo);
+
+    // 2) Traer precios (secuencial)
+    llamadasPendientes = paises.length * 2;
+    for (const p of paises) {
+      const fiat = p.fiat;
+      const compra = await fetchPrecio(fiat, "BUY");
+      llamadasPendientes--;
+      const venta  = await fetchPrecio(fiat, "SELL");
+      llamadasPendientes--;
+
+      datosPaises[fiat].compra = compra;
+      datosPaises[fiat].venta  = venta;
+    }
+
+    manejarFinDeLlamadas();
+    renderTarjetasPaises(modoEdicionActivo);
+    escribirCruces();
+
+    // 3) Traer referencias externas (SIN guardar)
+    try {
+      referenciasExternas = await obtenerReferencias();
+      renderReferencias();
+    } catch {
+      mostrarToast("⚠️ No se pudieron actualizar referencias");
+    }
+
+    // Pendiente de guardar
+    mostrarAdvertenciaPendiente(true);
+  });
+
+  document.getElementById("btn-aplicar-ajustes")?.addEventListener("click", () => {
+    for (const p of paises) {
+      const fiat = p.fiat;
+      const ajuste = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`)?.value);
+      const compra = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="compra"]`)?.value);
+      const venta  = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value);
+
+      if (!datosPaises[fiat]) datosPaises[fiat] = {};
+      datosPaises[fiat].ajuste = Number.isFinite(ajuste) ? ajuste : (datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat]);
+      if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
+      if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
+    }
+    renderTarjetasPaises(modoEdicionActivo);
+    escribirCruces();
+    mostrarAdvertenciaPendiente(true);
+  });
+
+  document.getElementById("btn-guardar-ajustes")?.addEventListener("click", async () => {
+    // Actualizamos datosPaises desde inputs (si están)
+    for (const p of paises) {
+      const fiat = p.fiat;
+      const ajuste = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`)?.value);
+      const compra = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="compra"]`)?.value);
+      const venta  = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value);
+
+      if (!datosPaises[fiat]) datosPaises[fiat] = {};
+      datosPaises[fiat].ajuste = Number.isFinite(ajuste) ? ajuste : (datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat]);
+      if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
+      if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
+    }
+
+    // Actualizar referencias a la hora de guardar
+    try {
+      referenciasExternas = await obtenerReferencias();
+      renderReferencias();
+    } catch {
+      mostrarToast("⚠️ No se pudieron actualizar referencias");
+    }
+
+    // Guardar snapshot
+    await guardarSnapshot({
+      ...datosPaises,
+      referencias: referenciasExternas,
+      timestamp: new Date().toISOString()
+    });
+
+    // Actualizar snapshotPrevio en memoria (para monitoreo)
+    snapshotPrevio = JSON.parse(JSON.stringify({ ...datosPaises, referencias: referenciasExternas, cruces: crucesAnteriores }));
+
+    const el = document.getElementById("ultima-actualizacion");
+    if (el) el.textContent = `🕒 Última actualización: ${new Date().toLocaleString()}`;
+
+    const monSnap = document.getElementById("mon-snapshot-time");
+    if (monSnap) monSnap.textContent = `Snapshot: ${new Date().toLocaleString()}`;
+
+    renderTarjetasPaises(modoEdicionActivo);
+    escribirCruces();
+    mostrarAdvertenciaPendiente(false);
+
+    mostrarToast("✅ Snapshot guardado");
+    // refrescar monitoreo contra el nuevo snapshot
+    renderMonitoreo();
+  });
+
+  // --- Monitoreo ---
+  document.getElementById("btn-mon-refresh")?.addEventListener("click", async () => {
+    await tickMonitoreo();
+    mostrarToast("🔄 Chequeo listo");
+  });
+
+  document.getElementById("btn-mon-toggle")?.addEventListener("click", (e) => {
+    pollingActivo = !pollingActivo;
+    if (e?.target) e.target.textContent = pollingActivo ? "⏸️ Pausar" : "▶️ Reanudar";
+    if (pollingActivo) iniciarPolling();
+    else detenerPolling();
+    renderMonitoreo();
+  });
+
+  document.getElementById("mon-tab-origen")?.addEventListener("click", () => {
+    monRolVista = "origen";
+    const a = document.getElementById("mon-tab-origen");
+    const b = document.getElementById("mon-tab-destino");
+    if (a) a.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
+    if (b) b.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
+    renderMonCruces();
+  });
+
+  document.getElementById("mon-tab-destino")?.addEventListener("click", () => {
+    monRolVista = "destino";
+    const a = document.getElementById("mon-tab-origen");
+    const b = document.getElementById("mon-tab-destino");
+    if (b) b.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
+    if (a) a.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
+    renderMonCruces();
+  });
+
+  document.getElementById("mon-buscar-cruce")?.addEventListener("input", (e) => {
+    monBuscar = e.target.value || "";
+    renderMonCruces();
+  });
+
+  document.getElementById("mon-resetear")?.addEventListener("click", () => {
+    monBuscar = "";
+    const inp = document.getElementById("mon-buscar-cruce");
+    if (inp) inp.value = "";
+    monRolVista = "origen";
+    const a = document.getElementById("mon-tab-origen");
+    const b = document.getElementById("mon-tab-destino");
+    if (a) a.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
+    if (b) b.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
+    renderMonCruces();
+  });
+}
 
 // -------------------------
 // Init
 // -------------------------
 (async () => {
   const loader = document.getElementById("loader");
-  if (loader) loader.style.display = "block";
+  if (loader) loader.style.display = "flex";
+
+  ensureToast();
+  bindUI();
 
   await cargarSnapshot();
-  renderTarjetasPaises(modoEdicionActivo);
   initPopover();
+
+  // Render configurar (drawer)
+  renderTarjetasPaises(modoEdicionActivo);
   escribirCruces();
+  mostrarAdvertenciaPendiente(false);
+
+  // Monitoreo inicial + polling
+  await tickMonitoreo();
+  iniciarPolling();
 
   if (loader) loader.style.display = "none";
-  verificarSesion();
 })();

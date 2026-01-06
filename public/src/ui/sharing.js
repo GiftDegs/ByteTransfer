@@ -1,105 +1,100 @@
-// src/ui/sharing.js
-import { formatearTasa } from "../core/utils.js";
-import { NUMERO_WHATSAPP } from "../core/config.js";
-import { mostrarToast } from "./toasts.js";
+// sharing.js (sin imports para no romper el flujo por rutas/export inexistentes)
 
-function ensureHtml2Canvas() {
-  return new Promise((resolve, reject) => {
-    if (window.html2canvas) return resolve(window.html2canvas);
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-    s.async = true;
-    s.onload = () => resolve(window.html2canvas);
-    s.onerror = () => reject(new Error("No se pudo cargar html2canvas"));
-    document.head.appendChild(s);
-  });
+function isMobileShareAvailable() {
+  return typeof navigator !== "undefined" && !!navigator.share;
 }
 
-export function initSharing(DOM, getLastCalc, getOpsState = () => ({ allowWhats: true })) {
-  const menu = DOM.btnCompartir?.nextElementSibling;
+function nombreMonedaBasica(codigo) {
+  const map = {
+    ARS: "Pesos argentinos",
+    COP: "Pesos colombianos",
+    VES: "Bolívares",
+    CLP: "Pesos chilenos",
+    PEN: "Soles",
+    MXN: "Pesos mexicanos",
+    BRL: "Reales",
+    USD: "Dólares",
+    EUR: "Euros",
+  };
+  return map[codigo] || codigo;
+}
 
-  DOM.btnCompartir?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    menu?.classList.toggle("hidden");
-  });
-  document.addEventListener("click", (e) => {
-    if (!menu) return;
-    if (!menu.contains(e.target) && e.target !== DOM.btnCompartir) menu.classList.add("hidden");
-  });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") menu?.classList.add("hidden"); });
+export function initSharing(DOM, getLastCalc) {
+  const canShare = isMobileShareAvailable();
 
-  DOM.opcionTexto?.addEventListener("click", async () => {
-    menu?.classList.add("hidden");
-    const last = getLastCalc();
-    if (!last) { mostrarToast(DOM, "⚠️ Primero realiza un cálculo"); return; }
-    const { mode, origen, destino, montoIngresado, montoCalculado, tasa, fecha } = last;
-    const tasaFmt = formatearTasa(tasa);
-    const inFmt = montoIngresado.toLocaleString("es-ES");
-    const calFmt = montoCalculado.toLocaleString("es-ES");
-    const texto = "📦 Transferencia calculada con ByteTransfer\n\n" +
-      (mode === "enviar"
-        ? `💰 Monto a enviar: ${inFmt} ${origen.codigo} desde ${origen.nombre}\n📥 Monto a recibir: ${destino.codigo} ${calFmt} en ${destino.nombre}`
-        : `📥 Monto a recibir: ${destino.codigo} ${inFmt} en ${destino.nombre}\n💰 Monto a enviar: ${calFmt} ${origen.codigo} desde ${origen.nombre}`) +
-      `\n💱 Tasa del día: ${tasaFmt}\n📅 Fecha: ${fecha}\n` +
-      (!getOpsState().allowWhats ? "\n⚠️ Modo referencia: la tasa no está vigente. Valores orientativos." : "");
+  // Regla:
+  // - Móvil (hay share sheet): mostramos botón imagen (share icon) y menú
+  // - PC (no hay share sheet): ocultamos share icon y mostramos WhatsApp
+  if (DOM.btnCompartir) DOM.btnCompartir.classList.toggle("hidden", !canShare);
+  if (DOM.btnWhats) DOM.btnWhats.classList.toggle("hidden", canShare);
 
-    if (navigator.share && !navigator.canShare?.({ files: [] })) {
-      try { await navigator.share({ title: "ByteTransfer", text: texto }); return; } catch {}
-    }
-    try { await navigator.clipboard.writeText(texto); mostrarToast(DOM, "Texto copiado ✅"); return; } catch {}
-    const ta = document.createElement("textarea"); ta.value = texto; document.body.appendChild(ta);
-    ta.select(); document.execCommand("copy"); ta.remove();
-    mostrarToast(DOM, "Texto copiado ✅");
-  });
+  const menu = DOM.menuCompartir;
 
-  DOM.opcionImagen?.addEventListener("click", async () => {
-    menu?.classList.add("hidden");
-    const card = DOM.resTextContainer;
-    if (!card) { mostrarToast(DOM, "⚠️ No encontré el resultado para capturar"); return; }
-    try {
-      const h2c = await ensureHtml2Canvas();
-      const canvas = await h2c(card, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-      const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-      if (!blob) throw new Error("No se pudo crear la imagen");
-      const file = new File([blob], "byte-transfer-result.png", { type: "image/png" });
+  // --- Menu toggle (solo si existe el botón de compartir) ---
+  if (DOM.btnCompartir && menu) {
+    DOM.btnCompartir.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.classList.toggle("hidden");
+    });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          const text = !getOpsState().allowWhats ? "Modo referencia" : "Resultado del cálculo";
-          await navigator.share({ title: "ByteTransfer", text, files: [file] });
-          return;
-        } catch {}
+    document.addEventListener("click", (e) => {
+      if (!menu.contains(e.target) && e.target !== DOM.btnCompartir) {
+        menu.classList.add("hidden");
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = "byte-transfer-result.png";
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      mostrarToast(DOM, "Imagen descargada 📷✅");
-    } catch (err) {
-      console.error("Compartir imagen falló:", err);
-      mostrarToast(DOM, "⚠️ No se pudo generar la imagen. Reintenta.");
-    }
-  });
+    });
 
-  DOM.btnWhats?.addEventListener("click", () => {
-    const ops = getOpsState();
-    if (!ops.allowWhats) {
-      mostrarToast(DOM, "⛔ Estamos cerrados / tasa no vigente. WhatsApp deshabilitado.");
-      return;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") menu.classList.add("hidden");
+    });
+  }
+
+  function buildText() {
+    const last = getLastCalc?.();
+    if (!last) return "ByteTransfer";
+
+    // Tu lastCalc real (en steps.js) tiene: { origen, destino, montoIngresado, montoCalculado, tasa, fecha, mode }
+    const oCode = last.origen?.codigo || "";
+    const dCode = last.destino?.codigo || "";
+    const oName = nombreMonedaBasica(oCode);
+    const dName = nombreMonedaBasica(dCode);
+
+    const nf0 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+    const nf2 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+
+    const montoIn = Number.isFinite(last.montoIngresado) ? nf2.format(last.montoIngresado) : last.montoIngresado;
+    const montoOut = Number.isFinite(last.montoCalculado) ? nf0.format(last.montoCalculado) : last.montoCalculado;
+
+    const tasa = last.tasa ?? "";
+    const fecha = last.fecha ?? "";
+
+    // Texto simple para cliente
+    return `ByteTransfer
+Envío: ${montoIn} ${oName}
+Recibe: ${montoOut} ${dName}
+Tasa: ${tasa} (${fecha})`;
+  }
+
+  async function shareText() {
+    try {
+      await navigator.share({ text: buildText() });
+    } catch (_) {
+      // cancelado / no disponible
     }
-    const last = getLastCalc();
-    if (!last) { mostrarToast(DOM, "⚠️ Primero realiza un cálculo antes de enviar por WhatsApp"); return; }
-    const { mode, origen, destino, montoIngresado, montoCalculado, tasa, fecha } = last;
-    const tasaFmt = formatearTasa(tasa);
-    const inFmt = montoIngresado.toLocaleString("es-ES");
-    const calFmt = montoCalculado.toLocaleString("es-ES");
-    const msg =
-      `👋 ¡Hola ByteTransfer!\n\n` +
-      `Quiero enviar *${mode === "enviar" ? `$${inFmt} ${origen.codigo}` : `$${calFmt} ${origen.codigo}`}* desde *${origen.nombre}* ${origen.emoji} 📤\n` +
-      `para que lleguen *${mode === "enviar" ? `${calFmt} ${destino.codigo}` : `${inFmt} ${destino.codigo}`}* a *${destino.nombre}* ${destino.emoji} 📬\n\n` +
-      `💱 *Tasa del día:* ${tasaFmt}\n📅 *Fecha:* ${fecha}\n\n` +
-      `¿Podrían ayudarme con esta transferencia? 🙏✨\n` +
-      `Ya les paso el comprobante 📸✅`;
-    const url = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
-  });
+  }
+
+  // Share (móvil)
+  if (DOM.opcionTexto) {
+    DOM.opcionTexto.addEventListener("click", async () => {
+      if (menu) menu.classList.add("hidden");
+      await shareText();
+    });
+  }
+
+  // WhatsApp (PC)
+  if (DOM.btnWhats) {
+    DOM.btnWhats.addEventListener("click", () => {
+      const url = `https://wa.me/?text=${encodeURIComponent(buildText())}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
+  }
 }

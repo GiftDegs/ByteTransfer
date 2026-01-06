@@ -4,17 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Panel de Tasas</title>
-    
+
     <script>
-  (function () {
-    try {
-      const saved = localStorage.getItem('bt_theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const shouldDark = saved ? saved === 'dark' : prefersDark;
-      document.documentElement.classList.toggle('dark', shouldDark);
-    } catch (_) {}
-  })();
-</script>
+      (function () {
+        try {
+          const saved = localStorage.getItem('bt_theme');
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const shouldDark = saved ? saved === 'dark' : prefersDark;
+          document.documentElement.classList.toggle('dark', shouldDark);
+        } catch (_) {}
+      })();
+    </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -22,115 +22,316 @@
         darkMode: 'class',
         theme: {
           extend: {
-          colors: {
-          brandBlue: '#1F6BFF',
-          brandTeal: '#13E6C6',
-          bgLight: '#F4FBFF',
-          bgDark: '#050B1A',
-          surfaceDark: '#0B1224',
-          },
+            colors: {
+              brandBlue: '#1F6BFF',
+              brandTeal: '#13E6C6',
+              bgLight: '#F4FBFF',
+              bgDark: '#050B1A',
+              surfaceDark: '#0B1224',
+            },
           },
         },
       };
     </script>
+
     <script src="/admin/main.js" defer></script>
 
     <style>
-  .backdrop-card {
-    background-color: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(12px);
-    border-radius: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
+      .backdrop-card {
+        background-color: rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(12px);
+        border-radius: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .backdrop-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+      .backdrop-input {
+        background-color: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(200, 200, 255, 0.2);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        backdrop-filter: blur(6px);
+        color: #111;
+      }
+      .dark .backdrop-input {
+        background-color: rgba(50, 50, 80, 0.4);
+        color: #eee;
+      }
 
-  .backdrop-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  }
+      /* Drawer animation */
+      .drawer-panel {
+        transform: translateX(100%);
+        transition: transform 220ms ease;
+      }
+      .drawer-open .drawer-panel {
+        transform: translateX(0);
+      }
 
-  .backdrop-input {
-    background-color: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(200, 200, 255, 0.2);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    backdrop-filter: blur(6px);
-    color: #111;
-  }
-
-  .dark .backdrop-input {
-    background-color: rgba(50, 50, 80, 0.4);
-    color: #eee;
-  }
-</style>
-
+      /* Sticky header blur */
+      .topbar {
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+    </style>
   </head>
 
   <body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-gray-100 transition-colors duration-300 p-6">
-
     <!-- Loader -->
     <div id="loader" class="fixed inset-0 flex items-center justify-center z-50 bg-white dark:bg-black bg-opacity-80 backdrop-blur">
       <div class="flex items-center space-x-3">
         <svg class="animate-spin h-6 w-6 text-brandBlue" viewBox="0 0 24 24" fill="none">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
         </svg>
         <span class="text-sm">⏳ Cargando datos...</span>
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto">
-      <h1 class="text-3xl font-extrabold mb-6">📊 Panel de Tasas por País</h1>
-
-      <div id="ultima-actualizacion" class="text-sm text-gray-500 mb-4"></div>
-
-      <div id="advertencia-pendiente" class="bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded hidden">
-        ⚠️ <strong>Importante:</strong> Se han actualizado los precios. Debes presionar <strong>💾 Guardar Ajustes</strong>.
-      </div>
-
-      <!-- Acciones -->
-      <div class="flex flex-wrap gap-3 mb-10 border-b border-gray-300 dark:border-gray-700 pb-4">
-        <button id="btn-refrescar" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow">
-          🔄 Actualizar Precios
-        </button>
-        <button id="btn-toggle-edicion" class="px-4 py-2 bg-brandTeal hover:brightness-110 text-white rounded shadow">
-          ✏️ Editar Precios
-        </button>
-        <button id="btn-aplicar-ajustes" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded shadow">
-          🔃 Aplicar Ajustes
-        </button>
-        <button id="btn-guardar-ajustes" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">
-          💾 Guardar Ajustes
-        </button>
-      </div>
-
-            <!-- Popover País -->
-      <div id="popover-paises" class="absolute bg-white dark:bg-gray-800 rounded shadow-lg w-64 max-h-80 overflow-auto hidden z-50">
-        <ul id="lista-paises" class="divide-y divide-gray-200 dark:divide-gray-600"></ul>
-      </div>
-
-      <!-- Tarjetas -->
-      <div id="tarjetas-paises" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-10"></div>
-
-      <!-- Selector país -->
-      <div class="flex flex-wrap gap-4 mb-10 items-center">
-        <button id="btn-seleccionar-pais" class="px-4 py-2 bg-brandBlue text-white rounded-lg shadow hover:bg-brandBlue/90">
-          🌐 País: <span id="pais-seleccionado">Todos</span>
-        </button>
-        <div class="flex border rounded-lg overflow-hidden shadow-sm">
-          <button id="tab-origen" class="px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold">Origen →</button>
-          <button id="tab-destino" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600">← Destino</button>
+    <!-- Topbar (modo Monitoreo por defecto) -->
+    <div class="topbar sticky top-0 z-40 -mx-6 px-6 py-3 mb-6 bg-white/60 dark:bg-black/30 border-b border-white/40 dark:border-white/10">
+      <div class="max-w-6xl mx-auto flex items-center gap-3">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="text-xl font-extrabold whitespace-nowrap">📊 Panel de Tasas</div>
+          <div class="hidden sm:flex items-center gap-2 text-xs opacity-80 min-w-0">
+            <span id="mon-snapshot-time" class="truncate">Snapshot: —</span>
+            <span class="opacity-40">•</span>
+            <span id="mon-market-time" class="truncate">Market: —</span>
+          </div>
         </div>
-        <button id="btn-resetear" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded shadow hover:bg-gray-400">
-          🧹 Limpiar filtros
+
+        <div class="flex-1"></div>
+
+        <!-- Estado (lo pintaremos luego en main.js) -->
+        <div id="mon-estado" class="hidden sm:flex items-center text-xs px-3 py-1 rounded-full border border-white/40 dark:border-white/10 bg-white/40 dark:bg-white/5">
+          Estado: —
+        </div>
+
+        <!-- CTA principal: Configurar (abre drawer) -->
+        <button
+          id="btn-abrir-config"
+          class="px-4 py-2 bg-brandBlue hover:bg-brandBlue/90 text-white rounded-full shadow transition text-sm font-semibold"
+          title="Configurar y guardar snapshot"
+        >
+          ⚙️ Configurar tasas
+        </button>
+
+        <!-- Tema -->
+        <button
+          id="modoToggle"
+          class="px-3 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white rounded-full shadow hover:brightness-110 transition text-sm"
+        >
+          🌞 Claro
         </button>
       </div>
-      
-      <h2 class="text-2xl font-bold mb-4">💱 Tasas de Cruce</h2>
-      <div class="space-y-4 mb-20">
-        <div id="cruce-encabezado" class="text-lg font-semibold"></div>
-        <div id="cruces-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+      <!-- Vista Monitoreo (default) -->
+      <section id="vista-monitoreo" class="space-y-6">
+        <!-- Ticker Referencias (compacto) -->
+        <div class="backdrop-card p-4">
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div class="flex items-baseline gap-2">
+              <span class="text-xs opacity-70">BCV USD</span>
+              <span id="mon-bcv-usd" class="text-2xl font-extrabold">—</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span class="text-xs opacity-70">BCV EUR</span>
+              <span id="mon-bcv-eur" class="text-2xl font-extrabold">—</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span class="text-xs opacity-70">USDT → VES</span>
+              <span id="mon-usdt-ves" class="text-2xl font-extrabold">—</span>
+            </div>
+
+            <div class="flex-1"></div>
+
+            <div class="text-xs opacity-70" id="mon-ref-fecha">—</div>
+          </div>
+        </div>
+
+        <!-- Resumen / Alertas (lo pintaremos luego desde main.js) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="backdrop-card p-4">
+            <div class="text-xs opacity-70 mb-1">Recomendación</div>
+            <div id="mon-recomendacion" class="text-lg font-bold">—</div>
+            <div id="mon-recomendacion-sub" class="text-xs opacity-70 mt-2">—</div>
+          </div>
+
+          <div class="backdrop-card p-4">
+            <div class="text-xs opacity-70 mb-1">Mayor movimiento</div>
+            <div id="mon-top-mov" class="text-lg font-bold">—</div>
+            <div id="mon-top-mov-sub" class="text-xs opacity-70 mt-2">—</div>
+          </div>
+
+          <div class="backdrop-card p-4">
+            <div class="text-xs opacity-70 mb-1">Monitoreo</div>
+            <div class="flex items-center gap-2">
+              <span id="mon-poll-status" class="text-lg font-bold">—</span>
+              <span class="text-xs opacity-70" id="mon-poll-next">—</span>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <button id="btn-mon-refresh" class="px-3 py-2 bg-gray-900/10 dark:bg-white/10 hover:brightness-110 rounded-lg text-sm">
+                🔄 Chequear ahora
+              </button>
+              <button id="btn-mon-toggle" class="px-3 py-2 bg-gray-900/10 dark:bg-white/10 hover:brightness-110 rounded-lg text-sm">
+                ⏸️ Pausar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid Monedas (resumen) -->
+        <div class="backdrop-card p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold">🧭 Monedas (resumen)</h2>
+            <div class="text-xs opacity-70">Vista para decidir si actualizar snapshot</div>
+          </div>
+          <div id="mon-grid-monedas" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <!-- main.js pintará aquí -->
+          </div>
+          <div class="text-xs opacity-70 mt-3">
+            Tip: el panel de configuración abre a la derecha. El monitoreo no modifica el snapshot hasta que lo guardes.
+          </div>
+        </div>
+
+        <!-- Cruces clave (colapsable, secundario) -->
+        <details class="backdrop-card p-4">
+          <summary class="cursor-pointer select-none flex items-center justify-between">
+            <span class="text-lg font-bold">💱 Cruces (consulta rápida)</span>
+            <span class="text-xs opacity-70">Abrir / cerrar</span>
+          </summary>
+
+          <div class="mt-4">
+            <div class="flex flex-wrap gap-4 items-center mb-4">
+              <div class="flex border rounded-lg overflow-hidden shadow-sm">
+                <button id="mon-tab-origen" class="px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold">Origen →</button>
+                <button id="mon-tab-destino" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600">← Destino</button>
+              </div>
+
+              <div class="flex-1 min-w-[220px]">
+                <input id="mon-buscar-cruce" class="w-full backdrop-input" placeholder="Buscar cruce (ej: ARS, COP, VES)..." />
+              </div>
+
+              <button id="mon-resetear" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded shadow hover:bg-gray-400">
+                🧹 Limpiar
+              </button>
+            </div>
+
+            <div id="mon-cruce-encabezado" class="text-sm font-semibold mb-3 opacity-90"></div>
+            <div id="mon-cruces-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+          </div>
+        </details>
+      </section>
+    </div>
+
+    <!-- Drawer Configuración -->
+    <div id="drawer" class="fixed inset-0 z-50 hidden">
+      <!-- overlay -->
+      <div id="drawer-overlay" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+      <!-- panel -->
+      <div class="drawer-panel absolute right-0 top-0 h-full w-full max-w-[980px] bg-white/80 dark:bg-surfaceDark/90 border-l border-white/40 dark:border-white/10 shadow-2xl overflow-y-auto">
+        <div class="p-5 sm:p-6">
+          <!-- Header drawer -->
+          <div class="flex items-start gap-3 mb-5">
+            <div class="min-w-0">
+              <div class="text-xl font-extrabold">⚙️ Configurar tasas (snapshot)</div>
+              <div id="ultima-actualizacion" class="text-xs opacity-70 mt-1">—</div>
+            </div>
+
+            <div class="flex-1"></div>
+
+            <button
+              id="btn-cerrar-config"
+              class="px-3 py-2 rounded-lg bg-gray-900/10 dark:bg-white/10 hover:brightness-110 text-sm"
+              title="Volver a monitoreo"
+            >
+              ✖ Cerrar
+            </button>
+          </div>
+
+          <!-- Referencias externas (config) -->
+          <div class="backdrop-card p-4 mb-6">
+            <h2 class="text-lg font-bold mb-2">📌 Referencias</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <div class="text-xs opacity-70">BCV USD</div>
+                <div id="ref-bcv-usd" class="text-2xl font-extrabold">—</div>
+              </div>
+              <div>
+                <div class="text-xs opacity-70">BCV EUR</div>
+                <div id="ref-bcv-eur" class="text-2xl font-extrabold">—</div>
+              </div>
+              <div>
+                <div class="text-xs opacity-70">USDT → VES</div>
+                <div id="ref-usdt-ves" class="text-2xl font-extrabold">—</div>
+              </div>
+            </div>
+            <div class="text-xs opacity-70 mt-2" id="ref-fecha">—</div>
+          </div>
+
+          <div
+            id="advertencia-pendiente"
+            class="bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded hidden"
+          >
+            ⚠️ <strong>Importante:</strong> Se han actualizado los precios. Debes presionar <strong>💾 Guardar Ajustes</strong>.
+          </div>
+
+          <!-- Acciones -->
+          <div class="flex flex-wrap gap-3 mb-8 border-b border-gray-300 dark:border-gray-700 pb-4">
+            <button id="btn-refrescar" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow">
+              🔄 Actualizar Precios
+            </button>
+            <button id="btn-toggle-edicion" class="px-4 py-2 bg-brandTeal hover:brightness-110 text-white rounded shadow">
+              ✏️ Editar Precios
+            </button>
+            <button id="btn-aplicar-ajustes" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded shadow">
+              🔃 Aplicar Ajustes
+            </button>
+            <button id="btn-guardar-ajustes" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">
+              💾 Guardar Ajustes
+            </button>
+          </div>
+
+          <!-- Popover País -->
+          <div id="popover-paises" class="absolute bg-white dark:bg-gray-800 rounded shadow-lg w-64 max-h-80 overflow-auto hidden z-50">
+            <ul id="lista-paises" class="divide-y divide-gray-200 dark:divide-gray-600"></ul>
+          </div>
+
+          <!-- Tarjetas -->
+          <div id="tarjetas-paises" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-10"></div>
+
+          <!-- Selector país -->
+          <div class="flex flex-wrap gap-4 mb-8 items-center">
+            <button id="btn-seleccionar-pais" class="px-4 py-2 bg-brandBlue text-white rounded-lg shadow hover:bg-brandBlue/90">
+              🌐 País: <span id="pais-seleccionado">Todos</span>
+            </button>
+
+            <div class="flex border rounded-lg overflow-hidden shadow-sm">
+              <button id="tab-origen" class="px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold">Origen →</button>
+              <button id="tab-destino" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600">← Destino</button>
+            </div>
+
+            <button id="btn-resetear" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded shadow hover:bg-gray-400">
+              🧹 Limpiar filtros
+            </button>
+          </div>
+
+          <h2 class="text-2xl font-bold mb-4">💱 Tasas de Cruce</h2>
+          <div class="space-y-4 mb-10">
+            <div id="cruce-encabezado" class="text-lg font-semibold"></div>
+            <div id="cruces-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+          </div>
+
+          <div class="text-xs opacity-70 pb-10">
+            Nota: esta vista modifica el snapshot solo cuando presionas <strong>Guardar Ajustes</strong>. El monitoreo no guarda cambios.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -140,37 +341,70 @@
         <h2 class="text-lg font-bold mb-2">¿Actualizar precios desde Binance?</h2>
         <p class="text-sm text-gray-600 dark:text-gray-300">Se perderán valores manuales. ¿Confirmás?</p>
         <div class="mt-4 flex justify-center gap-4">
-          <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded hover:bg-gray-400">Cancelar</button>
+          <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded hover:bg-gray-400">
+            Cancelar
+          </button>
           <button id="btn-confirmar-binance" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Sí, actualizar</button>
         </div>
       </div>
     </div>
 
-    <!-- Botón flotante -->
-    <a href="/index.html" target="_blank" class="fixed bottom-4 right-4 z-50 px-4 py-2 bg-primary hover:bg-indigo-700 text-white rounded-full shadow-lg transition">
+    <!-- Botón flotante: ir a la app -->
+    <a
+      href="/index.html"
+      target="_blank"
+      class="fixed bottom-4 right-4 z-40 px-4 py-2 bg-brandBlue hover:bg-brandBlue/90 text-white rounded-full shadow-lg transition"
+    >
       🚀 Ir a la app
     </a>
 
-  <button id="modoToggle"
-  class="absolute top-4 right-4 z-50 px-3 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white rounded-full shadow hover:brightness-110 transition text-sm">
-  🌞 Claro
-</button>
+    <script>
+      // Toggle tema (mismo que tenías, pero ya está en topbar)
+      const btn = document.getElementById('modoToggle');
 
-<script>
-  const btn = document.getElementById("modoToggle");
+      function actualizarToggle() {
+        const esOscuro = document.documentElement.classList.contains('dark');
+        btn.innerHTML = esOscuro ? '🌙 Oscuro' : '🌞 Claro';
+      }
 
-  function actualizarToggle() {
-    const esOscuro = document.documentElement.classList.contains("dark");
-    btn.innerHTML = esOscuro ? "🌙 Oscuro" : "🌞 Claro";
-  }
+      btn.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        localStorage.setItem('bt_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        actualizarToggle();
+      });
 
-  btn.addEventListener("click", () => {
-    document.documentElement.classList.toggle("dark");
-  localStorage.setItem("bt_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
-  });
+      actualizarToggle();
 
-  actualizarToggle();
-</script>
+      // Drawer open/close helpers (JS mínimo, el resto lo haremos en main.js también)
+      const drawer = document.getElementById('drawer');
+      const overlay = document.getElementById('drawer-overlay');
+      const btnOpen = document.getElementById('btn-abrir-config');
+      const btnClose = document.getElementById('btn-cerrar-config');
 
+      function abrirDrawer() {
+        drawer.classList.remove('hidden');
+        // trigger animation
+        requestAnimationFrame(() => {
+          drawer.classList.add('drawer-open');
+        });
+      }
+
+      function cerrarDrawer() {
+        drawer.classList.remove('drawer-open');
+        // esperar animación y ocultar
+        setTimeout(() => {
+          drawer.classList.add('hidden');
+        }, 220);
+      }
+
+      btnOpen?.addEventListener('click', abrirDrawer);
+      btnClose?.addEventListener('click', cerrarDrawer);
+      overlay?.addEventListener('click', cerrarDrawer);
+
+      // ESC para cerrar
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !drawer.classList.contains('hidden')) cerrarDrawer();
+      });
+    </script>
   </body>
 </html>

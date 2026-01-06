@@ -17,6 +17,21 @@ let lastCalc = null;
 let modalActivo = false;
 let ops = { open: false, fresh: false, allowWhats: false, message: '' };
 
+function nombreMoneda(codigo) {
+  const map = {
+    ARS: "Pesos argentinos",
+    COP: "Pesos colombianos",
+    VES: "Bolívares",
+    CLP: "Pesos chilenos",
+    PEN: "Soles",
+    MXN: "Pesos mexicanos",
+    BRL: "Reales",
+    USD: "Dólares",
+    EUR: "Euros",
+  };
+  return map[codigo] || codigo;
+}
+
 function mostrarModalMontoGrande(callback) {
   modalActivo = true;
   const modal = document.getElementById("modalMontoGrande");
@@ -40,16 +55,14 @@ function mostrarModalMontoGrande(callback) {
 }
 
 
-// Back: mostrar/ocultar (sin registrar click aquí para evitar duplicados)
-(function initBackButton(){
-  const btn = document.getElementById('btnVolverGlobal');
+// Back: helper seguro dentro del módulo
+function showBack(show = true) {
+  // usamos DOM si existe, y si no, buscamos por ID
+  const btn = DOM?.btnVolverGlobal || document.getElementById("btnVolverGlobal");
   if (!btn) return;
+  btn.classList.toggle("hidden", !show);
+}
 
-  // Exponer helper global mínimo
-  window.showBack = (show = true) => {
-    btn.classList.toggle('hidden', !show);
-  };
-})();
 
 // --- Mostrar pill desde el arranque (Paso 1) ---
 (async function initPillEarly(){

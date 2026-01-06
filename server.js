@@ -32,6 +32,212 @@ function formatearTasa(v) {
   return +n.toFixed(6);
 }
 
+function normalizarNumero(str) {
+  if (str == null) return null;
+  const s = String(str).trim();
+
+  // Caso 1: "1.234,56" -> "1234.56"
+  // Caso 2: "1234,56"  -> "1234.56"
+  // Caso 3: "1234.56"  -> "1234.56"
+  const sinMiles = s.replace(/\.(?=\d{3}(\D|$))/g, ""); // quita puntos de miles
+  const puntoDecimal = sinMiles.replace(",", ".");
+  const n = Number(puntoDecimal);
+  return Number.isFinite(n) ? n : null;
+}
+
+function pickNumber(html, patterns) {
+  for (const re of patterns) {
+    const m = html.match(re);
+    if (m && m[1]) {
+      const n = normalizarNumero(m[1]);
+      if (n != null && n < 10) continue;
+      if (n != null) return formatearTasa(n);
+    }
+  }
+  return null;
+}
+
+// -------------------------
+// Referencias BCV multi-fuente (USD/EUR)
+// -------------------------
+
+function parseMercantil(html) {
+  const h = String(html);
+
+  // 1) Ubicar el bloque anclado al título
+  const anchor = h.match(/Tipo de Cambio de Referencia BCV[\s\S]{0,5000}/i);
+  const block = anchor ? anchor[0] : null;
+  if (!block) return null;
+
+  // 2) Extraer el PRIMER <tr> del <tbody> y capturar sus <td>
+  const tbodyMatch = block.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+  if (!tbodyMatch) return null;
+
+  const tbody = tbodyMatch[1];
+
+  const firstRowMatch = tbody.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
+  if (!firstRowMatch) return null;
+
+  const firstRow = firstRowMatch[1];
+
+  // 3) Capturar TODOS los <td> de esa fila
+  const tdMatches = [...firstRow.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m =>
+    m[1]
+      .replace(/<[^>]+>/g, "")     // quita tags internos
+      .replace(/&nbsp;/g, " ")
+      .trim()
+  );
+
+  if (tdMatches.length < 2) return null;
+
+  const usdRaw = tdMatches[0];
+  const eurRaw = tdMatches[1];
+
+  const usdNum = normalizarNumero(usdRaw);
+  const eurNum = normalizarNumero(eurRaw);
+
+  if (!Number.isFinite(usdNum) || !Number.isFinite(eurNum)) return null;
+
+  const usd = formatearTasa(usdNum);
+  const eur = formatearTasa(eurNum);
+
+  // Validación dura: no aceptamos valores ridículos
+  if (usd < 50 || eur < 50) return null;
+
+  return { usd, eur, fecha: null, fuente: "mercantil" };
+}
+
+async function getFromMercantil() {
+  const { data } = await axios.get(
+    "https://www.mercantilbanco.com/informacion/tasas%2C-tarifas-y-comisiones/tasa-mesa-de-cambio",
+    { timeout: 15000, headers: { "User-Agent": "Mozilla/5.0" } }
+  );
+  return parseMercantil(String(data));
+}
+
+function parseBancoExterior(html) {
+  const h = String(html);
+
+  // Exigimos decimal en ambos: evita capturar "2" de la fecha.
+  const usd = pickNumber(h, [
+    /USD\/EUR[\s\S]{0,350}?\$\s*([0-9]+[.,][0-9]{2,10})/i,
+  ]);
+
+  const eur = pickNumber(h, [
+    /USD\/EUR[\s\S]{0,350}?€\s*([0-9]+[.,][0-9]{2,10})/i,
+  ]);
+
+  const fechaMatch =
+    h.match(/Fecha\s*valor:\s*[\s\S]{0,60}?(\d{2}\/\d{2}\/\d{4})/i) ||
+    h.match(/(\d{2}\/\d{2}\/\d{4})/);
+
+  const fecha = fechaMatch ? fechaMatch[1] : null;
+
+  if (!usd && !eur) return null;
+  return { usd, eur, fecha, fuente: "bancoexterior" };
+}
+
+
+async function getFromBancoExterior() {
+  const { data } = await axios.get("https://www.bancoexterior.com/tasas-bcv/", {
+    timeout: 10000,
+    headers: { "User-Agent": "Mozilla/5.0" },
+  });
+  return parseBancoExterior(String(data));
+}
+
+async function getUsdFromDolarApi() {
+  const { data } = await axios.get("https://ve.dolarapi.com/v1/dolares/oficial", {
+    timeout: 10000,
+    headers: { "User-Agent": "Mozilla/5.0" },
+  });
+
+  const usd = data?.promedio ?? data?.venta ?? data?.compra ?? null;
+  if (!usd) return null;
+
+  return { usd: formatearTasa(usd), eur: null, fecha: data?.fechaActualizacion ?? null, fuente: "dolarapi" };
+}
+
+// Último recurso (si quieres): monitor (menos “oficial”, úsalo solo si te sirve)
+function parseMonitorDivisa(html) {
+  // Ej: "Tasa BCV ... 301.37 Bs/USD" y "Tasa Euro ... 354.49 Bs/EUR"
+  const usdMatch = html.match(/Tasa\s+BCV[\s\S]{0,200}?(\d{1,4}\.\d{1,6})\s*Bs\/USD/i);
+  const eurMatch = html.match(/Tasa\s+Euro[\s\S]{0,200}?(\d{1,4}\.\d{1,6})\s*Bs\/EUR/i);
+
+  const usd = usdMatch ? formatearTasa(usdMatch[1]) : null;
+  const eur = eurMatch ? formatearTasa(eurMatch[1]) : null;
+
+  if (!usd && !eur) return null;
+  return { usd, eur, fecha: null, fuente: "monitordedivisa" };
+}
+
+async function getFromMonitorDivisa() {
+  const { data } = await axios.get("https://www.monitordedivisavenezuela.com/", {
+    timeout: 10000,
+    headers: { "User-Agent": "Mozilla/5.0" },
+  });
+  return parseMonitorDivisa(String(data));
+}
+
+async function getBcvRates() {
+  try {
+    const m = await getFromMercantil();
+    if (m?.usd && m?.eur) return { ...m, fuente: "mercantil" };
+
+    // si no se logró, NO inventamos
+    return { usd: null, eur: null, fecha: null, fuente: "mercantil_parse_failed" };
+  } catch (e) {
+    console.log("❌ Mercantil falló:", e.message);
+    return { usd: null, eur: null, fecha: null, fuente: "mercantil_failed" };
+  }
+}
+
+async function binanceAvgPriceTop20(fiat, tradeType) {
+  const { data } = await axios.post(
+    "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search",
+    {
+      page: 1,
+      rows: 20,
+      payTypes: [],
+      asset: "USDT",
+      tradeType,
+      fiat,
+      order: null,
+      orderColumn: "price",
+    },
+    { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+  );
+
+  const items = data?.data || [];
+  const prices = [];
+  for (const it of items) {
+    const price = Number(it?.adv?.price);
+    if (!Number.isFinite(price)) continue;
+    prices.push(price);
+  }
+  if (!prices.length) return null;
+  const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+  return Number(avg.toFixed(6));
+}
+
+async function getUsdtVesRefs() {
+  // BUY = comprar USDT pagando VES (VES por 1 USDT)
+  const buy = await binanceAvgPriceTop20("VES", "BUY");
+
+  // Para SELL en VES: en tu frontend ya haces SELL = BUY * 0.9975 (spread)
+  // Mantengo la misma regla para que coincida.
+  const sell = buy ? Number((buy * 0.9975).toFixed(6)) : null;
+
+  const mid =
+    buy && sell ? Number(((buy + sell) / 2).toFixed(6)) : (buy ?? sell ?? null);
+
+  return {
+    buy: buy ? formatearTasa(buy) : null,
+    sell: sell ? formatearTasa(sell) : null,
+    mid: mid ? formatearTasa(mid) : null,
+  };
+}
+
 async function readGistSnapshot() {
   const { data } = await axios.get(`https://api.github.com/gists/${GIST_ID}`, {
     headers: { Authorization: `Bearer ${GH_TOKEN}`, Accept: "application/vnd.github+json" },
@@ -127,6 +333,24 @@ app.post("/api/guardar-snapshot", async (req, res) => {
   } catch (err) {
     console.error("❌ Error al guardar snapshot:", err.message);
     return res.status(500).json({ error: "Error al guardar snapshot" });
+  }
+});
+
+// ---------- Referencias (BCV + USDT/VES) ----------
+app.get("/api/referencias", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  try {
+    const bcv = await getBcvRates();
+    const usdt_ves = await getUsdtVesRefs();
+
+    return res.json({
+      bcv,
+      usdt_ves,
+      actualizado_en: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("❌ /api/referencias:", e.message);
+    return res.status(500).json({ error: "No se pudieron obtener referencias" });
   }
 });
 
