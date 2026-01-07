@@ -539,7 +539,7 @@ function cambiarPaso(tipo) {
   setTimeout(() => { DOM.inputMonto.focus(); validarMontoEnVivo(); }, 300);
 }
 
-function ejecutarCalculo() {
+async function ejecutarCalculo() {
   const raw = DOM.inputMonto.value.trim();
   const montoInput = parseFloat(raw);
 
@@ -689,6 +689,33 @@ function ejecutarCalculo() {
   const calc = Math.round(calcularCruce(origenSeleccionado, destinoSeleccionado, mode, montoInput, t));
   const calcRed = mode === "llegar" ? redondearPorMoneda(calc, o.codigo) : calc;
 
+  // ==== Info extra (solo VES, flujo normal): equivalente aprox en USD a tasa BCV ====
+  let infoBcvExtra = "";
+  if (destinoSeleccionado === "VES") {
+    try {
+      const bcv = await obtenerBCV();
+      const bcvUsd = Number(bcv?.usd);
+
+      if (Number.isFinite(bcvUsd) && bcvUsd > 0) {
+        // Queremos SIEMPRE el VES que llega (destino)
+        const vesFinal = (mode === "enviar")
+          ? calcRed     // si envías, calcRed es lo que recibe en VES
+          : montoInput; // si quieres que lleguen, montoInput ya era VES
+
+        const usdEq = vesFinal / bcvUsd;
+        const usdFmt = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 2 }).format(usdEq);
+
+        infoBcvExtra = `
+          <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
+            ℹ️ Equivalente aproximado: <strong>USD ${usdFmt}</strong> a tasa BCV
+          </div>
+        `;
+      }
+    } catch (e) {
+      infoBcvExtra = "";
+    }
+  }
+
   const montoFmt = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 2 }).format(montoInput);
   const calcFmt = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 0 }).format(calcRed);
   const tasaFmt = formatearTasa(tasa);
@@ -718,7 +745,7 @@ function ejecutarCalculo() {
        ${refBadge}
        <div class="text-sm italic text-gray-500 dark:text-gray-400 mt-4">Calculado con la tasa del día ${fecha} — <span class="font-semibold text-blue-800 dark:text-blue-400">${tasaFmt}</span></div>`;
 
-  DOM.resText.innerHTML = mensaje;
+  DOM.resText.innerHTML = mensaje + infoBcvExtra;
 
   if (ops.allowWhats && DOM.soundSuccess && !DOM.soundSuccess.muted) DOM.soundSuccess.play();
 

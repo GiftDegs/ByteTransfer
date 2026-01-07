@@ -1,0 +1,115 @@
+{
+  "ARS": {
+    "compra": 1539.655,
+    "venta": 1535.047,
+    "ajuste": 12
+  },
+  "COP": {
+    "compra": 3780.288,
+    "venta": 3755.1565,
+    "ajuste": 12
+  },
+  "MXN": {
+    "compra": 18.0495,
+    "venta": 17.993,
+    "ajuste": 16
+  },
+  "PEN": {
+    "compra": 3.3662,
+    "venta": 3.35735,
+    "ajuste": 8
+  },
+  "CLP": {
+    "compra": 899.7025,
+    "venta": 897.827,
+    "ajuste": 8
+  },
+  "BRL": {
+    "compra": 5.74,
+    "venta": 5.49,
+    "ajuste": 8
+  },
+  "VES": {
+    "compra": 805.00525,
+    "venta": 802.992737,
+    "ajuste": 15
+  },
+  "timestamp": "2026-01-07T16:37:02.278Z",
+  "cruces": {
+    "ARS-COP": 2.15,
+    "ARS-MXN": 0.01,
+    "ARS-PEN": 0.0019,
+    "ARS-CLP": 0.513,
+    "ARS-BRL": 0.0031,
+    "ARS-VES": 0.459,
+    "COP-ARS": 0.357,
+    "COP-MXN": 0.0042,
+    "COP-PEN": 0.000782,
+    "COP-CLP": 0.209,
+    "COP-BRL": 0.0013,
+    "COP-VES": 5.27,
+    "MXN-ARS": 71.4,
+    "MXN-COP": 174.8,
+    "MXN-PEN": 0.156,
+    "MXN-CLP": 41.8,
+    "MXN-BRL": 0.255,
+    "MXN-VES": 37.4,
+    "PEN-ARS": 419.5,
+    "PEN-COP": 1026.3,
+    "PEN-MXN": 4.92,
+    "PEN-CLP": 245.4,
+    "PEN-BRL": 1.5,
+    "PEN-VES": 219.5,
+    "CLP-ARS": 1.57,
+    "CLP-COP": 3.84,
+    "CLP-MXN": 0.018,
+    "CLP-PEN": 0.0034,
+    "CLP-BRL": 0.0056,
+    "CLP-VES": 0.821,
+    "BRL-ARS": 246,
+    "BRL-COP": 601.9,
+    "BRL-MXN": 2.88,
+    "BRL-PEN": 0.538,
+    "BRL-CLP": 143.9,
+    "BRL-VES": 128.7,
+    "VES-ARS": 1.62,
+    "VES-COP": 3.97,
+    "VES-MXN": 0.019,
+    "VES-PEN": 0.0035,
+    "VES-CLP": 0.948,
+    "VES-BRL": 0.0058
+  },
+  "guardado_en": "2026-01-07T16:37:02.281Z",
+  "referencias": {
+    "bcv": {
+      "usd": 311.9,
+      "eur": 364.8,
+      "fecha": null,
+      "fuente": "mercantil"
+    },
+    "usdt_ves": {
+      "buy": 818,
+      "sell": 815.9,
+      "mid": 816.9
+    },
+    "usdt_brl": {
+      "spot": {
+        "buy": 5.39,
+        "sell": 5.39,
+        "mid": 5.39,
+        "fuente": "bybit_spot"
+      },
+      "modelo": {
+        "buy": 5.45,
+        "sell": 5.33,
+        "mid": 5.39
+      },
+      "premiums": {
+        "buy": 0.012,
+        "sell": 0.012
+      },
+      "actualizado_en": "2026-01-07T16:37:02.275Z"
+    },
+    "actualizado_en": "2026-01-07T16:37:02.275Z"
+  }
+}

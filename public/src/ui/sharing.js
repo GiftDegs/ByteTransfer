@@ -65,6 +65,8 @@ function waitNextFrame() {
 
 // Captura EXACTAMENTE el resultado real visible (resTextContainer)
 // y lo convierte a Blob PNG.
+// Captura EXACTAMENTE el resultado real visible (resTextContainer)
+// y lo convierte a Blob PNG.
 async function captureResultBlobFromDOM(DOM) {
   const target =
     DOM?.resTextContainer ||
@@ -75,7 +77,14 @@ async function captureResultBlobFromDOM(DOM) {
 
   const html2canvas = await ensureHtml2Canvas();
 
-  // Clonamos a un wrapper oculto para capturar “como antes”
+  // Esperar a que carguen fuentes (evita cambios raros de medidas en la captura)
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+  } catch (_) {}
+
+  // Wrapper oculto
   const wrapper = document.createElement("div");
   wrapper.style.position = "fixed";
   wrapper.style.left = "-99999px";
@@ -83,15 +92,63 @@ async function captureResultBlobFromDOM(DOM) {
   wrapper.style.zIndex = "-1";
   wrapper.style.pointerEvents = "none";
 
-  const w = target.getBoundingClientRect().width || target.offsetWidth || 700;
-  wrapper.style.width = `${Math.ceil(w)}px`;
+  // Medida base (ancho del resultado real)
+  const rect = target.getBoundingClientRect();
+  const w = Math.ceil(rect.width || target.offsetWidth || 700);
+
+  // ✅ Forzamos tarjeta CUADRADA en la exportación
+  const size = Math.max(w, 720); // mínimo para que siempre tenga “presencia”
+
+  wrapper.style.width = `${size}px`;
+  wrapper.style.height = `${size}px`;
 
   const clone = target.cloneNode(true);
-  // Por si algún día hay botones dentro del resultado:
-  clone.querySelectorAll("button, #btnCompartir, #shareMenu, .share-menu, .btn-share").forEach((el) => el.remove());
+
+  // Quitar botones/menús del clon
+  clone
+    .querySelectorAll("button, #btnCompartir, #shareMenu, .share-menu, .btn-share")
+    .forEach((el) => el.remove());
+
+  // ✅ Forzar layout estable SOLO para la captura (evita solapes por html2canvas)
+  clone.style.width = `${size}px`;
+  clone.style.height = `${size}px`;
+  clone.style.boxSizing = "border-box";
+  clone.style.display = "flex";
+  clone.style.flexDirection = "column";
+  clone.style.justifyContent = "space-between"; // reparte arriba/medio/abajo
+  clone.style.overflow = "hidden";
+
+  // “Aire” extra para evitar que textos grandes invadan los chicos en la captura
+  // (no toca tu UI real, solo el clon)
+  clone.querySelectorAll("*").forEach((el) => {
+    // html2canvas a veces se enreda con transforms en texto
+    if (el.style) el.style.transform = "none";
+  });
+
+  // Inyectamos un mini CSS solo para el clon exportado
+  const style = document.createElement("style");
+  style.textContent = `
+    /* Solo afecta al clon dentro del wrapper */
+    .bt-capture-fix .text-6xl,
+    .bt-capture-fix .text-7xl,
+    .bt-capture-fix .text-5xl {
+      line-height: 1.05 !important;
+      padding-bottom: 8px !important; /* evita solape con la línea de moneda */
+    }
+    .bt-capture-fix .text-sm {
+      line-height: 1.25 !important;
+    }
+  `;
+  wrapper.appendChild(style);
+
+  // Marcador para que el CSS pegue
+  clone.classList.add("bt-capture-fix");
 
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
+
+  // Esperar 2 frames para que el navegador “asiente” layout + fuentes
+  await waitNextFrame();
   await waitNextFrame();
 
   const canvas = await html2canvas(clone, {
@@ -105,6 +162,7 @@ async function captureResultBlobFromDOM(DOM) {
 
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
   if (!blob) throw new Error("No se pudo generar PNG.");
+
   return blob;
 }
 

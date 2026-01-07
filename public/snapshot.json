@@ -1,27 +1,27 @@
 {
   "ARS": {
-    "compra": 1534.805,
-    "venta": 1532.3175,
+    "compra": 1537.853,
+    "venta": 1534.0415,
     "ajuste": 12
   },
   "COP": {
-    "compra": 3751.0295,
-    "venta": 3734.623,
+    "compra": 3774.032,
+    "venta": 3755.644,
     "ajuste": 12
   },
   "MXN": {
-    "compra": 18.03,
-    "venta": 17.97,
+    "compra": 18.0455,
+    "venta": 17.9775,
     "ajuste": 16
   },
   "PEN": {
-    "compra": 3.3736,
-    "venta": 3.36445,
+    "compra": 3.369,
+    "venta": 3.35505,
     "ajuste": 8
   },
   "CLP": {
-    "compra": 898.133,
-    "venta": 894.811,
+    "compra": 900.87,
+    "venta": 897.3365,
     "ajuste": 8
   },
   "BRL": {
@@ -30,68 +30,68 @@
     "ajuste": 8
   },
   "VES": {
-    "compra": 724.13205,
-    "venta": 722.32172,
+    "compra": 768.33135,
+    "venta": 766.410522,
     "ajuste": 15
   },
-  "timestamp": "2026-01-06T20:10:01.127Z",
+  "timestamp": "2026-01-07T18:10:29.406Z",
   "cruces": {
-    "ARS-COP": 2.14,
+    "ARS-COP": 2.15,
     "ARS-MXN": 0.01,
     "ARS-PEN": 0.0019,
     "ARS-CLP": 0.513,
     "ARS-BRL": 0.0031,
-    "ARS-VES": 0.414,
-    "COP-ARS": 0.359,
+    "ARS-VES": 0.439,
+    "COP-ARS": 0.358,
     "COP-MXN": 0.0042,
-    "COP-PEN": 0.000789,
-    "COP-CLP": 0.21,
+    "COP-PEN": 0.000782,
+    "COP-CLP": 0.209,
     "COP-BRL": 0.0013,
-    "COP-VES": 5.82,
+    "COP-VES": 5.52,
     "MXN-ARS": 71.4,
-    "MXN-COP": 174,
-    "MXN-PEN": 0.157,
-    "MXN-CLP": 41.7,
+    "MXN-COP": 174.8,
+    "MXN-PEN": 0.156,
+    "MXN-CLP": 41.8,
     "MXN-BRL": 0.256,
-    "MXN-VES": 33.7,
-    "PEN-ARS": 417.9,
-    "PEN-COP": 1018.5,
-    "PEN-MXN": 4.9,
-    "PEN-CLP": 244,
+    "MXN-VES": 35.7,
+    "PEN-ARS": 418.9,
+    "PEN-COP": 1025.6,
+    "PEN-MXN": 4.91,
+    "PEN-CLP": 245,
     "PEN-BRL": 1.5,
-    "PEN-VES": 197,
+    "PEN-VES": 209.3,
     "CLP-ARS": 1.57,
-    "CLP-COP": 3.83,
+    "CLP-COP": 3.84,
     "CLP-MXN": 0.018,
     "CLP-PEN": 0.0034,
     "CLP-BRL": 0.0056,
-    "CLP-VES": 0.74,
-    "BRL-ARS": 245.6,
-    "BRL-COP": 598.6,
+    "CLP-VES": 0.783,
+    "BRL-ARS": 245.9,
+    "BRL-COP": 601.9,
     "BRL-MXN": 2.88,
-    "BRL-PEN": 0.539,
-    "BRL-CLP": 143.4,
-    "BRL-VES": 115.8,
-    "VES-ARS": 1.8,
-    "VES-COP": 4.38,
-    "VES-MXN": 0.021,
-    "VES-PEN": 0.0039,
-    "VES-CLP": 1.05,
-    "VES-BRL": 0.0064
+    "BRL-PEN": 0.538,
+    "BRL-CLP": 143.8,
+    "BRL-VES": 122.8,
+    "VES-ARS": 1.7,
+    "VES-COP": 4.15,
+    "VES-MXN": 0.02,
+    "VES-PEN": 0.0037,
+    "VES-CLP": 0.993,
+    "VES-BRL": 0.0061
   },
-  "guardado_en": "2026-01-06T20:10:01.130Z",
+  "guardado_en": "2026-01-07T18:10:29.409Z",
   "referencias": {
     "bcv": {
-      "usd": 308.2,
-      "eur": 360.5,
+      "usd": 311.9,
+      "eur": 364.8,
       "fecha": null,
       "fuente": "mercantil"
     },
     "usdt_ves": {
-      "buy": 724.2,
-      "sell": 722.4,
-      "mid": 723.3
+      "buy": 770.3,
+      "sell": 768.3,
+      "mid": 769.3
     },
-    "actualizado_en": "2026-01-06T20:10:01.123Z"
+    "actualizado_en": "2026-01-07T18:10:29.404Z"
   }
 }

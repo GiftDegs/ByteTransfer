@@ -276,11 +276,31 @@ app.get("/api/snapshot", async (req, res) => {
   }
 });
 
-app.post("/api/guardar-snapshot", async (req, res) => {
-  // Auth opcional
-  if (ADMIN_KEY && req.headers["x-admin-key"] !== ADMIN_KEY) {
-    return res.status(401).json({ error: "unauthorized" });
+app.get("/api/admin/verify", (req, res) => {
+  // Si no hay ADMIN_KEY, el admin debería estar “apagado”
+  if (!ADMIN_KEY) {
+    return res.status(503).json({ ok: false, error: "ADMIN_KEY no configurada en el servidor" });
   }
+
+  const clientKey = req.headers["x-admin-key"];
+  if (!clientKey || clientKey !== ADMIN_KEY) {
+    return res.status(401).json({ ok: false, error: "Clave inválida" });
+  }
+
+  return res.json({ ok: true });
+});
+
+app.post("/api/guardar-snapshot", async (req, res) => {
+  
+// 🔐 Requiere ADMIN_KEY (obligatoria)
+  if (!ADMIN_KEY) {
+  return res.status(503).json({ error: "ADMIN_KEY no configurada en el servidor" });
+}
+
+const clientKey = req.headers["x-admin-key"];
+if (!clientKey || clientKey !== ADMIN_KEY) {
+  return res.status(401).json({ error: "No autorizado: clave admin inválida" });
+}
 
   const fecha = new Date().toISOString().slice(0, 10);
 
@@ -362,7 +382,7 @@ app.post("/api/binance", async (req, res) => {
   const { fiat, tradeType, page = 1, payTypes = [], transAmount } = req.body || {};
   if (!fiat || !tradeType) return res.status(400).json({ error: "Parámetros inválidos" });
 
-  const key = `${fiat}|${tradeType}|${transAmount || ""}`;
+  const key = `${fiat}|${tradeType}|${page}|${(payTypes || []).join(",")}|${transAmount || ""}`;
   const now = Date.now();
   const cached = binanceCache.get(key);
   if (cached && now - cached.t < BINANCE_TTL_MS) {
