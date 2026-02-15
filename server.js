@@ -16,7 +16,7 @@ const USE_GIST = !!(GIST_ID && GH_TOKEN);
 const ADMIN_KEY = process.env.ADMIN_KEY || null;
 
 // ---------- Middlewares ----------
-app.use(express.json({ limit: "1mb" })); // por si crece el payload
+app.use(express.json({ limit: "1mb" }));
 app.use("/admin", express.static(path.join(__dirname, "public/admin")));
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -35,11 +35,7 @@ function formatearTasa(v) {
 function normalizarNumero(str) {
   if (str == null) return null;
   const s = String(str).trim();
-
-  // Caso 1: "1.234,56" -> "1234.56"
-  // Caso 2: "1234,56"  -> "1234.56"
-  // Caso 3: "1234.56"  -> "1234.56"
-  const sinMiles = s.replace(/\.(?=\d{3}(\D|$))/g, ""); // quita puntos de miles
+  const sinMiles = s.replace(/\.(?=\d{3}(\D|$))/g, "");
   const puntoDecimal = sinMiles.replace(",", ".");
   const n = Number(puntoDecimal);
   return Number.isFinite(n) ? n : null;
@@ -57,51 +53,87 @@ function pickNumber(html, patterns) {
   return null;
 }
 
+// ---------- Snapshot helpers ----------
+function readLocalSnapshot() {
+  const ruta = path.join(__dirname, "public", "snapshot.json");
+  if (!fs.existsSync(ruta)) return {};
+  const data = fs.readFileSync(ruta, "utf8");
+  return JSON.parse(data);
+}
+
+function writeLocalSnapshot(obj) {
+  const fecha = new Date().toISOString().slice(0, 10);
+  const snapshotActualPath = path.join(__dirname, "public", "snapshot.json");
+  const dirSnapshots = path.join(__dirname, "public", "snapshots");
+  const snapshotHistPath = path.join(dirSnapshots, `${fecha}.json`);
+  if (!fs.existsSync(dirSnapshots)) fs.mkdirSync(dirSnapshots, { recursive: true });
+
+  fs.writeFileSync(snapshotActualPath, JSON.stringify(obj, null, 2));
+  if (!fs.existsSync(snapshotHistPath)) {
+    fs.writeFileSync(snapshotHistPath, JSON.stringify(obj, null, 2));
+  }
+}
+
+// ---------- Gist helpers ----------
+async function readGistSnapshot() {
+  const { data } = await axios.get(`https://api.github.com/gists/${GIST_ID}`, {
+    headers: {
+      Authorization: `Bearer ${GH_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "ByteTransfer",
+    },
+    timeout: 15000,
+  });
+
+  const file = data?.files?.[GIST_FILENAME];
+  if (!file || !file.content) return {};
+  return JSON.parse(file.content);
+}
+
+async function writeGistSnapshot(obj) {
+  await axios.patch(
+    `https://api.github.com/gists/${GIST_ID}`,
+    { files: { [GIST_FILENAME]: { content: JSON.stringify(obj, null, 2) } } },
+    {
+      headers: {
+        Authorization: `Bearer ${GH_TOKEN}`,
+        Accept: "application/vnd.github+json",
+        "User-Agent": "ByteTransfer",
+      },
+      timeout: 15000,
+    }
+  );
+}
+
 // -------------------------
 // Referencias BCV multi-fuente (USD/EUR)
 // -------------------------
-
 function parseMercantil(html) {
   const h = String(html);
-
-  // 1) Ubicar el bloque anclado al título
   const anchor = h.match(/Tipo de Cambio de Referencia BCV[\s\S]{0,5000}/i);
   const block = anchor ? anchor[0] : null;
   if (!block) return null;
 
-  // 2) Extraer el PRIMER <tr> del <tbody> y capturar sus <td>
   const tbodyMatch = block.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
   if (!tbodyMatch) return null;
 
   const tbody = tbodyMatch[1];
-
   const firstRowMatch = tbody.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
   if (!firstRowMatch) return null;
 
   const firstRow = firstRowMatch[1];
-
-  // 3) Capturar TODOS los <td> de esa fila
   const tdMatches = [...firstRow.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m =>
-    m[1]
-      .replace(/<[^>]+>/g, "")     // quita tags internos
-      .replace(/&nbsp;/g, " ")
-      .trim()
+    m[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim()
   );
 
   if (tdMatches.length < 2) return null;
 
-  const usdRaw = tdMatches[0];
-  const eurRaw = tdMatches[1];
-
-  const usdNum = normalizarNumero(usdRaw);
-  const eurNum = normalizarNumero(eurRaw);
-
+  const usdNum = normalizarNumero(tdMatches[0]);
+  const eurNum = normalizarNumero(tdMatches[1]);
   if (!Number.isFinite(usdNum) || !Number.isFinite(eurNum)) return null;
 
   const usd = formatearTasa(usdNum);
   const eur = formatearTasa(eurNum);
-
-  // Validación dura: no aceptamos valores ridículos
   if (usd < 50 || eur < 50) return null;
 
   return { usd, eur, fecha: null, fuente: "mercantil" };
@@ -118,7 +150,6 @@ async function getFromMercantil() {
 function parseBancoExterior(html) {
   const h = String(html);
 
-  // Exigimos decimal en ambos: evita capturar "2" de la fecha.
   const usd = pickNumber(h, [
     /USD\/EUR[\s\S]{0,350}?\$\s*([0-9]+[.,][0-9]{2,10})/i,
   ]);
@@ -132,51 +163,17 @@ function parseBancoExterior(html) {
     h.match(/(\d{2}\/\d{2}\/\d{4})/);
 
   const fecha = fechaMatch ? fechaMatch[1] : null;
-
   if (!usd && !eur) return null;
+
   return { usd, eur, fecha, fuente: "bancoexterior" };
 }
 
-
 async function getFromBancoExterior() {
   const { data } = await axios.get("https://www.bancoexterior.com/tasas-bcv/", {
-    timeout: 10000,
+    timeout: 15000,
     headers: { "User-Agent": "Mozilla/5.0" },
   });
   return parseBancoExterior(String(data));
-}
-
-async function getUsdFromDolarApi() {
-  const { data } = await axios.get("https://ve.dolarapi.com/v1/dolares/oficial", {
-    timeout: 10000,
-    headers: { "User-Agent": "Mozilla/5.0" },
-  });
-
-  const usd = data?.promedio ?? data?.venta ?? data?.compra ?? null;
-  if (!usd) return null;
-
-  return { usd: formatearTasa(usd), eur: null, fecha: data?.fechaActualizacion ?? null, fuente: "dolarapi" };
-}
-
-// Último recurso (si quieres): monitor (menos “oficial”, úsalo solo si te sirve)
-function parseMonitorDivisa(html) {
-  // Ej: "Tasa BCV ... 301.37 Bs/USD" y "Tasa Euro ... 354.49 Bs/EUR"
-  const usdMatch = html.match(/Tasa\s+BCV[\s\S]{0,200}?(\d{1,4}\.\d{1,6})\s*Bs\/USD/i);
-  const eurMatch = html.match(/Tasa\s+Euro[\s\S]{0,200}?(\d{1,4}\.\d{1,6})\s*Bs\/EUR/i);
-
-  const usd = usdMatch ? formatearTasa(usdMatch[1]) : null;
-  const eur = eurMatch ? formatearTasa(eurMatch[1]) : null;
-
-  if (!usd && !eur) return null;
-  return { usd, eur, fecha: null, fuente: "monitordedivisa" };
-}
-
-async function getFromMonitorDivisa() {
-  const { data } = await axios.get("https://www.monitordedivisavenezuela.com/", {
-    timeout: 10000,
-    headers: { "User-Agent": "Mozilla/5.0" },
-  });
-  return parseMonitorDivisa(String(data));
 }
 
 async function getBcvRates() {
@@ -184,11 +181,14 @@ async function getBcvRates() {
     const m = await getFromMercantil();
     if (m?.usd && m?.eur) return { ...m, fuente: "mercantil" };
 
-    // si no se logró, NO inventamos
-    return { usd: null, eur: null, fecha: null, fuente: "mercantil_parse_failed" };
+    // fallback si mercantil cambió
+    const be = await getFromBancoExterior();
+    if (be?.usd && be?.eur) return { ...be, fuente: "bancoexterior" };
+
+    return { usd: null, eur: null, fecha: null, fuente: "bcv_parse_failed" };
   } catch (e) {
-    console.log("❌ Mercantil falló:", e.message);
-    return { usd: null, eur: null, fecha: null, fuente: "mercantil_failed" };
+    console.log("❌ BCV falló:", e.message);
+    return { usd: null, eur: null, fecha: null, fuente: "bcv_failed" };
   }
 }
 
@@ -205,7 +205,7 @@ async function binanceAvgPriceTop20(fiat, tradeType) {
       order: null,
       orderColumn: "price",
     },
-    { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+    { headers: { "Content-Type": "application/json" }, timeout: 15000 }
   );
 
   const items = data?.data || [];
@@ -221,15 +221,9 @@ async function binanceAvgPriceTop20(fiat, tradeType) {
 }
 
 async function getUsdtVesRefs() {
-  // BUY = comprar USDT pagando VES (VES por 1 USDT)
   const buy = await binanceAvgPriceTop20("VES", "BUY");
-
-  // Para SELL en VES: en tu frontend ya haces SELL = BUY * 0.9975 (spread)
-  // Mantengo la misma regla para que coincida.
   const sell = buy ? Number((buy * 0.9975).toFixed(6)) : null;
-
-  const mid =
-    buy && sell ? Number(((buy + sell) / 2).toFixed(6)) : (buy ?? sell ?? null);
+  const mid = buy && sell ? Number(((buy + sell) / 2).toFixed(6)) : (buy ?? sell ?? null);
 
   return {
     buy: buy ? formatearTasa(buy) : null,
@@ -238,46 +232,41 @@ async function getUsdtVesRefs() {
   };
 }
 
-async function readGistSnapshot() {
-  const { data } = await axios.get(`https://api.github.com/gists/${GIST_ID}`, {
-    headers: { Authorization: `Bearer ${GH_TOKEN}`, Accept: "application/vnd.github+json" },
-  });
-  const file = data.files[GIST_FILENAME];
-  if (!file || !file.content) return {};
-  return JSON.parse(file.content);
-}
-
-async function writeGistSnapshot(obj) {
-  await axios.patch(
-    `https://api.github.com/gists/${GIST_ID}`,
-    { files: { [GIST_FILENAME]: { content: JSON.stringify(obj, null, 2) } } },
-    { headers: { Authorization: `Bearer ${GH_TOKEN}`, Accept: "application/vnd.github+json" } }
-  );
-}
-
 // ---------- Rutas ----------
 app.get("/healthz", (req, res) => res.send("ok"));
 
 app.get("/api/snapshot", async (req, res) => {
   res.set("Cache-Control", "no-store");
-  try {
-    if (USE_GIST) {
+
+  // 1) Intentar Gist
+  if (USE_GIST) {
+    try {
       const snap = await readGistSnapshot();
-      return res.json(snap);
+      return res.json(snap || {});
+    } catch (e) {
+      console.error("❌ Gist snapshot falló, usando local:", e.message);
+      // 2) Fallback local
+      try {
+        const local = readLocalSnapshot();
+        return res.json(local || {});
+      } catch (e2) {
+        console.error("❌ Local snapshot también falló:", e2.message);
+        return res.status(500).json({ error: "Error leyendo snapshot" });
+      }
     }
-    // Fallback local (desarrollo)
-    const ruta = path.join(__dirname, "public", "snapshot.json");
-    if (!fs.existsSync(ruta)) return res.json({});
-    const data = fs.readFileSync(ruta, "utf8");
-    return res.json(JSON.parse(data));
+  }
+
+  // 3) Si no hay Gist, usar local
+  try {
+    const local = readLocalSnapshot();
+    return res.json(local || {});
   } catch (e) {
-    console.error("❌ Leyendo snapshot:", e.message);
+    console.error("❌ Leyendo snapshot local:", e.message);
     return res.status(500).json({ error: "Error leyendo snapshot" });
   }
 });
 
 app.get("/api/admin/verify", (req, res) => {
-  // Si no hay ADMIN_KEY, el admin debería estar “apagado”
   if (!ADMIN_KEY) {
     return res.status(503).json({ ok: false, error: "ADMIN_KEY no configurada en el servidor" });
   }
@@ -291,40 +280,36 @@ app.get("/api/admin/verify", (req, res) => {
 });
 
 app.post("/api/guardar-snapshot", async (req, res) => {
-  
-// 🔐 Requiere ADMIN_KEY (obligatoria)
+  // 🔐 Requiere ADMIN_KEY
   if (!ADMIN_KEY) {
-  return res.status(503).json({ error: "ADMIN_KEY no configurada en el servidor" });
-}
+    return res.status(503).json({ error: "ADMIN_KEY no configurada en el servidor" });
+  }
 
-const clientKey = req.headers["x-admin-key"];
-if (!clientKey || clientKey !== ADMIN_KEY) {
-  return res.status(401).json({ error: "No autorizado: clave admin inválida" });
-}
+  const clientKey = req.headers["x-admin-key"];
+  if (!clientKey || clientKey !== ADMIN_KEY) {
+    return res.status(401).json({ error: "No autorizado: clave admin inválida" });
+  }
 
-  const fecha = new Date().toISOString().slice(0, 10);
-
-  // 1) Leer snapshot anterior (Gist o local)
+  // 1) Leer snapshot anterior (para merge de cruces)
   let snapshotAnterior = {};
   try {
     if (USE_GIST) snapshotAnterior = await readGistSnapshot();
-    else {
-      const p = path.join(__dirname, "public", "snapshot.json");
-      if (fs.existsSync(p)) snapshotAnterior = JSON.parse(fs.readFileSync(p, "utf8"));
-    }
+    else snapshotAnterior = readLocalSnapshot();
   } catch (e) {
-    console.warn("⚠️ Snapshot previo corrupto, regenerando:", e.message);
+    console.warn("⚠️ Snapshot previo corrupto / no disponible, regenerando:", e.message);
+    snapshotAnterior = {};
   }
 
-  // 2) Formatear solo cruces nuevos
+  // 2) Formatear cruces nuevos
   const crucesNuevos = req.body?.cruces || {};
   const crucesNuevosFormateados = {};
   for (const k of Object.keys(crucesNuevos)) {
     const n = Number(crucesNuevos[k]);
     if (!Number.isFinite(n)) continue;
-   crucesNuevosFormateados[k] = formatearTasa(n); // ✔️
-}
-  // 3) Merge con cruces anteriores
+    crucesNuevosFormateados[k] = formatearTasa(n);
+  }
+
+  // 3) Merge cruces
   const crucesCompletos = { ...(snapshotAnterior.cruces || {}), ...crucesNuevosFormateados };
 
   // 4) Datos finales
@@ -335,24 +320,26 @@ if (!clientKey || clientKey !== ADMIN_KEY) {
     guardado_en: new Date().toISOString(),
   };
 
-  // 5) Guardar (Gist o local con histórico)
+  // 5) Guardar (Gist preferido; si falla, local)
   try {
     if (USE_GIST) {
       await writeGistSnapshot(datosFinales);
-    } else {
-      const snapshotActualPath = path.join(__dirname, "public", "snapshot.json");
-      const dirSnapshots = path.join(__dirname, "public", "snapshots");
-      const snapshotHistPath = path.join(dirSnapshots, `${fecha}.json`);
-      if (!fs.existsSync(dirSnapshots)) fs.mkdirSync(dirSnapshots, { recursive: true });
-      fs.writeFileSync(snapshotActualPath, JSON.stringify(datosFinales, null, 2));
-      if (!fs.existsSync(snapshotHistPath)) {
-        fs.writeFileSync(snapshotHistPath, JSON.stringify(datosFinales, null, 2));
-      }
+      return res.json({ status: "ok", storage: "gist" });
     }
-    return res.json({ status: "ok" });
+
+    writeLocalSnapshot(datosFinales);
+    return res.json({ status: "ok", storage: "local" });
   } catch (err) {
-    console.error("❌ Error al guardar snapshot:", err.message);
-    return res.status(500).json({ error: "Error al guardar snapshot" });
+    console.error("❌ Guardar en gist falló:", err.message);
+
+    // Fallback local si gist falla
+    try {
+      writeLocalSnapshot(datosFinales);
+      return res.json({ status: "ok", storage: "local_fallback" });
+    } catch (e2) {
+      console.error("❌ Fallback local también falló:", e2.message);
+      return res.status(500).json({ error: "Error al guardar snapshot" });
+    }
   }
 });
 
@@ -403,7 +390,7 @@ app.post("/api/binance", async (req, res) => {
         order: null,
         orderColumn: "price",
       },
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" }, timeout: 15000 }
     );
     binanceCache.set(key, { t: now, data });
     return res.json(data);
@@ -414,7 +401,6 @@ app.post("/api/binance", async (req, res) => {
   }
 });
 
-// ---- Start ----
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
 });

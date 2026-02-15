@@ -855,9 +855,9 @@ async function ejecutarCalculo() {
     mode === "enviar"
       ? `
         <div class="text-sm italic text-gray-500 dark:text-gray-400">Enviando desde ${o.nombre}</div>
-        <div class="text-3xl sm:text-4xl font-semibold text-blue-800 dark:text-blue-400">${montoFmt} ${nombreMoneda(o.codigo)}</div>
+        <div class="text-3xl sm:text-4xl font-semibold text-blue-800 dark:text-blue-400">${montoFmt} ${o.codigo}</div>
         <div class="text-base text-gray-600 dark:text-gray-300 mt-2">recibirás</div>
-        <div class="text-4xl sm:text-5xl font-extrabold text-blue-900 dark:text-blue-200">${calcFmt} ${nombreMoneda(d.codigo)}</div>
+        <div class="text-4xl sm:text-5xl font-extrabold text-blue-900 dark:text-blue-200">${d.codigo} ${calcFmt}</div>
       `
       : `
         <div class="text-sm italic text-gray-500 dark:text-gray-400">Para recibir en ${d.nombre}</div>
