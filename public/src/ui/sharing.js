@@ -22,7 +22,10 @@ function buildImageFilename(getLastCalc) {
 
 function toastLite(DOM, msg) {
   const el = DOM?.toastMensaje;
-  if (!el) { alert(msg); return; }
+  if (!el) {
+    alert(msg);
+    return;
+  }
   el.textContent = msg;
   el.classList.remove("hidden");
   el.style.opacity = "1";
@@ -39,13 +42,13 @@ function toastLite(DOM, msg) {
 function isLikelyMobileDevice() {
   const ua = (navigator.userAgent || "").toLowerCase();
   const isUA = /android|iphone|ipad|ipod|iemobile|windows phone|mobile/.test(ua);
-  const hasTouch = ("maxTouchPoints" in navigator) && navigator.maxTouchPoints > 0;
+  const hasTouch = "maxTouchPoints" in navigator && navigator.maxTouchPoints > 0;
   const smallScreen = Math.min(window.innerWidth, window.innerHeight) <= 820; // umbral razonable
   // Móvil si userAgent dice móvil O (touch + pantalla chica)
   return isUA || (hasTouch && smallScreen);
 }
 
-// === html2canvas loader (como antes) ===
+// === html2canvas loader ===
 function ensureHtml2Canvas() {
   return new Promise((resolve, reject) => {
     if (window.html2canvas) return resolve(window.html2canvas);
@@ -63,8 +66,6 @@ function waitNextFrame() {
   return new Promise((r) => requestAnimationFrame(() => r()));
 }
 
-// Captura EXACTAMENTE el resultado real visible (resTextContainer)
-// y lo convierte a Blob PNG.
 // Captura EXACTAMENTE el resultado real visible (resTextContainer)
 // y lo convierte a Blob PNG.
 async function captureResultBlobFromDOM(DOM) {
@@ -92,16 +93,23 @@ async function captureResultBlobFromDOM(DOM) {
   wrapper.style.zIndex = "-1";
   wrapper.style.pointerEvents = "none";
 
-  // Medida base (ancho del resultado real)
-  const rect = target.getBoundingClientRect();
-  const w = Math.ceil(rect.width || target.offsetWidth || 700);
+  // === Export IG cuadrado ===
+  const size = 1080;
+  const pad = 54; // margen ~1–2 cm en 1080x1080
 
-  // ✅ Forzamos tarjeta CUADRADA en la exportación
-  const size = Math.max(w, 720); // mínimo para que siempre tenga “presencia”
+  // Stage (lienzo cuadrado)
+  const stage = document.createElement("div");
+  stage.style.width = `${size}px`;
+  stage.style.height = `${size}px`;
+  stage.style.position = "relative";
+  stage.style.display = "flex";
+  stage.style.alignItems = "center";
+  stage.style.justifyContent = "center";
+  stage.style.padding = `${pad}px`;
+  stage.style.boxSizing = "border-box";
+  stage.style.overflow = "hidden";
 
-  wrapper.style.width = `${size}px`;
-  wrapper.style.height = `${size}px`;
-
+  // Copiamos EXACTO lo que se ve en pantalla (tu tarjeta real)
   const clone = target.cloneNode(true);
 
   // Quitar botones/menús del clon
@@ -109,52 +117,49 @@ async function captureResultBlobFromDOM(DOM) {
     .querySelectorAll("button, #btnCompartir, #shareMenu, .share-menu, .btn-share")
     .forEach((el) => el.remove());
 
-  // ✅ Forzar layout estable SOLO para la captura (evita solapes por html2canvas)
-  clone.style.width = `${size}px`;
-  clone.style.height = `${size}px`;
-  clone.style.boxSizing = "border-box";
-  clone.style.display = "flex";
-  clone.style.flexDirection = "column";
-  clone.style.justifyContent = "space-between"; // reparte arriba/medio/abajo
-  clone.style.overflow = "hidden";
-
-  // “Aire” extra para evitar que textos grandes invadan los chicos en la captura
-  // (no toca tu UI real, solo el clon)
+  // Evitar que html2canvas se maree con transforms previos
   clone.querySelectorAll("*").forEach((el) => {
-    // html2canvas a veces se enreda con transforms en texto
     if (el.style) el.style.transform = "none";
   });
 
-  // Inyectamos un mini CSS solo para el clon exportado
-  const style = document.createElement("style");
-  style.textContent = `
-    /* Solo afecta al clon dentro del wrapper */
-    .bt-capture-fix .text-6xl,
-    .bt-capture-fix .text-7xl,
-    .bt-capture-fix .text-5xl {
-      line-height: 1.05 !important;
-      padding-bottom: 8px !important; /* evita solape con la línea de moneda */
-    }
-    .bt-capture-fix .text-sm {
-      line-height: 1.25 !important;
-    }
-  `;
-  wrapper.appendChild(style);
+  // Meter el clone dentro de un contenedor escalable
+  const scaler = document.createElement("div");
+  scaler.style.transformOrigin = "center center";
+  scaler.style.display = "block";
+  scaler.appendChild(clone);
 
-  // Marcador para que el CSS pegue
-  clone.classList.add("bt-capture-fix");
-
-  wrapper.appendChild(clone);
+  stage.appendChild(scaler);
+  wrapper.appendChild(stage);
   document.body.appendChild(wrapper);
 
-  // Esperar 2 frames para que el navegador “asiente” layout + fuentes
+  // Esperar layout
   await waitNextFrame();
   await waitNextFrame();
 
-  const canvas = await html2canvas(clone, {
+  // Calculamos escala para que "llene" el cuadrado (dejando pad)
+  const availableW = size - pad * 2;
+  const availableH = size - pad * 2;
+
+  const cRect = scaler.getBoundingClientRect();
+  const scaleX = availableW / (cRect.width || 1);
+  const scaleY = availableH / (cRect.height || 1);
+
+  // Queremos que el contenido LLENE el cuadrado dejando un margen elegante (pad),
+  // sin quedar “mini”. Preferimos estar a 1–2% de tocar los bordes.
+  let scale = Math.min(scaleX, scaleY) * 0.99;
+
+  // Límites razonables (por si el DOM cambia raro)
+  scale = Math.min(4.0, Math.max(0.85, scale));
+
+  scaler.style.transform = `scale(${scale})`;
+
+  // Un frame más después del scale
+  await waitNextFrame();
+
+  const canvas = await html2canvas(stage, {
     backgroundColor: null,
     useCORS: true,
-    scale: 2,
+    scale: 2, // 2160x2160 final (queda nítido)
     logging: false,
   });
 
@@ -184,9 +189,7 @@ export function initSharing(DOM, getLastCalc /*, getOpsState */) {
   if (DOM.opcionImagen) DOM.opcionImagen.classList.add("hidden");
 
   // Mostramos SIEMPRE el botón compartir (si existe)
-  // (y dejamos el WhatsApp solo si tú lo quieres para texto aparte)
   if (DOM.btnCompartir) DOM.btnCompartir.classList.remove("hidden");
-
   if (!DOM.btnCompartir) return;
 
   DOM.btnCompartir.addEventListener("click", async () => {
@@ -201,7 +204,12 @@ export function initSharing(DOM, getLastCalc /*, getOpsState */) {
       const file = new File([blob], "bytetransfer.png", { type: "image/png" });
 
       // MÓVIL: compartir imagen nativa
-      if (isLikelyMobileDevice() && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+      if (
+        isLikelyMobileDevice() &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] }) &&
+        navigator.share
+      ) {
         await navigator.share({ files: [file], title: "ByteTransfer" });
         return;
       }
