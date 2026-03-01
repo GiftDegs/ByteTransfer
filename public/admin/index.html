@@ -259,14 +259,31 @@
           <div class="backdrop-card p-4 mb-6">
             <h2 class="text-lg font-bold mb-2">📌 Referencias</h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <div class="text-xs opacity-70">BCV USD</div>
-                <div id="ref-bcv-usd" class="text-2xl font-extrabold">—</div>
-              </div>
-              <div>
-                <div class="text-xs opacity-70">BCV EUR</div>
-                <div id="ref-bcv-eur" class="text-2xl font-extrabold">—</div>
-              </div>
+<div>
+  <div class="text-xs opacity-70">BCV USD</div>
+  <input
+    id="ref-bcv-usd"
+    type="number"
+    step="any"
+    disabled
+    class="w-full mt-1 px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md text-center text-black bg-white dark:bg-gray-900 dark:text-white text-2xl font-extrabold focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
+    placeholder="—"
+  />
+  <div class="text-[11px] opacity-70 mt-1">Editable solo en modo edición</div>
+</div>
+
+<div>
+  <div class="text-xs opacity-70">BCV EUR</div>
+  <input
+    id="ref-bcv-eur"
+    type="number"
+    step="any"
+    disabled
+    class="w-full mt-1 px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md text-center text-black bg-white dark:bg-gray-900 dark:text-white text-2xl font-extrabold focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
+    placeholder="—"
+  />
+  <div class="text-[11px] opacity-70 mt-1">Editable solo en modo edición</div>
+</div>
               <div>
                 <div class="text-xs opacity-70">USDT → VES</div>
                 <div id="ref-usdt-ves" class="text-2xl font-extrabold">—</div>
