@@ -1,19 +1,45 @@
+// server.js
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
+const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ---------- Config Gist (persistencia) ----------
-const GIST_ID = process.env.GIST_ID;
-const GIST_FILENAME = process.env.GIST_FILENAME || "snapshot.json";
-const GH_TOKEN = process.env.GH_TOKEN;
-const USE_GIST = !!(GIST_ID && GH_TOKEN);
-
-// Auth opcional para guardar (solo si seteas ADMIN_KEY)
+// 🔐 Admin
 const ADMIN_KEY = process.env.ADMIN_KEY || null;
+
+// ---------- Postgres ----------
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error("❌ Falta DATABASE_URL en variables de entorno.");
+}
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  // En Render normalmente necesitas SSL.
+  // Si en local te molesta, puedes poner PGSSLMODE=disable.
+  ssl: process.env.PGSSLMODE === "disable" ? false : { rejectUnauthorized: false },
+});
+
+// ✅ Auto-crear tabla/índice al arrancar (para plan Free, sin shell)
+async function ensureTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS snapshots (
+      id BIGSERIAL PRIMARY KEY,
+      content JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS snapshots_created_at_idx
+    ON snapshots (created_at DESC);
+  `);
+
+  console.log("✅ Tabla snapshots verificada");
+}
 
 // ---------- Middlewares ----------
 app.use(express.json({ limit: "1mb" }));
@@ -53,56 +79,21 @@ function pickNumber(html, patterns) {
   return null;
 }
 
-// ---------- Snapshot helpers ----------
-function readLocalSnapshot() {
-  const ruta = path.join(__dirname, "public", "snapshot.json");
-  if (!fs.existsSync(ruta)) return {};
-  const data = fs.readFileSync(ruta, "utf8");
-  return JSON.parse(data);
-}
-
-function writeLocalSnapshot(obj) {
-  const fecha = new Date().toISOString().slice(0, 10);
-  const snapshotActualPath = path.join(__dirname, "public", "snapshot.json");
-  const dirSnapshots = path.join(__dirname, "public", "snapshots");
-  const snapshotHistPath = path.join(dirSnapshots, `${fecha}.json`);
-  if (!fs.existsSync(dirSnapshots)) fs.mkdirSync(dirSnapshots, { recursive: true });
-
-  fs.writeFileSync(snapshotActualPath, JSON.stringify(obj, null, 2));
-  if (!fs.existsSync(snapshotHistPath)) {
-    fs.writeFileSync(snapshotHistPath, JSON.stringify(obj, null, 2));
-  }
-}
-
-// ---------- Gist helpers ----------
-async function readGistSnapshot() {
-  const { data } = await axios.get(`https://api.github.com/gists/${GIST_ID}`, {
-    headers: {
-      Authorization: `Bearer ${GH_TOKEN}`,
-      Accept: "application/vnd.github+json",
-      "User-Agent": "ByteTransfer",
-    },
-    timeout: 15000,
-  });
-
-  const file = data?.files?.[GIST_FILENAME];
-  if (!file || !file.content) return {};
-  return JSON.parse(file.content);
-}
-
-async function writeGistSnapshot(obj) {
-  await axios.patch(
-    `https://api.github.com/gists/${GIST_ID}`,
-    { files: { [GIST_FILENAME]: { content: JSON.stringify(obj, null, 2) } } },
-    {
-      headers: {
-        Authorization: `Bearer ${GH_TOKEN}`,
-        Accept: "application/vnd.github+json",
-        "User-Agent": "ByteTransfer",
-      },
-      timeout: 15000,
-    }
+// ---------- DB helpers ----------
+async function dbGetLatestSnapshot() {
+  const { rows } = await pool.query(
+    "SELECT id, content, created_at FROM snapshots ORDER BY created_at DESC, id DESC LIMIT 1"
   );
+  if (!rows.length) return null;
+  return rows[0];
+}
+
+async function dbInsertSnapshot(contentObj) {
+  const { rows } = await pool.query(
+    "INSERT INTO snapshots (content) VALUES ($1) RETURNING id, created_at",
+    [contentObj]
+  );
+  return rows[0];
 }
 
 // -------------------------
@@ -181,7 +172,6 @@ async function getBcvRates() {
     const m = await getFromMercantil();
     if (m?.usd && m?.eur) return { ...m, fuente: "mercantil" };
 
-    // fallback si mercantil cambió
     const be = await getFromBancoExterior();
     if (be?.usd && be?.eur) return { ...be, fuente: "bancoexterior" };
 
@@ -233,36 +223,47 @@ async function getUsdtVesRefs() {
 }
 
 // ---------- Rutas ----------
-app.get("/healthz", (req, res) => res.send("ok"));
+app.get("/healthz", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.send("ok");
+  } catch (e) {
+    res.status(503).send("db not ready");
+  }
+});
 
+// Trae el ÚLTIMO snapshot guardado
 app.get("/api/snapshot", async (req, res) => {
   res.set("Cache-Control", "no-store");
-
-  // 1) Intentar Gist
-  if (USE_GIST) {
-    try {
-      const snap = await readGistSnapshot();
-      return res.json(snap || {});
-    } catch (e) {
-      console.error("❌ Gist snapshot falló, usando local:", e.message);
-      // 2) Fallback local
-      try {
-        const local = readLocalSnapshot();
-        return res.json(local || {});
-      } catch (e2) {
-        console.error("❌ Local snapshot también falló:", e2.message);
-        return res.status(500).json({ error: "Error leyendo snapshot" });
-      }
-    }
-  }
-
-  // 3) Si no hay Gist, usar local
   try {
-    const local = readLocalSnapshot();
-    return res.json(local || {});
+    const latest = await dbGetLatestSnapshot();
+    if (!latest) return res.json({});
+    return res.json(latest.content || {});
   } catch (e) {
-    console.error("❌ Leyendo snapshot local:", e.message);
-    return res.status(500).json({ error: "Error leyendo snapshot" });
+    console.error("❌ /api/snapshot:", e.message);
+    return res.status(500).json({ error: "Error leyendo snapshot (DB)" });
+  }
+});
+
+// Lista últimos N snapshots (historial)
+app.get("/api/snapshots", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const limit = Math.min(Number(req.query.limit || 10), 50);
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, created_at, content FROM snapshots ORDER BY created_at DESC, id DESC LIMIT $1",
+      [limit]
+    );
+    const out = rows.map(r => ({
+      id: r.id,
+      created_at: r.created_at,
+      timestamp: r.content?.timestamp ?? null,
+      guardado_en: r.content?.guardado_en ?? null,
+    }));
+    return res.json(out);
+  } catch (e) {
+    console.error("❌ /api/snapshots:", e.message);
+    return res.status(500).json({ error: "Error listando snapshots" });
   }
 });
 
@@ -270,21 +271,18 @@ app.get("/api/admin/verify", (req, res) => {
   if (!ADMIN_KEY) {
     return res.status(503).json({ ok: false, error: "ADMIN_KEY no configurada en el servidor" });
   }
-
   const clientKey = req.headers["x-admin-key"];
   if (!clientKey || clientKey !== ADMIN_KEY) {
     return res.status(401).json({ ok: false, error: "Clave inválida" });
   }
-
   return res.json({ ok: true });
 });
 
+// Guarda snapshot nuevo (historial): INSERT siempre
 app.post("/api/guardar-snapshot", async (req, res) => {
-  // 🔐 Requiere ADMIN_KEY
   if (!ADMIN_KEY) {
     return res.status(503).json({ error: "ADMIN_KEY no configurada en el servidor" });
   }
-
   const clientKey = req.headers["x-admin-key"];
   if (!clientKey || clientKey !== ADMIN_KEY) {
     return res.status(401).json({ error: "No autorizado: clave admin inválida" });
@@ -293,10 +291,10 @@ app.post("/api/guardar-snapshot", async (req, res) => {
   // 1) Leer snapshot anterior (para merge de cruces)
   let snapshotAnterior = {};
   try {
-    if (USE_GIST) snapshotAnterior = await readGistSnapshot();
-    else snapshotAnterior = readLocalSnapshot();
+    const latest = await dbGetLatestSnapshot();
+    snapshotAnterior = latest?.content || {};
   } catch (e) {
-    console.warn("⚠️ Snapshot previo corrupto / no disponible, regenerando:", e.message);
+    console.warn("⚠️ No pude leer snapshot previo, regenerando:", e.message);
     snapshotAnterior = {};
   }
 
@@ -320,26 +318,18 @@ app.post("/api/guardar-snapshot", async (req, res) => {
     guardado_en: new Date().toISOString(),
   };
 
-  // 5) Guardar (Gist preferido; si falla, local)
+  // 5) Insert (historial)
   try {
-    if (USE_GIST) {
-      await writeGistSnapshot(datosFinales);
-      return res.json({ status: "ok", storage: "gist" });
-    }
-
-    writeLocalSnapshot(datosFinales);
-    return res.json({ status: "ok", storage: "local" });
-  } catch (err) {
-    console.error("❌ Guardar en gist falló:", err.message);
-
-    // Fallback local si gist falla
-    try {
-      writeLocalSnapshot(datosFinales);
-      return res.json({ status: "ok", storage: "local_fallback" });
-    } catch (e2) {
-      console.error("❌ Fallback local también falló:", e2.message);
-      return res.status(500).json({ error: "Error al guardar snapshot" });
-    }
+    const inserted = await dbInsertSnapshot(datosFinales);
+    return res.json({
+      status: "ok",
+      storage: "postgres",
+      id: inserted.id,
+      created_at: inserted.created_at,
+    });
+  } catch (e) {
+    console.error("❌ Guardar snapshot (DB):", e.message);
+    return res.status(500).json({ error: "Error guardando snapshot (DB)" });
   }
 });
 
@@ -401,6 +391,16 @@ app.post("/api/binance", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
-});
+// Arranque: crea tabla y luego escucha
+(async () => {
+  try {
+    await ensureTables();
+  } catch (e) {
+    console.error("❌ Error creando/verificando tabla snapshots:", e.message);
+    // No mato el proceso; pero si esto falla, el guardado no servirá.
+  }
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
+  });
+})();
