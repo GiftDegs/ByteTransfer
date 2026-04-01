@@ -84,7 +84,7 @@ async function dbAvailable() {
   try {
     await pool.query("SELECT 1");
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -135,7 +135,6 @@ async function dbInsertSnapshot(contentObj) {
 }
 
 async function getLatestSnapshotSafe() {
-  // 1) Intentar DB
   if (pool) {
     try {
       const latest = await dbGetLatestSnapshot();
@@ -147,7 +146,6 @@ async function getLatestSnapshotSafe() {
     }
   }
 
-  // 2) Fallback local
   try {
     const local = readLocalSnapshot();
     if (local) {
@@ -161,12 +159,10 @@ async function getLatestSnapshotSafe() {
 }
 
 async function saveSnapshotSafe(contentObj) {
-  // 1) Intentar DB
   if (pool) {
     try {
       const inserted = await dbInsertSnapshot(contentObj);
 
-      // además dejamos copia local como respaldo
       try {
         writeLocalSnapshot(contentObj);
       } catch (e) {
@@ -184,7 +180,6 @@ async function saveSnapshotSafe(contentObj) {
     }
   }
 
-  // 2) Fallback local
   try {
     const writtenPath = writeLocalSnapshot(contentObj);
     return {
@@ -200,11 +195,6 @@ async function saveSnapshotSafe(contentObj) {
     };
   }
 }
-
-// ---------- Middlewares ----------
-app.use(express.json({ limit: "1mb" }));
-app.use("/admin", express.static(path.join(__dirname, "public/admin")));
-app.use(express.static(path.join(__dirname, "public")));
 
 // ---------- Utils ----------
 function formatearTasa(v) {
@@ -237,6 +227,56 @@ function pickNumber(html, patterns) {
     }
   }
   return null;
+}
+
+// ---------- BRL simple (PTAX -> fijo) ----------
+function formatPtaxDateBR(d = new Date()) {
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${mm}-${dd}-${yyyy}`;
+}
+
+async function getBcbUsdBrlPtax() {
+  const cotacao = "USD";
+  const dataStr = formatPtaxDateBR(new Date());
+
+  const url =
+    `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/` +
+    `CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?` +
+    `@moeda='${cotacao}'&@dataCotacao='${dataStr}'&$top=1&$format=json`;
+
+  const { data } = await axios.get(url, {
+    timeout: 15000,
+    headers: { "User-Agent": "Mozilla/5.0" },
+  });
+
+  const row = data?.value?.[0] || null;
+  const buy = Number(row?.cotacaoCompra);
+  const sell = Number(row?.cotacaoVenda);
+
+  return {
+    source: "ptax",
+    buy: Number.isFinite(buy) ? buy : null,
+    sell: Number.isFinite(sell) ? sell : null,
+  };
+}
+
+async function getDynamicBrlPrice() {
+  try {
+    const ptax = await getBcbUsdBrlPtax();
+    if (Number.isFinite(ptax.buy) || Number.isFinite(ptax.sell)) {
+      return ptax;
+    }
+  } catch (e) {
+    console.warn("⚠️ BRL PTAX falló:", e.message);
+  }
+
+  return {
+    source: "fallback",
+    buy: 5.74,
+    sell: 5.49,
+  };
 }
 
 // -------------------------
@@ -371,6 +411,11 @@ async function getUsdtVesRefs() {
   };
 }
 
+// ---------- Middlewares ----------
+app.use(express.json({ limit: "1mb" }));
+app.use("/admin", express.static(path.join(__dirname, "public/admin")));
+app.use(express.static(path.join(__dirname, "public")));
+
 // ---------- Rutas ----------
 app.get("/healthz", async (req, res) => {
   const dbOk = await dbAvailable();
@@ -453,7 +498,6 @@ app.post("/api/guardar-snapshot", async (req, res) => {
     return res.status(401).json({ error: "No autorizado: clave admin inválida" });
   }
 
-  // 1) Leer snapshot anterior (DB o local)
   let snapshotAnterior = {};
   try {
     const latest = await getLatestSnapshotSafe();
@@ -463,7 +507,6 @@ app.post("/api/guardar-snapshot", async (req, res) => {
     snapshotAnterior = {};
   }
 
-  // 2) Formatear cruces nuevos
   const crucesNuevos = req.body?.cruces || {};
   const crucesNuevosFormateados = {};
 
@@ -473,13 +516,11 @@ app.post("/api/guardar-snapshot", async (req, res) => {
     crucesNuevosFormateados[k] = formatearTasa(n);
   }
 
-  // 3) Merge cruces
   const crucesCompletos = {
     ...(snapshotAnterior.cruces || {}),
     ...crucesNuevosFormateados,
   };
 
-  // 4) Datos finales
   const datosFinales = {
     ...snapshotAnterior,
     ...req.body,
@@ -487,7 +528,6 @@ app.post("/api/guardar-snapshot", async (req, res) => {
     guardado_en: new Date().toISOString(),
   };
 
-  // 5) Guardar seguro
   const result = await saveSnapshotSafe(datosFinales);
 
   if (!result.ok) {
@@ -525,6 +565,19 @@ app.get("/api/referencias", async (req, res) => {
   }
 });
 
+// ---------- BRL price endpoint ----------
+app.get("/api/brl-price", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  try {
+    const data = await getDynamicBrlPrice();
+    return res.json(data);
+  } catch (e) {
+    console.error("❌ /api/brl-price:", e.message);
+    return res.status(500).json({ error: "No se pudo obtener BRL" });
+  }
+});
+
 // ---- BINANCE con cache simple (TTL 45s) ----
 const binanceCache = new Map();
 const BINANCE_TTL_MS = 45 * 1000;
@@ -533,6 +586,34 @@ app.post("/api/binance", async (req, res) => {
   const { fiat, tradeType, page = 1, payTypes = [], transAmount } = req.body || {};
   if (!fiat || !tradeType) {
     return res.status(400).json({ error: "Parámetros inválidos" });
+  }
+
+  // BRL especial
+  if (fiat === "BRL") {
+    try {
+      const brl = await getDynamicBrlPrice();
+      const price = tradeType === "BUY" ? brl.buy : brl.sell;
+
+      if (!Number.isFinite(price)) {
+        return res.status(500).json({ error: "No se pudo obtener precio BRL" });
+      }
+
+      return res.json({
+        data: [
+          {
+            adv: {
+              price: String(price),
+              minSingleTransAmount: "0",
+              isAdvBanned: false,
+            },
+          },
+        ],
+        source: brl.source,
+      });
+    } catch (e) {
+      console.error("❌ /api/binance BRL:", e.message);
+      return res.status(500).json({ error: "Fallo conexión BRL" });
+    }
   }
 
   const key = `${fiat}|${tradeType}|${page}|${(payTypes || []).join(",")}|${transAmount || ""}`;
@@ -568,6 +649,70 @@ app.post("/api/binance", async (req, res) => {
     return res.status(500).json({ error: "Fallo conexión Binance" });
   }
 });
+
+// ---------- Precios dinámicos ----------
+async function fetchPrecio(fiat, tipo) {
+  const USDT_LIMITE_VES = 150;
+  const precios = [];
+
+  try {
+    // BRL simple
+    if (fiat === "BRL") {
+      const brl = await getDynamicBrlPrice();
+      return tipo === "BUY" ? brl.buy : brl.sell;
+    }
+
+    // Caso particular: VES SELL basado en BUY
+    if (tipo === "SELL" && fiat === "VES") {
+      const precioCompra = await fetchPrecio(fiat, "BUY");
+      if (!precioCompra) return null;
+      return parseFloat((precioCompra * 0.9975).toFixed(6));
+    }
+
+    const res = await axios.post(
+      "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search",
+      {
+        page: 1,
+        rows: 100,
+        payTypes: [],
+        asset: "USDT",
+        tradeType: tipo,
+        fiat,
+        order: null,
+        orderColumn: "price",
+      },
+      { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+    );
+
+    const comerciales = res.data?.data || [];
+
+    for (const item of comerciales) {
+      const adv = item?.adv;
+      if (!adv) continue;
+
+      const precio = parseFloat(adv.price);
+      const minVES = parseFloat(adv.minSingleTransAmount) || Infinity;
+      const permitido = !adv.isAdvBanned;
+
+      if (!precio || !permitido) continue;
+
+      if (fiat === "VES" && tipo === "SELL") {
+        const usdtNecesario = minVES / precio;
+        if (usdtNecesario > USDT_LIMITE_VES) continue;
+      }
+
+      precios.push(precio);
+      if (precios.length === 20) break;
+    }
+
+    if (!precios.length) return null;
+    const promedio = precios.reduce((a, b) => a + b, 0) / precios.length;
+    return parseFloat(promedio.toFixed(6));
+  } catch (e) {
+    console.error("❌ fetchPrecio:", fiat, tipo, e.message || e);
+    return null;
+  }
+}
 
 // ---------- Arranque ----------
 (async () => {

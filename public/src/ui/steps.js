@@ -1,6 +1,6 @@
 import { DOM } from "./dom.js";
 import { paisesDisponibles, CONFIG } from "../core/config.js";
-import { formatearTasa, formatearFecha, redondearPorMoneda, userLocale } from "../core/utils.js";
+import { formatearTasa, formatearFecha, formatearMontoConMoneda, redondearPorMoneda, userLocale } from "../core/utils.js";
 import { calcularCruce } from "../core/fx.js";
 import { obtenerTasa, obtenerBCV } from "../services/rates.js";
 import { obtenerStatus } from "../services/status.js";
@@ -695,9 +695,9 @@ async function ejecutarCalculo() {
     const nf2 = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 2 });
     const nf0 = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 0 });
 
-    const usdFmt = nf2.format(usdDeseados);
-    const vesFmt = nf0.format(Math.round(vesObjetivo));
-    const enviarFmt = nf0.format(calcRed);
+    const usdFmt = formatearMontoConMoneda(usdDeseados, "USD", { maximumFractionDigits: 2 });
+    const vesFmt = formatearMontoConMoneda(Math.round(vesObjetivo), "VES");
+    const enviarFmt = formatearMontoConMoneda(calcRed, o.codigo);
     const tasaFmt = formatearTasa(t);
 
     const etiquetaBCV =
@@ -728,7 +728,7 @@ async function ejecutarCalculo() {
       <div class="text-base text-gray-600 dark:text-gray-300 mt-3">equivalentes a</div>
       <div class="text-3xl font-semibold text-blue-800 dark:text-blue-400">VES ${vesFmt}</div>
       <div class="text-base text-gray-600 dark:text-gray-300 mt-3">debes enviar</div>
-      <div class="text-4xl font-extrabold text-blue-900 dark:text-blue-200">${enviarFmt} ${o.codigo}</div>
+      <div class="text-4xl font-extrabold text-blue-900 dark:text-blue-200">${enviarFmt}</div>
       ${refBadge}
       ${metaCardTasa({ fecha, tasaFmt, ops })}
     `;
@@ -804,8 +804,10 @@ async function ejecutarCalculo() {
     }
   }
 
-  const montoFmt = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 2 }).format(montoInput);
-  const calcFmt = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 0 }).format(calcRed);
+  const montoFmt = formatearMontoConMoneda(montoInput, mode === "enviar" ? o.codigo : d.codigo, {
+  maximumFractionDigits: 2,
+  });
+  const calcFmt = formatearMontoConMoneda(calcRed, mode === "enviar" ? d.codigo : o.codigo);
   const tasaFmt = formatearTasa(tasa);
 
   lastCalc = {
@@ -821,14 +823,14 @@ async function ejecutarCalculo() {
 
   const mensaje = mode === "enviar"
     ? `<div class="text-sm italic text-gray-500 dark:text-gray-400">Enviando desde ${o.nombre}</div>
-       <div class="text-3xl font-semibold text-blue-800 dark:text-blue-400">${montoFmt} ${o.codigo}</div>
+       <div class="text-3xl font-semibold text-blue-800 dark:text-blue-400">${montoFmt}</div>
        <div class="text-base text-gray-600 dark:text-gray-300 mt-1">recibirás</div>
-       <div class="text-4xl font-extrabold text-blue-900 dark:text-blue-200">${d.codigo} ${calcFmt}</div>
+       <div class="text-4xl font-extrabold text-blue-900 dark:text-blue-200">${calcFmt}</div>
        ${metaCardTasa({ fecha, tasaFmt, ops })}`
     : `<div class="text-sm italic text-gray-500 dark:text-gray-400">Para recibir en ${d.nombre}</div>
-       <div class="text-3xl font-semibold text-blue-800 dark:text-blue-400">${d.codigo} ${montoFmt}</div>
+       <div class="text-3xl font-semibold text-blue-800 dark:text-blue-400">${montoFmt}</div>
        <div class="text-base text-gray-600 dark:text-gray-300 mt-1">debes enviar</div>
-       <div class="text-4xl font-extrabold text-blue-900 dark:text-blue-200">${calcFmt} ${o.codigo}</div>
+       <div class="text-4xl font-extrabold text-blue-900 dark:text-blue-200">${calcFmt}</div>
        ${metaCardTasa({ fecha, tasaFmt, ops })}`;
 
   DOM.resText.innerHTML = mensaje + infoBcvExtra;

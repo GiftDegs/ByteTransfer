@@ -471,7 +471,20 @@ async function guardarSnapshot(datos) {
 // -------------------------
 async function fetchPrecio(fiat, tipo) {
   // BRL con fallback estático (opcional)
-  if (fiat === "BRL") return tipo === "BUY" ? 5.74 : 5.49;
+  if (fiat === "BRL") {
+  try {
+    const res = await fetch("/api/brl-price", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const j = await res.json();
+    if (tipo === "BUY" && Number.isFinite(Number(j.buy))) return Number(j.buy);
+    if (tipo === "SELL" && Number.isFinite(Number(j.sell))) return Number(j.sell);
+  } catch (e) {
+    console.error("❌ BRL dinámico admin:", e.message || e);
+  }
+
+  return tipo === "BUY" ? 5.5 : 5;
+}
 
   const USDT_LIMITE_VES = 150;
   const precios = [];

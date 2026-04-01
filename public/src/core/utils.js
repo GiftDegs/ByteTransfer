@@ -26,6 +26,29 @@ export function formatearTasa(v) {
   return n.toFixed(6);
 }
 
+export function formatearMontoConMoneda(valor, moneda, {
+  maximumFractionDigits = 0,
+  minimumFractionDigits = 0,
+} = {}) {
+  const n = Number(valor);
+  const numero = Number.isFinite(n)
+    ? n.toLocaleString(userLocale, { maximumFractionDigits, minimumFractionDigits })
+    : String(valor);
+
+  switch (moneda) {
+    case 'ARS': return `${numero} $ Arg`;
+    case 'COP': return `${numero} $ Col`;
+    case 'MXN': return `${numero} $ Mx`;
+    case 'CLP': return `${numero} $ Chl`;
+    case 'VES': return `${numero} Bs.`;
+    case 'PEN': return `${numero} S/.`;
+    case 'BRL': return `${numero} R$`;
+    case 'USD': return `${numero} $`;
+    case 'EUR': return `${numero} €`;
+    default: return `${numero} ${moneda}`;
+  }
+}
+
 export function redondearPorMoneda(valor, moneda) {
   let unidadRedondeo = 1;
   switch (moneda) {
