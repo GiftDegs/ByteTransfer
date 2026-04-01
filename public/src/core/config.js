@@ -1,5 +1,5 @@
 export const CONFIG = {
-  MIN_USD: 5,
+  MIN_USD: 1,
   MAX_USD: 1000,
 };
 

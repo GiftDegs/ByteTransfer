@@ -398,7 +398,6 @@ function renderReferencias() {
   }
 }
 
-
 // -------------------------
 // Carga/guardado de snapshot
 // -------------------------
@@ -1054,6 +1053,17 @@ function renderMonCruces() {
 // ======================================================
 function bindUI() {
   // --- Configurar ---
+
+  // Habilitar/Deshabilitar edición de BCV
+const inUsd = document.getElementById("ref-bcv-usd");
+const inEur = document.getElementById("ref-bcv-eur");
+if (inUsd) inUsd.disabled = !modoEdicionActivo;
+if (inEur) inEur.disabled = !modoEdicionActivo;
+
+// Si entraste en edición y no hay referencias cargadas aún, crea estructura mínima
+if (!referenciasExternas) referenciasExternas = {};
+if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null };
+
   document.getElementById("btn-seleccionar-pais")?.addEventListener("click", e => {
     e.stopPropagation();
     openPopover();
@@ -1082,17 +1092,6 @@ function bindUI() {
     modoEdicionActivo = !modoEdicionActivo;
     renderTarjetasPaises(modoEdicionActivo);
     mostrarAdvertenciaPendiente(false);
-
-    // Habilitar/Deshabilitar edición de BCV (si existe en HTML como input)
-    const inUsd = document.getElementById("ref-bcv-usd");
-    const inEur = document.getElementById("ref-bcv-eur");
-    if (inUsd && inUsd.tagName === "INPUT") inUsd.disabled = !modoEdicionActivo;
-    if (inEur && inEur.tagName === "INPUT") inEur.disabled = !modoEdicionActivo;
-
-    // Estructura mínima (por si se edita antes de traer refs)
-    if (!referenciasExternas) referenciasExternas = {};
-    if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null };
-
     const btn = document.getElementById("btn-toggle-edicion");
     if (btn) btn.textContent = modoEdicionActivo ? "🔒 Finalizar Edición" : "✏️ Editar Precios";
   });
@@ -1168,26 +1167,6 @@ function bindUI() {
       if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
       if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
     }
-
-    // Aplicar BCV manual desde inputs (si existen)
-    const bcvUsdEl = document.getElementById("ref-bcv-usd");
-    const bcvEurEl = document.getElementById("ref-bcv-eur");
-    const usd = bcvUsdEl && bcvUsdEl.tagName === "INPUT" ? parseFloat(bcvUsdEl.value) : NaN;
-    const eur = bcvEurEl && bcvEurEl.tagName === "INPUT" ? parseFloat(bcvEurEl.value) : NaN;
-
-    if (!referenciasExternas) referenciasExternas = {};
-    if (!referenciasExternas.bcv) referenciasExternas.bcv = {};
-
-    let tocasteBcv = false;
-    if (Number.isFinite(usd)) { referenciasExternas.bcv.usd = formatearTasa(usd); tocasteBcv = true; }
-    if (Number.isFinite(eur)) { referenciasExternas.bcv.eur = formatearTasa(eur); tocasteBcv = true; }
-
-    if (tocasteBcv) {
-      referenciasExternas.bcv.manual = true;
-      referenciasExternas.bcv.fuente = "manual";
-      renderReferencias();
-    }
-
     renderTarjetasPaises(modoEdicionActivo);
     escribirCruces();
     mostrarAdvertenciaPendiente(true);
@@ -1207,41 +1186,16 @@ function bindUI() {
       if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
     }
 
-    // Actualizar referencias a la hora de guardar (sin pisar BCV manual si lo editaste)
-    const bcvUsdEl = document.getElementById("ref-bcv-usd");
-    const bcvEurEl = document.getElementById("ref-bcv-eur");
-    const manualUsd = bcvUsdEl && bcvUsdEl.tagName === "INPUT" ? parseFloat(bcvUsdEl.value) : NaN;
-    const manualEur = bcvEurEl && bcvEurEl.tagName === "INPUT" ? parseFloat(bcvEurEl.value) : NaN;
-    const hayManualBcv = Number.isFinite(manualUsd) || Number.isFinite(manualEur);
-
+    // Actualizar referencias a la hora de guardar
     try {
-      const fresh = await obtenerReferencias();
-
-      if (hayManualBcv) {
-        if (!fresh.bcv) fresh.bcv = {};
-        if (Number.isFinite(manualUsd)) fresh.bcv.usd = formatearTasa(manualUsd);
-        if (Number.isFinite(manualEur)) fresh.bcv.eur = formatearTasa(manualEur);
-        fresh.bcv.manual = true;
-        fresh.bcv.fuente = "manual";
-      }
-
-      referenciasExternas = fresh;
+      referenciasExternas = await obtenerReferencias();
       renderReferencias();
     } catch {
-      // Si falló la API, igual guardamos con lo que haya + tu BCV manual
-      if (!referenciasExternas) referenciasExternas = {};
-      if (!referenciasExternas.bcv) referenciasExternas.bcv = {};
-
-      if (hayManualBcv) {
-        if (Number.isFinite(manualUsd)) referenciasExternas.bcv.usd = formatearTasa(manualUsd);
-        if (Number.isFinite(manualEur)) referenciasExternas.bcv.eur = formatearTasa(manualEur);
-        referenciasExternas.bcv.manual = true;
-        referenciasExternas.bcv.fuente = "manual";
-      }
-
-      renderReferencias();
-      mostrarToast("⚠️ No se pudieron actualizar referencias (guardando con BCV manual/estado actual)");
+      mostrarToast("⚠️ No se pudieron actualizar referencias");
     }
+
+    document.getElementById("ref-bcv-usd")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
+document.getElementById("ref-bcv-eur")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
 
 const ok = await guardarSnapshot({
   ...datosPaises,
@@ -1269,11 +1223,6 @@ mostrarToast("✅ Snapshot guardado");
     // refrescar monitoreo contra el nuevo snapshot
     renderMonitoreo();
   });
-
-
-  // BCV manual: marcar pendiente cuando se edita
-  document.getElementById("ref-bcv-usd")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
-  document.getElementById("ref-bcv-eur")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
 
   // --- Monitoreo ---
   document.getElementById("btn-mon-refresh")?.addEventListener("click", async () => {
