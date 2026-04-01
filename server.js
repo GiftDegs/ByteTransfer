@@ -1,5 +1,5 @@
-// server.js
 const express = require("express");
+const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const { Pool } = require("pg");
@@ -11,20 +11,90 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_KEY = process.env.ADMIN_KEY || null;
 
 // ---------- Postgres ----------
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  console.error("❌ Falta DATABASE_URL en variables de entorno.");
+const DATABASE_URL = process.env.DATABASE_URL || null;
+
+const pool = DATABASE_URL
+  ? new Pool({
+      connectionString: DATABASE_URL,
+      ssl: process.env.PGSSLMODE === "disable" ? false : { rejectUnauthorized: false },
+    })
+  : null;
+
+// ---------- Snapshot fallback local ----------
+function getSnapshotCandidatePaths() {
+  const custom = process.env.SNAPSHOT_FALLBACK_PATH;
+  const candidates = [
+    custom,
+    path.join(__dirname, "public", "snapshot.json"),
+    path.join(__dirname, "snapshot.json"),
+  ].filter(Boolean);
+
+  return [...new Set(candidates)];
 }
 
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  // En Render normalmente necesitas SSL.
-  // Si en local te molesta, puedes poner PGSSLMODE=disable.
-  ssl: process.env.PGSSLMODE === "disable" ? false : { rejectUnauthorized: false },
-});
+function getReadableSnapshotPath() {
+  const candidates = getSnapshotCandidatePaths();
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch (_) {}
+  }
+  return candidates[0] || path.join(__dirname, "snapshot.json");
+}
 
-// ✅ Auto-crear tabla/índice al arrancar (para plan Free, sin shell)
+function getWritableSnapshotPath() {
+  const custom = process.env.SNAPSHOT_FALLBACK_PATH;
+  if (custom) return custom;
+
+  const publicPath = path.join(__dirname, "public", "snapshot.json");
+  const publicDir = path.dirname(publicPath);
+
+  try {
+    if (fs.existsSync(publicDir)) return publicPath;
+  } catch (_) {}
+
+  return path.join(__dirname, "snapshot.json");
+}
+
+function readLocalSnapshot() {
+  const p = getReadableSnapshotPath();
+  if (!fs.existsSync(p)) return null;
+
+  const raw = fs.readFileSync(p, "utf8");
+  if (!raw.trim()) return null;
+
+  return JSON.parse(raw);
+}
+
+function writeLocalSnapshot(obj) {
+  const p = getWritableSnapshotPath();
+  const dir = path.dirname(p);
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  fs.writeFileSync(p, JSON.stringify(obj, null, 2), "utf8");
+  return p;
+}
+
+// ---------- DB helpers ----------
+async function dbAvailable() {
+  if (!pool) return false;
+  try {
+    await pool.query("SELECT 1");
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function ensureTables() {
+  if (!pool) {
+    console.warn("⚠️ DATABASE_URL no configurada. Se usará fallback local.");
+    return false;
+  }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS snapshots (
       id BIGSERIAL PRIMARY KEY,
@@ -39,6 +109,96 @@ async function ensureTables() {
   `);
 
   console.log("✅ Tabla snapshots verificada");
+  return true;
+}
+
+async function dbGetLatestSnapshot() {
+  if (!pool) throw new Error("DATABASE_URL no configurada");
+
+  const { rows } = await pool.query(
+    "SELECT id, content, created_at FROM snapshots ORDER BY created_at DESC, id DESC LIMIT 1"
+  );
+
+  if (!rows.length) return null;
+  return rows[0];
+}
+
+async function dbInsertSnapshot(contentObj) {
+  if (!pool) throw new Error("DATABASE_URL no configurada");
+
+  const { rows } = await pool.query(
+    "INSERT INTO snapshots (content) VALUES ($1) RETURNING id, created_at",
+    [contentObj]
+  );
+
+  return rows[0];
+}
+
+async function getLatestSnapshotSafe() {
+  // 1) Intentar DB
+  if (pool) {
+    try {
+      const latest = await dbGetLatestSnapshot();
+      if (latest?.content) {
+        return { source: "db", snapshot: latest.content };
+      }
+    } catch (e) {
+      console.error("❌ DB snapshot read failed:", e.message);
+    }
+  }
+
+  // 2) Fallback local
+  try {
+    const local = readLocalSnapshot();
+    if (local) {
+      return { source: "local", snapshot: local };
+    }
+  } catch (e) {
+    console.error("❌ Local snapshot read failed:", e.message);
+  }
+
+  return { source: "none", snapshot: {} };
+}
+
+async function saveSnapshotSafe(contentObj) {
+  // 1) Intentar DB
+  if (pool) {
+    try {
+      const inserted = await dbInsertSnapshot(contentObj);
+
+      // además dejamos copia local como respaldo
+      try {
+        writeLocalSnapshot(contentObj);
+      } catch (e) {
+        console.warn("⚠️ No pude escribir fallback local:", e.message);
+      }
+
+      return {
+        ok: true,
+        storage: "postgres",
+        id: inserted.id,
+        created_at: inserted.created_at,
+      };
+    } catch (e) {
+      console.error("❌ Guardar snapshot en DB falló:", e.message);
+    }
+  }
+
+  // 2) Fallback local
+  try {
+    const writtenPath = writeLocalSnapshot(contentObj);
+    return {
+      ok: true,
+      storage: "local",
+      path: writtenPath,
+    };
+  } catch (e) {
+    console.error("❌ Guardar snapshot local falló:", e.message);
+    return {
+      ok: false,
+      error: e.message,
+    };
+  }
 }
 
 // ---------- Middlewares ----------
@@ -79,23 +239,6 @@ function pickNumber(html, patterns) {
   return null;
 }
 
-// ---------- DB helpers ----------
-async function dbGetLatestSnapshot() {
-  const { rows } = await pool.query(
-    "SELECT id, content, created_at FROM snapshots ORDER BY created_at DESC, id DESC LIMIT 1"
-  );
-  if (!rows.length) return null;
-  return rows[0];
-}
-
-async function dbInsertSnapshot(contentObj) {
-  const { rows } = await pool.query(
-    "INSERT INTO snapshots (content) VALUES ($1) RETURNING id, created_at",
-    [contentObj]
-  );
-  return rows[0];
-}
-
 // -------------------------
 // Referencias BCV multi-fuente (USD/EUR)
 // -------------------------
@@ -113,7 +256,7 @@ function parseMercantil(html) {
   if (!firstRowMatch) return null;
 
   const firstRow = firstRowMatch[1];
-  const tdMatches = [...firstRow.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m =>
+  const tdMatches = [...firstRow.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((m) =>
     m[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim()
   );
 
@@ -125,6 +268,7 @@ function parseMercantil(html) {
 
   const usd = formatearTasa(usdNum);
   const eur = formatearTasa(eurNum);
+
   if (usd < 50 || eur < 50) return null;
 
   return { usd, eur, fecha: null, fuente: "mercantil" };
@@ -133,7 +277,10 @@ function parseMercantil(html) {
 async function getFromMercantil() {
   const { data } = await axios.get(
     "https://www.mercantilbanco.com/informacion/tasas%2C-tarifas-y-comisiones/tasa-mesa-de-cambio",
-    { timeout: 15000, headers: { "User-Agent": "Mozilla/5.0" } }
+    {
+      timeout: 15000,
+      headers: { "User-Agent": "Mozilla/5.0" },
+    }
   );
   return parseMercantil(String(data));
 }
@@ -200,11 +347,13 @@ async function binanceAvgPriceTop20(fiat, tradeType) {
 
   const items = data?.data || [];
   const prices = [];
+
   for (const it of items) {
     const price = Number(it?.adv?.price);
     if (!Number.isFinite(price)) continue;
     prices.push(price);
   }
+
   if (!prices.length) return null;
   const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
   return Number(avg.toFixed(6));
@@ -224,42 +373,56 @@ async function getUsdtVesRefs() {
 
 // ---------- Rutas ----------
 app.get("/healthz", async (req, res) => {
-  try {
-    await pool.query("SELECT 1");
-    res.send("ok");
-  } catch (e) {
-    res.status(503).send("db not ready");
+  const dbOk = await dbAvailable();
+
+  if (dbOk) {
+    return res.json({ ok: true, storage: "db" });
   }
+
+  try {
+    const local = readLocalSnapshot();
+    if (local) {
+      return res.status(200).json({ ok: true, storage: "local-fallback" });
+    }
+  } catch (_) {}
+
+  return res.status(503).json({ ok: false, storage: "none", error: "db not ready" });
 });
 
-// Trae el ÚLTIMO snapshot guardado
 app.get("/api/snapshot", async (req, res) => {
   res.set("Cache-Control", "no-store");
+
   try {
-    const latest = await dbGetLatestSnapshot();
-    if (!latest) return res.json({});
-    return res.json(latest.content || {});
+    const result = await getLatestSnapshotSafe();
+    res.set("X-Snapshot-Source", result.source);
+    return res.json(result.snapshot || {});
   } catch (e) {
     console.error("❌ /api/snapshot:", e.message);
-    return res.status(500).json({ error: "Error leyendo snapshot (DB)" });
+    return res.status(500).json({ error: "Error leyendo snapshot" });
   }
 });
 
-// Lista últimos N snapshots (historial)
 app.get("/api/snapshots", async (req, res) => {
   res.set("Cache-Control", "no-store");
   const limit = Math.min(Number(req.query.limit || 10), 50);
+
+  if (!pool) {
+    return res.json([]);
+  }
+
   try {
     const { rows } = await pool.query(
       "SELECT id, created_at, content FROM snapshots ORDER BY created_at DESC, id DESC LIMIT $1",
       [limit]
     );
-    const out = rows.map(r => ({
+
+    const out = rows.map((r) => ({
       id: r.id,
       created_at: r.created_at,
       timestamp: r.content?.timestamp ?? null,
       guardado_en: r.content?.guardado_en ?? null,
     }));
+
     return res.json(out);
   } catch (e) {
     console.error("❌ /api/snapshots:", e.message);
@@ -271,28 +434,30 @@ app.get("/api/admin/verify", (req, res) => {
   if (!ADMIN_KEY) {
     return res.status(503).json({ ok: false, error: "ADMIN_KEY no configurada en el servidor" });
   }
+
   const clientKey = req.headers["x-admin-key"];
   if (!clientKey || clientKey !== ADMIN_KEY) {
     return res.status(401).json({ ok: false, error: "Clave inválida" });
   }
+
   return res.json({ ok: true });
 });
 
-// Guarda snapshot nuevo (historial): INSERT siempre
 app.post("/api/guardar-snapshot", async (req, res) => {
   if (!ADMIN_KEY) {
     return res.status(503).json({ error: "ADMIN_KEY no configurada en el servidor" });
   }
+
   const clientKey = req.headers["x-admin-key"];
   if (!clientKey || clientKey !== ADMIN_KEY) {
     return res.status(401).json({ error: "No autorizado: clave admin inválida" });
   }
 
-  // 1) Leer snapshot anterior (para merge de cruces)
+  // 1) Leer snapshot anterior (DB o local)
   let snapshotAnterior = {};
   try {
-    const latest = await dbGetLatestSnapshot();
-    snapshotAnterior = latest?.content || {};
+    const latest = await getLatestSnapshotSafe();
+    snapshotAnterior = latest?.snapshot || {};
   } catch (e) {
     console.warn("⚠️ No pude leer snapshot previo, regenerando:", e.message);
     snapshotAnterior = {};
@@ -301,6 +466,7 @@ app.post("/api/guardar-snapshot", async (req, res) => {
   // 2) Formatear cruces nuevos
   const crucesNuevos = req.body?.cruces || {};
   const crucesNuevosFormateados = {};
+
   for (const k of Object.keys(crucesNuevos)) {
     const n = Number(crucesNuevos[k]);
     if (!Number.isFinite(n)) continue;
@@ -308,7 +474,10 @@ app.post("/api/guardar-snapshot", async (req, res) => {
   }
 
   // 3) Merge cruces
-  const crucesCompletos = { ...(snapshotAnterior.cruces || {}), ...crucesNuevosFormateados };
+  const crucesCompletos = {
+    ...(snapshotAnterior.cruces || {}),
+    ...crucesNuevosFormateados,
+  };
 
   // 4) Datos finales
   const datosFinales = {
@@ -318,24 +487,29 @@ app.post("/api/guardar-snapshot", async (req, res) => {
     guardado_en: new Date().toISOString(),
   };
 
-  // 5) Insert (historial)
-  try {
-    const inserted = await dbInsertSnapshot(datosFinales);
-    return res.json({
-      status: "ok",
-      storage: "postgres",
-      id: inserted.id,
-      created_at: inserted.created_at,
+  // 5) Guardar seguro
+  const result = await saveSnapshotSafe(datosFinales);
+
+  if (!result.ok) {
+    return res.status(500).json({
+      error: "Error guardando snapshot",
+      detail: result.error,
     });
-  } catch (e) {
-    console.error("❌ Guardar snapshot (DB):", e.message);
-    return res.status(500).json({ error: "Error guardando snapshot (DB)" });
   }
+
+  return res.json({
+    status: "ok",
+    storage: result.storage,
+    id: result.id || null,
+    created_at: result.created_at || null,
+    path: result.path || null,
+  });
 });
 
 // ---------- Referencias (BCV + USDT/VES) ----------
 app.get("/api/referencias", async (req, res) => {
   res.set("Cache-Control", "no-store");
+
   try {
     const bcv = await getBcvRates();
     const usdt_ves = await getUsdtVesRefs();
@@ -357,11 +531,14 @@ const BINANCE_TTL_MS = 45 * 1000;
 
 app.post("/api/binance", async (req, res) => {
   const { fiat, tradeType, page = 1, payTypes = [], transAmount } = req.body || {};
-  if (!fiat || !tradeType) return res.status(400).json({ error: "Parámetros inválidos" });
+  if (!fiat || !tradeType) {
+    return res.status(400).json({ error: "Parámetros inválidos" });
+  }
 
   const key = `${fiat}|${tradeType}|${page}|${(payTypes || []).join(",")}|${transAmount || ""}`;
   const now = Date.now();
   const cached = binanceCache.get(key);
+
   if (cached && now - cached.t < BINANCE_TTL_MS) {
     return res.json(cached.data);
   }
@@ -382,6 +559,7 @@ app.post("/api/binance", async (req, res) => {
       },
       { headers: { "Content-Type": "application/json" }, timeout: 15000 }
     );
+
     binanceCache.set(key, { t: now, data });
     return res.json(data);
   } catch (error) {
@@ -391,16 +569,21 @@ app.post("/api/binance", async (req, res) => {
   }
 });
 
-// Arranque: crea tabla y luego escucha
+// ---------- Arranque ----------
 (async () => {
-  try {
-    await ensureTables();
-  } catch (e) {
-    console.error("❌ Error creando/verificando tabla snapshots:", e.message);
-    // No mato el proceso; pero si esto falla, el guardado no servirá.
+  if (pool) {
+    try {
+      await ensureTables();
+    } catch (e) {
+      console.error("❌ Error creando/verificando tabla snapshots:", e.message);
+      console.warn("⚠️ La app seguirá usando fallback local si existe snapshot.json");
+    }
+  } else {
+    console.warn("⚠️ Arrancando sin Postgres. Se usará snapshot local si existe.");
   }
 
   app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
+    console.log(`📁 Snapshot fallback: ${getReadableSnapshotPath()}`);
   });
 })();
