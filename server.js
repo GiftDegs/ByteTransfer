@@ -2,12 +2,104 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
+const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 🔐 Admin
 const ADMIN_KEY = process.env.ADMIN_KEY || null;
+
+// ---------- PostgreSQL ----------
+const DATABASE_URL = process.env.DATABASE_URL;
+
+const isRender = !!process.env.RENDER;
+
+const pool = DATABASE_URL
+  ? new Pool({
+      connectionString: DATABASE_URL,
+      ssl: isRender ? false : { rejectUnauthorized: false },
+    })
+  : null;
+
+let dbReady = false;
+
+async function initDb() {
+  if (!pool) {
+    console.log("🟡 DATABASE_URL no configurada. Usando snapshot local.");
+    return;
+  }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS snapshots (
+        id BIGSERIAL PRIMARY KEY,
+        data JSONB NOT NULL,
+        guardado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    const test = await pool.query("SELECT NOW() AS now");
+    dbReady = true;
+    console.log("✅ DB conectada:", test.rows[0].now);
+  } catch (err) {
+    dbReady = false;
+    console.error("❌ Error conectando/inicializando DB:", err.message);
+  }
+}
+
+async function readLatestSnapshotFromDb() {
+  if (!pool || !dbReady) return null;
+
+  const result = await pool.query(`
+    SELECT data
+    FROM snapshots
+    ORDER BY guardado_en DESC, id DESC
+    LIMIT 1
+  `);
+
+  if (!result.rows.length) return {};
+  return result.rows[0].data || {};
+}
+
+async function readSnapshotsFromDb(limit = 20) {
+  if (!pool || !dbReady) return [];
+
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 20, 100));
+
+  const result = await pool.query(
+    `
+    SELECT id, data, guardado_en
+    FROM snapshots
+    ORDER BY guardado_en DESC, id DESC
+    LIMIT $1
+    `,
+    [safeLimit]
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    guardado_en: row.guardado_en,
+    ...(row.data || {}),
+  }));
+}
+
+async function writeSnapshotToDb(obj) {
+  if (!pool || !dbReady) {
+    throw new Error("DB no disponible");
+  }
+
+  const result = await pool.query(
+    `
+    INSERT INTO snapshots (data, guardado_en)
+    VALUES ($1::jsonb, $2::timestamptz)
+    RETURNING id, guardado_en
+    `,
+    [JSON.stringify(obj), obj.guardado_en || new Date().toISOString()]
+  );
+
+  return result.rows[0];
+}
 
 // ---------- Snapshot local único ----------
 function getSnapshotPath() {
@@ -261,6 +353,11 @@ app.use(express.static(path.join(__dirname, "public")));
 // ---------- Rutas ----------
 app.get("/healthz", async (req, res) => {
   try {
+    if (pool && dbReady) {
+      await pool.query("SELECT 1");
+      return res.status(200).json({ ok: true, storage: "postgres" });
+    }
+
     const snap = readLocalSnapshot();
     if (snap && typeof snap === "object") {
       return res.status(200).json({ ok: true, storage: "local" });
@@ -274,6 +371,12 @@ app.get("/api/snapshot", async (req, res) => {
   res.set("Cache-Control", "no-store");
 
   try {
+    if (pool && dbReady) {
+      const snap = await readLatestSnapshotFromDb();
+      res.set("X-Snapshot-Source", "postgres");
+      return res.json(snap || {});
+    }
+
     const snap = readLocalSnapshot();
     res.set("X-Snapshot-Source", "local");
     return res.json(snap || {});
@@ -285,7 +388,19 @@ app.get("/api/snapshot", async (req, res) => {
 
 app.get("/api/snapshots", async (req, res) => {
   res.set("Cache-Control", "no-store");
-  return res.json([]);
+
+  try {
+    if (pool && dbReady) {
+      const limit = req.query.limit || 20;
+      const rows = await readSnapshotsFromDb(limit);
+      return res.json(rows);
+    }
+
+    return res.json([]);
+  } catch (e) {
+    console.error("❌ /api/snapshots:", e.message);
+    return res.status(500).json({ error: "Error leyendo snapshots" });
+  }
 });
 
 app.get("/api/admin/verify", (req, res) => {
@@ -313,7 +428,11 @@ app.post("/api/guardar-snapshot", async (req, res) => {
 
   let snapshotAnterior = {};
   try {
-    snapshotAnterior = readLocalSnapshot() || {};
+    if (pool && dbReady) {
+      snapshotAnterior = (await readLatestSnapshotFromDb()) || {};
+    } else {
+      snapshotAnterior = readLocalSnapshot() || {};
+    }
   } catch (e) {
     console.warn("⚠️ No pude leer snapshot previo, regenerando:", e.message);
     snapshotAnterior = {};
@@ -341,6 +460,16 @@ app.post("/api/guardar-snapshot", async (req, res) => {
   };
 
   try {
+    if (pool && dbReady) {
+      const saved = await writeSnapshotToDb(datosFinales);
+      return res.json({
+        status: "ok",
+        storage: "postgres",
+        id: saved.id,
+        guardado_en: saved.guardado_en,
+      });
+    }
+
     const writtenPath = writeLocalSnapshot(datosFinales);
     return res.json({
       status: "ok",
@@ -348,7 +477,7 @@ app.post("/api/guardar-snapshot", async (req, res) => {
       path: writtenPath,
     });
   } catch (e) {
-    console.error("❌ Guardar snapshot local falló:", e.message);
+    console.error("❌ Guardar snapshot falló:", e.message);
     return res.status(500).json({
       error: "Error guardando snapshot",
       detail: e.message,
@@ -525,7 +654,9 @@ async function fetchPrecio(fiat, tipo) {
 }
 
 // ---------- Arranque ----------
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Servidor corriendo en: http://localhost:${PORT}`);
-  console.log(`📁 Snapshot local único: ${getSnapshotPath()}`);
+  console.log(`📁 Snapshot fallback local: ${getSnapshotPath()}`);
+
+  await initDb();
 });
