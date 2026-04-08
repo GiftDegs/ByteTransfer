@@ -52,7 +52,6 @@ function ensureAuthModal() {
     class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-gray-100 text-gray-600"
     aria-label="Mostrar clave"
     title="Mostrar clave">
-    <!-- Icono ojo (SVG) -->
     <svg id="bt-eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
       <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
         d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
@@ -60,7 +59,6 @@ function ensureAuthModal() {
         d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
     </svg>
 
-    <!-- Icono ojo tachado (SVG) -->
     <svg id="bt-eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" class="hidden">
       <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
         d="M3 3l18 18"/>
@@ -96,32 +94,27 @@ function ensureAuthModal() {
 
   document.body.appendChild(overlay);
 
-  // acciones
   overlay.querySelector("#bt-auth-clear").addEventListener("click", () => {
     overlay.querySelector("#bt-auth-key").value = "";
     hideAuthError();
   });
 
-overlay.querySelector("#bt-auth-key").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") overlay.querySelector("#bt-auth-submit").click();
-});
+  overlay.querySelector("#bt-auth-key").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") overlay.querySelector("#bt-auth-submit").click();
+  });
 
-// Toggle mostrar/ocultar clave
-const input = overlay.querySelector("#bt-auth-key");
-const toggle = overlay.querySelector("#bt-auth-toggle");
-const eyeOpen = overlay.querySelector("#bt-eye-open");
-const eyeClosed = overlay.querySelector("#bt-eye-closed");
+  const input = overlay.querySelector("#bt-auth-key");
+  const toggle = overlay.querySelector("#bt-auth-toggle");
+  const eyeOpen = overlay.querySelector("#bt-eye-open");
+  const eyeClosed = overlay.querySelector("#bt-eye-closed");
 
-toggle.addEventListener("click", () => {
-  const showing = input.type === "text";
-  input.type = showing ? "password" : "text";
+  toggle.addEventListener("click", () => {
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
 
-  eyeOpen.classList.toggle("hidden", showing);    // 👈 ojo abierto cuando NO está mostrando? NO.
-  eyeClosed.classList.toggle("hidden", !showing); // 👈 ojo cerrado cuando sí está mostrando? NO.
-
-  // Vamos a dejarlo coherente:
-});
-
+    eyeOpen.classList.toggle("hidden", !showing);
+    eyeClosed.classList.toggle("hidden", showing);
+  });
 }
 
 function showAuthError(msg) {
@@ -162,7 +155,6 @@ async function verifyAdminKey(key) {
 async function requireAdminAccess() {
   lockUI();
 
-  // si ya hay key guardada en session, intentamos
   const existing = getAdminKey();
   if (existing) {
     const v = await verifyAdminKey(existing);
@@ -173,7 +165,6 @@ async function requireAdminAccess() {
     clearAdminKey();
   }
 
-  // enganchar botón entrar
   const btn = document.getElementById("bt-auth-submit");
   const input = document.getElementById("bt-auth-key");
 
@@ -218,27 +209,24 @@ const paises = [
 
 const ajustesPorDefecto = { ARS: 8, COP: 8, MXN: 15, PEN: 7, CLP: 7, BRL: 8, VES: 4 };
 
-// Estado configuración (snapshot)
 let referenciasExternas = null;
-let datosPaises = {};          // { ARS:{compra,venta,ajuste}, ... } (lo que editas y guardas)
-let snapshotPrevio = {};       // snapshot cargado de /api/snapshot
-let crucesAnteriores = {};     // histórico previo para variación en UI
+let datosPaises = {};
+let snapshotPrevio = {};
+let crucesAnteriores = {};
 let modoEdicionActivo = false;
 
-let filtroPais = null;         // ej. "ARS" para filtrar (config)
-let rolVista = "origen";       // "origen" | "destino" (config)
+let filtroPais = null;
+let rolVista = "origen";
 
 let llamadasPendientes = 0;
 let timerAdvertencia = null;
 
-// Estado monitoreo (NO toca snapshot)
-let mercadoPaises = {};        // { ARS:{compra,venta}, ... } (solo lectura)
-let referenciasMercado = null; // referencias actuales del mercado (solo lectura)
+let mercadoPaises = {};
+let referenciasMercado = null;
 let pollingActivo = true;
 let pollingInterval = null;
 let ultimoTick = null;
 
-// Monitoreo - cruces
 let monRolVista = "origen";
 let monBuscar = "";
 
@@ -290,7 +278,6 @@ function pintarDelta(el, marketVal, snapVal, labelSnapshot) {
   const m = Number(marketVal);
   const s = Number(snapVal);
 
-  // Si no hay datos completos, solo pinta el valor market
   if (!Number.isFinite(m)) {
     el.textContent = "—";
     el.title = "";
@@ -409,7 +396,6 @@ async function cargarSnapshot() {
 
     snapshotPrevio = json || {};
 
-    // Copiamos países existentes y aseguramos estructura
     datosPaises = {};
     for (const p of paises) {
       const sp = snapshotPrevio[p.fiat] || {};
@@ -420,16 +406,15 @@ async function cargarSnapshot() {
       };
     }
 
-    // Cruces anteriores
     crucesAnteriores = snapshotPrevio.cruces || {};
-
-    // Referencias guardadas dentro del snapshot (si existen)
     referenciasExternas = snapshotPrevio.referencias || null;
     renderReferencias();
 
-    // UI timestamp
-    if (json.timestamp) {
-      const f = new Date(json.timestamp);
+    const fechaBase = snapshotPrevio.guardado_en || snapshotPrevio.timestamp || null;
+
+    if (fechaBase) {
+      const f = new Date(fechaBase);
+
       const el = document.getElementById("ultima-actualizacion");
       if (el) el.textContent = `🕒 Última actualización: ${f.toLocaleString()}`;
 
@@ -470,26 +455,24 @@ async function guardarSnapshot(datos) {
 // Binance (para configurar y para monitoreo)
 // -------------------------
 async function fetchPrecio(fiat, tipo) {
-  // BRL con fallback estático (opcional)
   if (fiat === "BRL") {
-  try {
-    const res = await fetch("/api/brl-price", { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    try {
+      const res = await fetch("/api/brl-price", { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const j = await res.json();
-    if (tipo === "BUY" && Number.isFinite(Number(j.buy))) return Number(j.buy);
-    if (tipo === "SELL" && Number.isFinite(Number(j.sell))) return Number(j.sell);
-  } catch (e) {
-    console.error("❌ BRL dinámico admin:", e.message || e);
+      const j = await res.json();
+      if (tipo === "BUY" && Number.isFinite(Number(j.buy))) return Number(j.buy);
+      if (tipo === "SELL" && Number.isFinite(Number(j.sell))) return Number(j.sell);
+    } catch (e) {
+      console.error("❌ BRL dinámico admin:", e.message || e);
+    }
+
+    return tipo === "BUY" ? 5.5 : 5;
   }
-
-  return tipo === "BUY" ? 5.5 : 5;
-}
 
   const USDT_LIMITE_VES = 150;
   const precios = [];
   try {
-    // Caso particular: VES SELL basado en BUY (ajuste pequeño para spread)
     if (tipo === "SELL" && fiat === "VES") {
       const precioCompra = await fetchPrecio(fiat, "BUY");
       if (!precioCompra) return null;
@@ -522,7 +505,7 @@ async function fetchPrecio(fiat, tipo) {
       }
 
       precios.push(precio);
-      if (precios.length === 20) break; // top 20 válidos
+      if (precios.length === 20) break;
     }
 
     if (!precios.length) return null;
@@ -541,7 +524,6 @@ function renderTarjetasPaises(modoEdicion = false) {
   const cont = document.getElementById("tarjetas-paises");
   if (!cont) return;
 
-  // si existe tabla vieja, la removemos (por migraciones anteriores)
   const tablaAntigua = document.getElementById("tabla-paises-body")?.parentElement?.parentElement;
   if (tablaAntigua) tablaAntigua.remove();
 
@@ -605,7 +587,6 @@ function renderTarjetasPaises(modoEdicion = false) {
     cont.appendChild(tarjeta);
   });
 
-  // listeners de inputs creados (activar advertencia)
   setTimeout(() => {
     const inputs = cont.querySelectorAll("input[data-fi]");
     inputs.forEach(input => {
@@ -791,33 +772,30 @@ async function obtenerMercadoLive() {
 }
 
 function renderMonitoreo() {
-  // Referencias (monitoreo)
-const snapRefs = snapshotPrevio?.referencias || null;
+  const snapRefs = snapshotPrevio?.referencias || null;
 
-// BCV USD/EUR
-{
-  const usdEl = document.getElementById("mon-bcv-usd");
-  const eurEl = document.getElementById("mon-bcv-eur");
+  {
+    const usdEl = document.getElementById("mon-bcv-usd");
+    const eurEl = document.getElementById("mon-bcv-eur");
 
-  const marketUsd = referenciasMercado?.bcv?.usd ?? null;
-  const marketEur = referenciasMercado?.bcv?.eur ?? null;
+    const marketUsd = referenciasMercado?.bcv?.usd ?? null;
+    const marketEur = referenciasMercado?.bcv?.eur ?? null;
 
-  const snapUsd = snapRefs?.bcv?.usd ?? null;
-  const snapEur = snapRefs?.bcv?.eur ?? null;
+    const snapUsd = snapRefs?.bcv?.usd ?? null;
+    const snapEur = snapRefs?.bcv?.eur ?? null;
 
-  pintarDelta(usdEl, marketUsd, snapUsd, "Snapshot BCV USD");
-  pintarDelta(eurEl, marketEur, snapEur, "Snapshot BCV EUR");
-}
+    pintarDelta(usdEl, marketUsd, snapUsd, "Snapshot BCV USD");
+    pintarDelta(eurEl, marketEur, snapEur, "Snapshot BCV EUR");
+  }
 
-// USDT → VES
-{
-  const usdtEl = document.getElementById("mon-usdt-ves");
+  {
+    const usdtEl = document.getElementById("mon-usdt-ves");
 
-  const marketUsdtVes = referenciasMercado?.usdt_ves?.mid ?? null;
-  const snapUsdtVes = snapRefs?.usdt_ves?.mid ?? null;
+    const marketUsdtVes = referenciasMercado?.usdt_ves?.mid ?? null;
+    const snapUsdtVes = snapRefs?.usdt_ves?.mid ?? null;
 
-  pintarDelta(usdtEl, marketUsdtVes, snapUsdtVes, "Snapshot USDT→VES");
-}
+    pintarDelta(usdtEl, marketUsdtVes, snapUsdtVes, "Snapshot USDT→VES");
+  }
 
   const refFecha = document.getElementById("mon-ref-fecha");
   if (refFecha) {
@@ -826,7 +804,6 @@ const snapRefs = snapshotPrevio?.referencias || null;
       : "—";
   }
 
-  // Grid monedas (comparación snapshot vs market)
   const cont = document.getElementById("mon-grid-monedas");
   if (!cont) return;
   cont.innerHTML = "";
@@ -869,41 +846,29 @@ const snapRefs = snapshotPrevio?.referencias || null;
     cont.appendChild(card);
   }
 
-  // Estado global + recomendación (basado en riesgo de margen)
   const estado = document.getElementById("mon-estado");
   const rec = document.getElementById("mon-recomendacion");
   const recSub = document.getElementById("mon-recomendacion-sub");
   const topMov = document.getElementById("mon-top-mov");
   const topMovSub = document.getElementById("mon-top-mov-sub");
 
-  // Reglas de negocio:
-  // - PEN/CLP suelen trabajarse con ganancia mínima 6%  -> caída crítica ≈ 1.5%
-  // - resto mínimo 8%                                  -> caída crítica ≈ 3.5%
-  // - subidas no molestan salvo "absurdo" >= +10%
-  // Margen mínimo por ORIGEN (cuando esa moneda es el origen de la operación)
-  // Ej: si el ORIGEN es PEN o CLP, trabajas con mínimo 6%. En el resto mínimo 8%.
   const MARGEN_MIN_POR_ORIGEN = { PEN: 6, CLP: 6 };
   const MARGEN_MIN_DEFAULT = 8;
 
   function umbralCaidaCritica(origenFiat) {
     const margen = MARGEN_MIN_POR_ORIGEN[origenFiat] ?? MARGEN_MIN_DEFAULT;
-
-    const crit = margen - 4.5; // 6->1.5 ; 8->3.5
-    // por si alguien cambia reglas a futuro y queda muy bajo
+    const crit = margen - 4.5;
     return Math.max(1.0, crit);
   }
 
   const UMBRAL_SUBIDA_ABSURDA = 10.0;
-
-  // Para mostrar "top movimiento" informativo (abs)
   let topAbs = { fiat: null, delta: 0, snap: null, market: null };
+  let peorEstado = { sev: -1, fiat: null, delta: null, crit: null };
 
-  // Para decidir el estado global (prioridad: caídas)
-  let peorEstado = { sev: -1, fiat: null, delta: null, crit: null }; // sev: 3 red, 2 yellow, 1 purple, 0 ok
   function evaluarEstado(fiat, deltaPct) {
     if (!Number.isFinite(deltaPct)) return { sev: -1 };
     const crit = umbralCaidaCritica(fiat);
-    const warn = Math.max(1.0, crit - 0.5); // franja amarilla antes del crítico
+    const warn = Math.max(1.0, crit - 0.5);
 
     if (deltaPct <= -crit) return { sev: 3, crit, label: "🔥 Riesgo margen", rec: "Actualizar snapshot YA" };
     if (deltaPct <= -warn) return { sev: 2, crit, label: "⚠️ Bajando", rec: "Vigilar / preparar update" };
@@ -911,7 +876,6 @@ const snapRefs = snapshotPrevio?.referencias || null;
     return { sev: 0, crit, label: "✅ Estable", rec: "No requiere acción" };
   }
 
-  // Recorremos otra vez las monedas ya renderizadas (usamos mismos datos)
   for (const p of paises) {
     const s = snapshotPrevio?.[p.fiat];
     const m = mercadoPaises?.[p.fiat];
@@ -927,28 +891,23 @@ const snapRefs = snapshotPrevio?.referencias || null;
     const midMarket = (mC + mV) / 2;
     const deltaPct = ((midMarket - midSnap) / midSnap) * 100;
 
-    // top ABS (solo informativo)
     if (Math.abs(deltaPct) > Math.abs(topAbs.delta)) {
       topAbs = { fiat: p.fiat, delta: deltaPct, snap: midSnap, market: midMarket };
     }
 
-    // estado por riesgo (prioriza caídas por fiat)
     const st = evaluarEstado(p.fiat, deltaPct);
     if (st.sev > peorEstado.sev) {
       peorEstado = { ...st, fiat: p.fiat, delta: deltaPct };
     } else if (st.sev === peorEstado.sev && st.sev >= 2) {
-      // si ambos son amarillos/rojos, nos quedamos con el más negativo
       if (deltaPct < (peorEstado.delta ?? 999)) peorEstado = { ...st, fiat: p.fiat, delta: deltaPct };
     }
   }
 
-  // Pintar top ABS
   if (topMov) topMov.textContent = topAbs.fiat ? `${topAbs.fiat} ${topAbs.delta.toFixed(2)}%` : "—";
   if (topMovSub) topMovSub.textContent = topAbs.fiat
     ? `Snapshot ~${Math.round(topAbs.snap)} | Market ~${Math.round(topAbs.market)}`
     : "—";
 
-  // Pintar estado global
   if (!peorEstado.fiat) {
     if (estado) estado.textContent = "Estado: —";
     if (rec) rec.textContent = "—";
@@ -958,9 +917,8 @@ const snapRefs = snapshotPrevio?.referencias || null;
     if (estado) estado.textContent = peorEstado.label;
     if (rec) rec.textContent = peorEstado.rec;
 
-    // Mensaje explicando el umbral por país
-       const margen = (MARGEN_MIN_POR_ORIGEN[peorEstado.fiat] ?? MARGEN_MIN_DEFAULT);
-      const critTxt = `Umbral caída crítica ~${crit.toFixed(1)}% (margen mín ${margen}%)`;
+    const margen = (MARGEN_MIN_POR_ORIGEN[peorEstado.fiat] ?? MARGEN_MIN_DEFAULT);
+    const critTxt = `Umbral caída crítica ~${crit.toFixed(1)}% (margen mín ${margen}%)`;
 
     if (recSub) {
       recSub.textContent =
@@ -968,13 +926,11 @@ const snapRefs = snapshotPrevio?.referencias || null;
     }
   }
 
-  // Poll UI
   const pollStatus = document.getElementById("mon-poll-status");
   const pollNext = document.getElementById("mon-poll-next");
   if (pollStatus) pollStatus.textContent = pollingActivo ? "Activo" : "Pausado";
   if (pollNext) pollNext.textContent = pollingActivo ? "• cada 60s" : "• detenido";
 
-  // Cruces consulta rápida (usa snapshot actual)
   renderMonCruces();
 }
 
@@ -999,7 +955,7 @@ function detenerPolling() {
 }
 
 // -------------------------
-// Cruces MONITOREO (consulta rápida) - usa datos del snapshot (datosPaises)
+// Cruces MONITOREO (consulta rápida)
 // -------------------------
 function renderMonCruces() {
   const cont = document.getElementById("mon-cruces-container");
@@ -1009,8 +965,8 @@ function renderMonCruces() {
   cont.innerHTML = "";
 
   const activos = new Set(paises.map(p => p.fiat));
-
   const buscar = (monBuscar || "").trim().toUpperCase();
+
   if (header) {
     header.textContent = buscar
       ? `Filtro: "${buscar}"`
@@ -1065,17 +1021,16 @@ function renderMonCruces() {
 // EVENTOS UI (configurar + monitoreo)
 // ======================================================
 function bindUI() {
-  // --- Configurar ---
+  const inUsd = document.getElementById("ref-bcv-usd");
+  const inEur = document.getElementById("ref-bcv-eur");
+  if (inUsd) inUsd.disabled = !modoEdicionActivo;
+  if (inEur) inEur.disabled = !modoEdicionActivo;
 
-  // Habilitar/Deshabilitar edición de BCV
-const inUsd = document.getElementById("ref-bcv-usd");
-const inEur = document.getElementById("ref-bcv-eur");
-if (inUsd) inUsd.disabled = !modoEdicionActivo;
-if (inEur) inEur.disabled = !modoEdicionActivo;
+  if (!referenciasExternas) referenciasExternas = {};
+  if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null };
 
-// Si entraste en edición y no hay referencias cargadas aún, crea estructura mínima
-if (!referenciasExternas) referenciasExternas = {};
-if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null };
+  document.getElementById("ref-bcv-usd")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
+  document.getElementById("ref-bcv-eur")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
 
   document.getElementById("btn-seleccionar-pais")?.addEventListener("click", e => {
     e.stopPropagation();
@@ -1105,11 +1060,16 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
     modoEdicionActivo = !modoEdicionActivo;
     renderTarjetasPaises(modoEdicionActivo);
     mostrarAdvertenciaPendiente(false);
+
+    const inUsd2 = document.getElementById("ref-bcv-usd");
+    const inEur2 = document.getElementById("ref-bcv-eur");
+    if (inUsd2) inUsd2.disabled = !modoEdicionActivo;
+    if (inEur2) inEur2.disabled = !modoEdicionActivo;
+
     const btn = document.getElementById("btn-toggle-edicion");
     if (btn) btn.textContent = modoEdicionActivo ? "🔒 Finalizar Edición" : "✏️ Editar Precios";
   });
 
-  // Modal confirmación (Actualizar precios)
   document.getElementById("btn-refrescar")?.addEventListener("click", () => {
     document.getElementById("modal-confirmacion")?.classList.remove("hidden");
   });
@@ -1118,11 +1078,9 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
     document.getElementById("modal-confirmacion")?.classList.add("hidden");
   };
 
-  // Confirmar Binance: actualiza datosPaises (config), luego referencias (sin guardar), marca pendiente
   document.getElementById("btn-confirmar-binance")?.addEventListener("click", async () => {
     window.cerrarModalConfirmacion?.();
 
-    // 1) Persistir ajuste desde inputs (si hay)
     for (const p of paises) {
       const fiat = p.fiat;
       if (!datosPaises[fiat]) datosPaises[fiat] = {};
@@ -1132,14 +1090,12 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
       datosPaises[fiat].ajuste =
         Number.isFinite(ajusteNuevo) ? ajusteNuevo : (Number.isFinite(ajustePrevio) ? ajustePrevio : ajustesPorDefecto[fiat]);
 
-      // Limpiar compra/venta para rellenar con nuevos valores
       datosPaises[fiat].compra = null;
       datosPaises[fiat].venta  = null;
     }
 
     renderTarjetasPaises(modoEdicionActivo);
 
-    // 2) Traer precios (secuencial)
     llamadasPendientes = paises.length * 2;
     for (const p of paises) {
       const fiat = p.fiat;
@@ -1156,7 +1112,6 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
     renderTarjetasPaises(modoEdicionActivo);
     escribirCruces();
 
-    // 3) Traer referencias externas (SIN guardar)
     try {
       referenciasExternas = await obtenerReferencias();
       renderReferencias();
@@ -1164,7 +1119,6 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
       mostrarToast("⚠️ No se pudieron actualizar referencias");
     }
 
-    // Pendiente de guardar
     mostrarAdvertenciaPendiente(true);
   });
 
@@ -1186,7 +1140,6 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
   });
 
   document.getElementById("btn-guardar-ajustes")?.addEventListener("click", async () => {
-    // Actualizamos datosPaises desde inputs (si están)
     for (const p of paises) {
       const fiat = p.fiat;
       const ajuste = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`)?.value);
@@ -1194,12 +1147,14 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
       const venta  = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value);
 
       if (!datosPaises[fiat]) datosPaises[fiat] = {};
-      datosPaises[fiat].ajuste = Number.isFinite(ajuste) ? ajuste : (datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat]);
+      datosPaises[fiat].ajuste = Number.isFinite(ajuste)
+        ? ajuste
+        : (datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat]);
+
       if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
       if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
     }
 
-    // Actualizar referencias a la hora de guardar
     try {
       referenciasExternas = await obtenerReferencias();
       renderReferencias();
@@ -1207,37 +1162,26 @@ if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null }
       mostrarToast("⚠️ No se pudieron actualizar referencias");
     }
 
-    document.getElementById("ref-bcv-usd")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
-document.getElementById("ref-bcv-eur")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
+    const ahoraIso = new Date().toISOString();
+    const snapshotAGuardar = {
+      ...datosPaises,
+      cruces: crucesAnteriores,
+      referencias: referenciasExternas,
+      timestamp: ahoraIso
+    };
 
-const ok = await guardarSnapshot({
-  ...datosPaises,
-  referencias: referenciasExternas,
-  timestamp: new Date().toISOString()
-});
+    const ok = await guardarSnapshot(snapshotAGuardar);
+    if (!ok) return;
 
-if (!ok) return;
-
-mostrarToast("✅ Snapshot guardado");
-
-
-    // Actualizar snapshotPrevio en memoria (para monitoreo)
-    snapshotPrevio = JSON.parse(JSON.stringify({ ...datosPaises, referencias: referenciasExternas, cruces: crucesAnteriores }));
-
-    const el = document.getElementById("ultima-actualizacion");
-    if (el) el.textContent = `🕒 Última actualización: ${new Date().toLocaleString()}`;
-
-    const monSnap = document.getElementById("mon-snapshot-time");
-    if (monSnap) monSnap.textContent = `Snapshot: ${new Date().toLocaleString()}`;
+    await cargarSnapshot();
 
     renderTarjetasPaises(modoEdicionActivo);
     escribirCruces();
-    mostrarAdvertenciaPendiente(false);
-    // refrescar monitoreo contra el nuevo snapshot
     renderMonitoreo();
+    mostrarAdvertenciaPendiente(false);
+    mostrarToast("✅ Snapshot guardado");
   });
 
-  // --- Monitoreo ---
   document.getElementById("btn-mon-refresh")?.addEventListener("click", async () => {
     await tickMonitoreo();
     mostrarToast("🔄 Chequeo listo");
@@ -1301,12 +1245,10 @@ mostrarToast("✅ Snapshot guardado");
   await cargarSnapshot();
   initPopover();
 
-  // Render configurar (drawer)
   renderTarjetasPaises(modoEdicionActivo);
   escribirCruces();
   mostrarAdvertenciaPendiente(false);
 
-  // Monitoreo inicial + polling
   await tickMonitoreo();
   iniciarPolling();
 
