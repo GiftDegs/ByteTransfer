@@ -1170,10 +1170,112 @@ function bindUI() {
       timestamp: ahoraIso
     };
 
-    const ok = await guardarSnapshot(snapshotAGuardar);
-    if (!ok) return;
+  // 🔍 Detectar si hay cambios reales
+  const snapshotNuevoStr = JSON.stringify(snapshotAGuardar);
+  const snapshotPrevioStr = JSON.stringify(snapshotPrevio);
 
-    await cargarSnapshot();
+  if (snapshotNuevoStr === snapshotPrevioStr) {
+  mostrarToast("⚠️ No hay cambios para guardar");
+  return;
+
+  // 📂 Cargar backup (CTRL + SHIFT + B)
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey && event.shiftKey && event.key === "B") {
+    document.getElementById("input-backup")?.click();
+  }
+});
+
+document.getElementById("input-backup")?.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const text = await file.text();
+
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    mostrarToast("❌ Archivo inválido");
+    return;
+  }
+
+  if (!json.snapshots) {
+    mostrarToast("❌ Formato incorrecto");
+    return;
+  }
+
+  const confirmar = confirm("⚠️ Esto reemplazará TODA la base. ¿Continuar?");
+  if (!confirmar) return;
+
+  try {
+    const res = await fetch("/api/import-snapshots", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": getAdminKey()
+      },
+      body: JSON.stringify(json)
+    });
+
+    const r = await res.json();
+
+    if (!res.ok) throw new Error(r.error);
+
+    mostrarToast(`✅ Backup cargado (${r.total})`);
+
+    location.reload();
+
+  } catch (err) {
+    console.error(err);
+    mostrarToast("❌ Error cargando backup");
+  }
+});
+
+}
+
+// 👉 Guardar snapshot
+const ok = await guardarSnapshot(snapshotAGuardar);
+if (!ok) return;
+
+await cargarSnapshot();
+
+// 🔍 Detectar si realmente cambió (post-save)
+const snapshotDespuesStr = JSON.stringify(snapshotPrevio);
+
+if (snapshotNuevoStr !== snapshotDespuesStr) {
+  console.warn("⚠️ Algo raro: snapshot no coincide después de guardar");
+}
+
+// ✅ Descargar backup automático
+try {
+  const res = await fetch("/api/export-snapshots", {
+    headers: {
+      "x-admin-key": getAdminKey()
+    }
+  });
+
+  if (!res.ok) throw new Error("Export falló");
+
+  const data = await res.json();
+
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  const fecha = new Date().toISOString().replace(/[:.]/g, "-");
+
+  a.href = url;
+  a.download = `backup-snapshots-${fecha}.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  console.log("✅ Backup automático descargado");
+} catch (err) {
+  console.error("❌ Error en backup automático:", err);
+}
 
     renderTarjetasPaises(modoEdicionActivo);
     escribirCruces();
