@@ -8,10 +8,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 🔐 Admin
-const ADMIN_KEY = process.env.ADMIN_KEY || null;
+const ADMIN_KEY = process.env.ADMIN_KEY;
 
 // ---------- PostgreSQL ----------
-const DATABASE_URL = process.env.DATABASE_URL;
+// En local usa tu External Database URL.
+// En Render usa la variable DATABASE_URL del panel Environment.
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  "postgresql://bytetransfer_user:S16nBKmM24o34ZVvGqrf7IsRAn77OCbn@dpg-d7b5klsvjg8s73et2q20-a.oregon-postgres.render.com/bytetransfer";
 
 const isRender = !!process.env.RENDER;
 
@@ -400,6 +404,86 @@ app.get("/api/snapshots", async (req, res) => {
   } catch (e) {
     console.error("❌ /api/snapshots:", e.message);
     return res.status(500).json({ error: "Error leyendo snapshots" });
+  }
+});
+
+// ---------- EXPORT SNAPSHOTS ----------
+app.get("/api/export-snapshots", async (req, res) => {
+  if (!ADMIN_KEY) {
+    return res.status(503).json({ error: "ADMIN_KEY no configurada" });
+  }
+
+  const clientKey = req.headers["x-admin-key"];
+  if (!clientKey || clientKey !== ADMIN_KEY) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+
+  try {
+    if (!(pool && dbReady)) {
+      return res.status(503).json({ error: "DB no disponible" });
+    }
+
+    const result = await pool.query(`
+      SELECT id, data, guardado_en
+      FROM snapshots
+      ORDER BY guardado_en ASC, id ASC
+    `);
+
+    const exportData = result.rows.map((row) => ({
+      id: row.id,
+      guardado_en: row.guardado_en,
+      data: row.data,
+    }));
+
+    return res.json({
+      exported_at: new Date().toISOString(),
+      total: exportData.length,
+      snapshots: exportData,
+    });
+  } catch (e) {
+    console.error("❌ /api/export-snapshots:", e.message);
+    return res.status(500).json({ error: "Error exportando snapshots" });
+  }
+});
+
+// ---------- IMPORT SNAPSHOTS ----------
+app.post("/api/import-snapshots", async (req, res) => {
+  if (!ADMIN_KEY) {
+    return res.status(503).json({ error: "ADMIN_KEY no configurada" });
+  }
+
+  const clientKey = req.headers["x-admin-key"];
+  if (!clientKey || clientKey !== ADMIN_KEY) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+
+  try {
+    if (!(pool && dbReady)) {
+      return res.status(503).json({ error: "DB no disponible" });
+    }
+
+    const snapshots = req.body?.snapshots;
+
+    if (!Array.isArray(snapshots)) {
+      return res.status(400).json({ error: "Formato inválido" });
+    }
+
+    // ⚠️ BORRAR TODO
+    await pool.query("DELETE FROM snapshots");
+
+    for (const item of snapshots) {
+      await pool.query(
+        `INSERT INTO snapshots (data, guardado_en)
+         VALUES ($1::jsonb, $2::timestamptz)`,
+        [JSON.stringify(item.data), item.guardado_en]
+      );
+    }
+
+    res.json({ ok: true, total: snapshots.length });
+
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Error importando backup" });
   }
 });
 

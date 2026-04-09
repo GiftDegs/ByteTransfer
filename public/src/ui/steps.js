@@ -7,7 +7,7 @@ import { obtenerStatus } from "../services/status.js";
 import { mostrarToast } from "./toasts.js";
 import { showBanner, hideBanner, mostrarConfirmacionVerdeAutoOcultar } from "./banners.js";
 import { evaluateOps, openingTextTodayLocal } from "../core/time.js";
-import { getState, setState } from "../state/appState.js";
+import { setState } from "../state/appState.js";
 
 let origenSeleccionado = null;
 let destinoSeleccionado = null;
@@ -16,45 +16,180 @@ let tasa = null;
 let tasaCompraUSD = null;
 let lastCalc = null;
 let modalActivo = false;
-let ops = { open: false, fresh: false, allowWhats: false, message: '' };
+let ops = { open: false, fresh: false, allowWhats: false, message: "" };
+let renderPaso1Token = 0;
 
 // === BCV state ===
-let bcvMount = { parent: null, next: null }; // para mover bcvBox a Step2 temporalmente
+let bcvMount = { parent: null, next: null };
 let bcvActivo = false;
-let bcvTipo = null;      // "USD" | "EUR" | "CUSTOM"
-let bcvTasa = null;      // número (VES por USD)
+let bcvTipo = null; // "USD" | "EUR" | "CUSTOM"
+let bcvTasa = null; // número (VES por USD)
 let bcvRange = { min: null, max: null };
+
+// ===== PRIORIDAD DE PAISES (separado por contexto) =====
+const STORAGE_KEYS = {
+  usoOrigen: "bt_uso_paises_origen",
+  usoDestino: "bt_uso_paises_destino",
+  detectadoOrigen: "bt_pais_detectado_origen",
+};
+
+function leerJSON(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function getPaisDetectadoOrigen() {
+  return localStorage.getItem(STORAGE_KEYS.detectadoOrigen) || null;
+}
+
+function setPaisDetectadoOrigen(codigo) {
+  if (!codigo) return;
+  localStorage.setItem(STORAGE_KEYS.detectadoOrigen, codigo);
+}
+
+function getUsoPaisesOrigen() {
+  return leerJSON(STORAGE_KEYS.usoOrigen);
+}
+
+function getUsoPaisesDestino() {
+  return leerJSON(STORAGE_KEYS.usoDestino);
+}
+
+function registrarUsoPaisOrigen(codigo) {
+  if (!codigo) return;
+  const uso = getUsoPaisesOrigen();
+  uso[codigo] = (uso[codigo] || 0) + 1;
+  localStorage.setItem(STORAGE_KEYS.usoOrigen, JSON.stringify(uso));
+}
+
+function registrarUsoPaisDestino(codigo) {
+  if (!codigo) return;
+  const uso = getUsoPaisesDestino();
+  uso[codigo] = (uso[codigo] || 0) + 1;
+  localStorage.setItem(STORAGE_KEYS.usoDestino, JSON.stringify(uso));
+}
+
+function getPaisMasUsadoOrigen() {
+  const uso = getUsoPaisesOrigen();
+  const entries = Object.entries(uso);
+  if (!entries.length) return null;
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0] || null;
+}
+
+function getPaisMasUsadoDestino() {
+  const uso = getUsoPaisesDestino();
+  const entries = Object.entries(uso);
+  if (!entries.length) return null;
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0] || null;
+}
+
+// 🌍 Detectar país real por IP
+async function detectarPaisPorIP() {
+  try {
+    const res = await fetch("https://api.country.is/");
+    if (!res.ok) return null;
+
+    const data = await res.json();
+
+    const mapa = {
+      AR: "ARS",
+      CO: "COP",
+      VE: "VES",
+      CL: "CLP",
+      PE: "PEN",
+      MX: "MXN",
+      BR: "BRL",
+    };
+
+    return mapa[data?.country] || null;
+  } catch (e) {
+    console.warn("Error detectando país por IP:", e);
+    return null;
+  }
+}
+
+function ordenarPaisesOrigen(lista) {
+  const uso = getUsoPaisesOrigen();
+  const paisDetectado = getPaisDetectadoOrigen();
+
+  const hayUsoReal = Object.values(uso).some(v => (v || 0) > 0);
+
+  return [...lista].sort((a, b) => {
+    const usoA = uso[a.codigo] || 0;
+    const usoB = uso[b.codigo] || 0;
+
+    // 1) si ya existe uso, manda el uso
+    if (hayUsoReal && usoA !== usoB) return usoB - usoA;
+
+    // 2) si todavía no hay uso, manda la IP
+    if (!hayUsoReal) {
+      if (a.codigo === paisDetectado && b.codigo !== paisDetectado) return -1;
+      if (b.codigo === paisDetectado && a.codigo !== paisDetectado) return 1;
+    }
+
+    // 3) fallback alfabético
+    return a.nombre.localeCompare(b.nombre);
+  });
+}
+
+function ordenarPaisesDestino(lista) {
+  const uso = getUsoPaisesDestino();
+
+  return [...lista].sort((a, b) => {
+    const usoA = uso[a.codigo] || 0;
+    const usoB = uso[b.codigo] || 0;
+
+    // 1) más usado como destino
+    if (usoA !== usoB) return usoB - usoA;
+
+    // 2) fallback estable
+    return a.nombre.localeCompare(b.nombre);
+  });
+}
+
+function getBadgeOrigen(codigo) {
+  const masUsado = getPaisMasUsadoOrigen();
+  const detectado = getPaisDetectadoOrigen();
+
+  if (codigo === detectado && codigo === masUsado) return " 🌍🔥";
+  if (codigo === detectado) return " 🌍";
+  if (codigo === masUsado) return " 🔥";
+  return "";
+}
+
+function getBadgeDestino(codigo) {
+  const masUsado = getPaisMasUsadoDestino();
+  if (codigo === masUsado) return " 🔥";
+  return "";
+}
 
 function isBCVFlow() {
   return bcvActivo === true && destinoSeleccionado === "VES";
 }
 
 function ensureBCVBoxInStep2() {
-  // Si #bcvBox está dentro de Step1 (como en tu HTML actual), lo movemos a Step2
-  // para que no desaparezca cuando ocultamos Step1.
   const box = DOM.bcvBox;
   const step2 = DOM.step2;
 
   if (!box || !step2) return;
-
-  // ya está en step2
   if (step2.contains(box)) return;
 
-  // guardamos para restaurar después
   if (!bcvMount.parent) {
     bcvMount.parent = box.parentElement;
     bcvMount.next = box.nextSibling;
   }
 
-  // insertamos al inicio del Step2
   step2.insertBefore(box, step2.firstChild);
 }
 
 function restoreBCVBox() {
   const box = DOM.bcvBox;
   if (!box || !bcvMount.parent) return;
-
-  // si ya está restaurado, salir
   if (bcvMount.parent.contains(box)) return;
 
   if (bcvMount.next && bcvMount.parent.contains(bcvMount.next)) {
@@ -70,7 +205,6 @@ function resetBCVStateAndUI() {
   bcvTasa = null;
   bcvRange = { min: null, max: null };
 
-  // UI
   restoreBCVBox();
   DOM.bcvBox?.classList.add("hidden");
   DOM.bcvCustomRow?.classList.add("hidden");
@@ -78,28 +212,11 @@ function resetBCVStateAndUI() {
   if (DOM.bcvCustomHelp) DOM.bcvCustomHelp.textContent = "";
   if (DOM.bcvTasaCustom) DOM.bcvTasaCustom.value = "";
 
-  // restaurar botones normales
   DOM.btnEnviar?.classList.remove("hidden");
   DOM.btnLlegar?.classList.remove("hidden");
   DOM.btnLlegarBCV?.classList.toggle("hidden", destinoSeleccionado !== "VES");
 
-  // input vuelve a normal
   DOM.inputMonto.disabled = false;
-}
-
-function nombreMoneda(codigo) {
-  const map = {
-    ARS: "Pesos argentinos",
-    COP: "Pesos colombianos",
-    VES: "Bolívares",
-    CLP: "Pesos chilenos",
-    PEN: "Soles",
-    MXN: "Pesos mexicanos",
-    BRL: "Reales",
-    USD: "Dólares",
-    EUR: "Euros",
-  };
-  return map[codigo] || codigo;
 }
 
 function metaCardTasa({ fecha, tasaFmt, ops }) {
@@ -182,7 +299,6 @@ function mostrarModalMontoGrande(callback) {
   btnCerrar.addEventListener("click", cerrarYContinuar);
 }
 
-// Back helper
 function showBack(show = true) {
   const btn = DOM?.btnVolverGlobal || document.getElementById("btnVolverGlobal");
   if (!btn) return;
@@ -195,19 +311,19 @@ function showBack(show = true) {
     const manual = await obtenerStatus();
     ops = evaluateOps(null, manual);
   } catch {
-    ops = evaluateOps(null, { open: null, message: '' });
+    ops = evaluateOps(null, { open: null, message: "" });
   }
   updateHorarioPill();
 })();
 
 function updateHorarioPill() {
-  const el = document.getElementById('statusHeader');
+  const el = document.getElementById("statusHeader");
   if (!el) return;
 
   const hoy = openingTextTodayLocal(userLocale);
   const abierto = ops.open === true;
 
-  el.className = 'mt-1 text-base sm:text-lg inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full border shadow-sm';
+  el.className = "mt-1 text-base sm:text-lg inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full border shadow-sm";
 
   el.innerHTML = abierto
     ? `<div class="flex flex-col items-center text-center">
@@ -230,9 +346,9 @@ function updateHorarioPill() {
        </div>`;
 
   if (abierto) {
-    el.classList.add('bg-emerald-600/30', 'border-emerald-700', 'text-emerald-900', 'dark:text-white');
+    el.classList.add("bg-emerald-600/30", "border-emerald-700", "text-emerald-900", "dark:text-white");
   } else {
-    el.classList.add('bg-red-600/30', 'border-red-700', 'text-red-900', 'dark:text-white', 'animate-pulse');
+    el.classList.add("bg-red-600/30", "border-red-700", "text-red-900", "dark:text-white", "animate-pulse");
   }
 }
 
@@ -240,9 +356,9 @@ function updateWhatsButton() {
   if (!DOM.btnWhats) return;
   const allow = ops.allowWhats;
   DOM.btnWhats.disabled = !allow;
-  DOM.btnWhats.classList.toggle('opacity-50', !allow);
-  DOM.btnWhats.classList.toggle('cursor-not-allowed', !allow);
-  DOM.btnWhats.textContent = allow ? 'Ir a WhatsApp' : 'Cerrado / Solo referencia';
+  DOM.btnWhats.classList.toggle("opacity-50", !allow);
+  DOM.btnWhats.classList.toggle("cursor-not-allowed", !allow);
+  DOM.btnWhats.textContent = allow ? "Ir a WhatsApp" : "Cerrado / Solo referencia";
 }
 
 function setModoButtonsEnabled(enabled) {
@@ -307,7 +423,6 @@ function setInputStyle({ state, msg = null }) {
 }
 
 function maxPermitidoEnInput() {
-  // En BCV el input es USD deseados
   if (isBCVFlow()) return CONFIG.MAX_USD;
 
   if (!mode || !tasaCompraUSD) return null;
@@ -319,7 +434,6 @@ function maxPermitidoEnInput() {
 }
 
 function rangoPermitidoEnInput() {
-  // En BCV el input es USD deseados (rango fijo en USD)
   if (isBCVFlow()) {
     return { min: CONFIG.MIN_USD, max: CONFIG.MAX_USD, codigo: "USD" };
   }
@@ -345,9 +459,11 @@ function updateAyudaRangos() {
   DOM.ayudaMonto.className =
     "text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center leading-snug";
 
-  if (!mode && !isBCVFlow()) { DOM.ayudaMonto.innerHTML = ""; return; }
+  if (!mode && !isBCVFlow()) {
+    DOM.ayudaMonto.innerHTML = "";
+    return;
+  }
 
-  // BCV: siempre mostramos en USD
   if (isBCVFlow()) {
     const nf2 = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 2 });
     const minFmt = nf2.format(CONFIG.MIN_USD);
@@ -364,7 +480,6 @@ function updateAyudaRangos() {
     return;
   }
 
-  // normal
   if (mode === "enviar" && !tasaCompraUSD) {
     DOM.ayudaMonto.innerHTML = `<span class="block">Calculando límites…</span>`;
     return;
@@ -375,7 +490,10 @@ function updateAyudaRangos() {
   }
 
   const rango = rangoPermitidoEnInput();
-  if (!rango) { DOM.ayudaMonto.innerHTML = ""; return; }
+  if (!rango) {
+    DOM.ayudaMonto.innerHTML = "";
+    return;
+  }
 
   const nf2 = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 2 });
   const minFmt = nf2.format(Math.max(0, rango.min));
@@ -397,7 +515,6 @@ function updateAyudaRangos() {
 function validarMontoEnVivo() {
   let raw = DOM.inputMonto.value.trim();
 
-  // Prevenir múltiples ceros a la izquierda
   if (/^0\d+/.test(raw)) {
     raw = raw.replace(/^0+(?!\.)/, "");
     DOM.inputMonto.value = raw;
@@ -405,7 +522,12 @@ function validarMontoEnVivo() {
 
   updateAyudaRangos();
 
-  if (!raw) { DOM.btnCalcular.disabled = true; setInputStyle({ state: "neutral" }); return; }
+  if (!raw) {
+    DOM.btnCalcular.disabled = true;
+    setInputStyle({ state: "neutral" });
+    return;
+  }
+
   const num = parseFloat(raw.replace(",", "."));
   if (!Number.isFinite(num) || num <= 0) {
     DOM.btnCalcular.disabled = true;
@@ -413,9 +535,7 @@ function validarMontoEnVivo() {
     return;
   }
 
-  // === BCV: el input ES USD directo ===
   if (isBCVFlow()) {
-    // todavía no eligió tasa BCV
     if (!Number.isFinite(bcvTasa) || bcvTasa <= 0) {
       DOM.btnCalcular.disabled = true;
       setInputStyle({ state: "neutral", msg: "Selecciona Dólar BCV / Euro BCV / Personalizada para continuar." });
@@ -433,20 +553,26 @@ function validarMontoEnVivo() {
       return;
     }
 
-    // además necesitas tasa normal para poder calcular cuánto enviar
     const t = Number(tasa);
     const listo = Number.isFinite(t) && t > 0;
-    if (!listo) { DOM.btnCalcular.disabled = true; setInputStyle({ state: "neutral" }); return; }
+    if (!listo) {
+      DOM.btnCalcular.disabled = true;
+      setInputStyle({ state: "neutral" });
+      return;
+    }
 
     DOM.btnCalcular.disabled = false;
     setInputStyle({ state: "ok" });
     return;
   }
 
-  // === normal ===
   const t = Number(tasa);
   const listo = !!mode && Number.isFinite(tasaCompraUSD) && Number.isFinite(t) && t > 0;
-  if (!listo) { DOM.btnCalcular.disabled = true; setInputStyle({ state: "neutral" }); return; }
+  if (!listo) {
+    DOM.btnCalcular.disabled = true;
+    setInputStyle({ state: "neutral" });
+    return;
+  }
 
   const montoEnPesos = mode === "enviar" ? num : calcularCruce(origenSeleccionado, destinoSeleccionado, mode, num, t);
   const usd = montoEnPesos / tasaCompraUSD;
@@ -487,22 +613,46 @@ function ocultarTodo() {
   DOM.resultado.classList.add("hidden");
 }
 
-export function mostrarPaso1() {
+export async function mostrarPaso1() {
+  const currentToken = ++renderPaso1Token;
+
   showBack(false);
   ocultarTodo();
   actualizarHeader("Selecciona el país de origen");
   DOM.btnVolverGlobal.classList.add("hidden");
   DOM.step1Origen.classList.remove("hidden");
   DOM.step1Origen.classList.add("fade-slide-in");
+
+  // Detectar país real por IP
+  const paisIP = await detectarPaisPorIP();
+
+  // Si mientras esperábamos hubo otra llamada más nueva, esta se cancela
+  if (currentToken !== renderPaso1Token) return;
+
+  if (paisIP) {
+    setPaisDetectadoOrigen(paisIP);
+  }
+
+  const listaOrdenada = ordenarPaisesOrigen(paisesDisponibles);
+
+  // limpiar SOLO justo antes de pintar
   DOM.origenBtns.innerHTML = "";
-  paisesDisponibles.forEach(p => {
+
+  listaOrdenada.forEach(p => {
     const btn = document.createElement("button");
-    btn.textContent = `${p.emoji} ${p.nombre}`;
-    btn.className = "ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105 " +
+    btn.textContent = `${p.emoji} ${p.nombre}${getBadgeOrigen(p.codigo)}`;
+    btn.className =
+      "ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105 " +
       "bg-white/80 text-brandBlue border-brandBlue/50 " +
       "dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40 " +
       "backdrop-blur-sm dark:hover:bg-white/15";
-    btn.onclick = () => { origenSeleccionado = p.codigo; mostrarPaso2(); };
+
+    btn.onclick = () => {
+      registrarUsoPaisOrigen(p.codigo);
+      origenSeleccionado = p.codigo;
+      mostrarPaso2();
+    };
+
     DOM.origenBtns.appendChild(btn);
   });
 }
@@ -515,14 +665,21 @@ function mostrarPaso2() {
   DOM.step2Destino.classList.remove("hidden");
   DOM.step2Destino.classList.add("fade-slide-in");
   DOM.destinoBtns.innerHTML = "";
-  paisesDisponibles.filter(p => p.codigo !== origenSeleccionado).forEach(p => {
+
+  const listaOrdenada = ordenarPaisesDestino(
+    paisesDisponibles.filter(p => p.codigo !== origenSeleccionado)
+  );
+
+  listaOrdenada.forEach(p => {
     const btn = document.createElement("button");
-    btn.textContent = `${p.emoji} ${p.nombre}`;
-    btn.className = "ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105 " +
+    btn.textContent = `${p.emoji} ${p.nombre}${getBadgeDestino(p.codigo)}`;
+    btn.className =
+      "ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105 " +
       "bg-white/80 text-[#0066FF] border-[#0066FF]/50 " +
       "dark:bg-white/10 dark:text-brandTeal dark:border-brandTeal/40 " +
       "backdrop-blur-sm dark:hover:bg-white/15";
     btn.onclick = () => {
+      registrarUsoPaisDestino(p.codigo);
       destinoSeleccionado = p.codigo;
       DOM.step2Destino.classList.add("hidden");
       mostrarPaso3();
@@ -535,7 +692,6 @@ async function mostrarPaso3() {
   showBack(true);
   ocultarTodo();
 
-  // al entrar a paso3, siempre resetea BCV
   resetBCVStateAndUI();
 
   DOM.step1.classList.remove("hidden");
@@ -613,7 +769,6 @@ async function mostrarPaso3() {
 }
 
 function cambiarPaso(tipo) {
-  // al cambiar modo normal, nos aseguramos de salir del BCV
   if (bcvActivo) resetBCVStateAndUI();
 
   mode = tipo;
@@ -631,7 +786,10 @@ function cambiarPaso(tipo) {
 
   DOM.step1.classList.add("hidden");
   DOM.step2.classList.remove("hidden");
-  setTimeout(() => { DOM.inputMonto.focus(); validarMontoEnVivo(); }, 300);
+  setTimeout(() => {
+    DOM.inputMonto.focus();
+    validarMontoEnVivo();
+  }, 300);
 }
 
 async function ejecutarCalculo() {
@@ -661,9 +819,6 @@ async function ejecutarCalculo() {
     ? `<div class="mt-2 inline-block text-xs font-bold text-red-700 bg-red-100 border border-red-300 rounded px-2 py-1">MODO REFERENCIA</div>`
     : ``;
 
-  // ==========================
-  // ✅ MODO BCV (solo destino VES)
-  // ==========================
   if (isBCVFlow()) {
     if (!Number.isFinite(bcvTasa) || bcvTasa <= 0) {
       DOM.errorMonto.textContent = "⚠️ Selecciona una tasa BCV válida.";
@@ -671,7 +826,6 @@ async function ejecutarCalculo() {
       return;
     }
 
-    // input = USD deseados
     const usdDeseados = montoInput;
     if (usdDeseados < CONFIG.MIN_USD) {
       DOM.errorMonto.textContent = `⚠️ El monto mínimo permitido es ${CONFIG.MIN_USD} USD`;
@@ -686,14 +840,12 @@ async function ejecutarCalculo() {
 
     const vesObjetivo = usdDeseados * bcvTasa;
 
-    // usamos el motor existente: "llegar" a VES
     const calcEnviar = Math.round(
       calcularCruce(origenSeleccionado, "VES", "llegar", vesObjetivo, t)
     );
     const calcRed = redondearPorMoneda(calcEnviar, o.codigo);
 
     const nf2 = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 2 });
-    const nf0 = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 0 });
 
     const usdFmt = formatearMontoConMoneda(usdDeseados, "USD", { maximumFractionDigits: 2 });
     const vesFmt = formatearMontoConMoneda(Math.round(vesObjetivo), "VES");
@@ -735,7 +887,6 @@ async function ejecutarCalculo() {
 
     DOM.resText.innerHTML = mensaje;
 
-    // transiciones a resultado
     DOM.step2.classList.add("hidden");
     DOM.tasaWrap.classList.add("transition", "duration-500", "ease-out", "opacity-0", "scale-95");
     setTimeout(() => DOM.tasaWrap.classList.add("hidden"), 500);
@@ -752,9 +903,6 @@ async function ejecutarCalculo() {
     return;
   }
 
-  // ==========================
-  // ✅ FLUJO NORMAL
-  // ==========================
   if (!tasaCompraUSD) {
     DOM.errorMonto.textContent = "⚠️ No se pudo obtener la tasa de compra en USD.";
     DOM.errorMonto.classList.remove("hidden");
@@ -782,7 +930,6 @@ async function ejecutarCalculo() {
   const calc = Math.round(calcularCruce(origenSeleccionado, destinoSeleccionado, mode, montoInput, t));
   const calcRed = mode === "llegar" ? redondearPorMoneda(calc, o.codigo) : calc;
 
-  // ==== Info extra (solo VES, flujo normal): equivalente aprox en USD a tasa BCV ====
   let infoBcvExtra = "";
   if (destinoSeleccionado === "VES") {
     try {
@@ -805,7 +952,7 @@ async function ejecutarCalculo() {
   }
 
   const montoFmt = formatearMontoConMoneda(montoInput, mode === "enviar" ? o.codigo : d.codigo, {
-  maximumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
   const calcFmt = formatearMontoConMoneda(calcRed, mode === "enviar" ? d.codigo : o.codigo);
   const tasaFmt = formatearTasa(tasa);
@@ -856,7 +1003,6 @@ export function wireEvents() {
   DOM.btnLlegar.onclick = () => cambiarPaso("llegar");
   DOM.btnLlegarBCV.onclick = () => activarModoBCV();
 
-  // Volver
   DOM.btnVolverGlobal.onclick = () => {
     const isStep1Visible = !DOM.step1.classList.contains("hidden");
     const isStep2Visible = !DOM.step2.classList.contains("hidden");
@@ -876,7 +1022,6 @@ export function wireEvents() {
     }
 
     if (isStep2Visible) {
-      // si estabas en BCV, al volver salimos del modo BCV para que no se quede pegado
       if (bcvActivo) resetBCVStateAndUI();
 
       DOM.step2.classList.add("hidden");
@@ -893,20 +1038,25 @@ export function wireEvents() {
     mostrarPaso1();
   };
 
-  // input: limpiar/limitar
   let scrollPrev = 0;
   DOM.inputMonto.addEventListener("focus", () => {
     scrollPrev = window.scrollY;
     setTimeout(() => DOM.inputMonto.scrollIntoView({ behavior: "smooth", block: "center" }), 380);
     updateAyudaRangos();
   });
+
   DOM.inputMonto.addEventListener("blur", () => {
     DOM.errorMonto.classList.add("hidden");
     setTimeout(() => window.scrollTo({ top: scrollPrev, behavior: "smooth" }), 150);
   });
+
   DOM.inputMonto.addEventListener("keydown", e => {
-    if (e.key === "Enter") { e.preventDefault(); DOM.btnCalcular.click(); }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      DOM.btnCalcular.click();
+    }
   });
+
   DOM.inputMonto.addEventListener("input", () => {
     let val = DOM.inputMonto.value.replace(/,/g, ".").replace(/[^0-9.]/g, "");
     const parts = val.split(".");
@@ -914,20 +1064,21 @@ export function wireEvents() {
     if (parts[1]?.length > 2) val = parts[0] + "." + parts[1].slice(0, 2);
     DOM.inputMonto.value = val;
 
-    const num = parseFloat(val), maxVal = maxPermitidoEnInput();
+    const num = parseFloat(val);
+    const maxVal = maxPermitidoEnInput();
+
     if (Number.isFinite(num) && Number.isFinite(maxVal) && num > maxVal) {
       const capped = Math.floor(maxVal * 100) / 100;
       DOM.inputMonto.value = String(capped);
     }
+
     validarMontoEnVivo();
   });
 
-  // Calcular + modal
   DOM.btnCalcular.onclick = () => {
     const raw = DOM.inputMonto.value.trim();
     const monto = parseFloat(raw);
 
-    // BCV: monto ya está en USD
     const usd = isBCVFlow()
       ? monto
       : ((mode === "enviar" ? monto : calcularCruce(origenSeleccionado, destinoSeleccionado, mode, monto, tasa)) / tasaCompraUSD);
@@ -960,10 +1111,8 @@ export function wireEvents() {
     mostrarPaso1();
   };
 
-  // iniciar flujo
   mostrarPaso1();
 
-  // === BCV UI handlers ===
   DOM.btnBcvUsd?.addEventListener("click", async () => {
     const { usd } = await obtenerBCV();
     bcvTipo = "USD";
@@ -1049,7 +1198,6 @@ export function wireEvents() {
 async function activarModoBCV() {
   if (destinoSeleccionado !== "VES") return;
 
-  // Asegura que el selector BCV quede visible en el paso de monto
   ensureBCVBoxInStep2();
 
   bcvActivo = true;
@@ -1058,7 +1206,6 @@ async function activarModoBCV() {
 
   DOM.bcvBox?.classList.remove("hidden");
 
-  // Ocultar botones normales (se reemplazan por BCV)
   DOM.btnEnviar?.classList.add("hidden");
   DOM.btnLlegar?.classList.add("hidden");
   DOM.btnLlegarBCV?.classList.add("hidden");
@@ -1081,19 +1228,24 @@ async function activarModoBCV() {
   DOM.inputMonto.disabled = true;
   setInputStyle({ state: "neutral", msg: "" });
 
-  // Ir al paso de monto (step2)
   DOM.step1.classList.add("hidden");
   DOM.step2.classList.remove("hidden");
   actualizarHeader("Ingresa el monto");
 
-  // Forzamos a que el motor tenga un modo base
   mode = "llegar";
   setState({ mode: "llegar" });
 
   updateAyudaRangos();
   validarMontoEnVivo();
-  setTimeout(() => { DOM.inputMonto.focus(); }, 200);
+  setTimeout(() => {
+    DOM.inputMonto.focus();
+  }, 200);
 }
 
-export function getLastCalc() { return lastCalc; }
-export function getOpsState() { return ops; }
+export function getLastCalc() {
+  return lastCalc;
+}
+
+export function getOpsState() {
+  return ops;
+}
