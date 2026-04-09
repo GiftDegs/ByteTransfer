@@ -343,6 +343,67 @@ function manejarFinDeLlamadas() {
   }
 }
 
+function construirBaseComparableActual() {
+  return {
+    datos: datosPaises,
+    cruces: crucesAnteriores,
+    referencias: {
+      bcv: referenciasExternas?.bcv || null,
+      usdt_ves: referenciasExternas?.usdt_ves || null,
+    },
+  };
+}
+
+function construirBaseComparablePrevia() {
+  const datos = {};
+
+  for (const p of paises) {
+    const sp = snapshotPrevio?.[p.fiat] || {};
+    datos[p.fiat] = {
+      compra: Number.isFinite(sp.compra) ? sp.compra : null,
+      venta: Number.isFinite(sp.venta) ? sp.venta : null,
+      ajuste: Number.isFinite(sp.ajuste) ? sp.ajuste : (sp.ajuste ?? ajustesPorDefecto[p.fiat]),
+    };
+  }
+
+  return {
+    datos,
+    cruces: snapshotPrevio?.cruces || {},
+    referencias: {
+      bcv: snapshotPrevio?.referencias?.bcv || null,
+      usdt_ves: snapshotPrevio?.referencias?.usdt_ves || null,
+    },
+  };
+}
+
+async function descargarBackupAutomatico() {
+  const res = await fetch("/api/export-snapshots", {
+    headers: {
+      "x-admin-key": getAdminKey()
+    }
+  });
+
+  if (!res.ok) throw new Error(`Export falló (${res.status})`);
+
+  const data = await res.json();
+
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  const fecha = new Date().toISOString().replace(/[:.]/g, "-");
+
+  a.href = url;
+  a.download = `backup-snapshots-${fecha}.json`;
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+}
+
 // -------------------------
 // Referencias (BCV / USDT-VES)
 // -------------------------
@@ -1170,112 +1231,26 @@ function bindUI() {
       timestamp: ahoraIso
     };
 
-  // 🔍 Detectar si hay cambios reales
-  const snapshotNuevoStr = JSON.stringify(snapshotAGuardar);
-  const snapshotPrevioStr = JSON.stringify(snapshotPrevio);
+    const baseActual = JSON.stringify(construirBaseComparableActual());
+    const basePrevia = JSON.stringify(construirBaseComparablePrevia());
 
-  if (snapshotNuevoStr === snapshotPrevioStr) {
-  mostrarToast("⚠️ No hay cambios para guardar");
-  return;
-
-  // 📂 Cargar backup (CTRL + SHIFT + B)
-document.addEventListener("keydown", (event) => {
-  if (event.ctrlKey && event.shiftKey && event.key === "B") {
-    document.getElementById("input-backup")?.click();
-  }
-});
-
-document.getElementById("input-backup")?.addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const text = await file.text();
-
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    mostrarToast("❌ Archivo inválido");
-    return;
-  }
-
-  if (!json.snapshots) {
-    mostrarToast("❌ Formato incorrecto");
-    return;
-  }
-
-  const confirmar = confirm("⚠️ Esto reemplazará TODA la base. ¿Continuar?");
-  if (!confirmar) return;
-
-  try {
-    const res = await fetch("/api/import-snapshots", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-key": getAdminKey()
-      },
-      body: JSON.stringify(json)
-    });
-
-    const r = await res.json();
-
-    if (!res.ok) throw new Error(r.error);
-
-    mostrarToast(`✅ Backup cargado (${r.total})`);
-
-    location.reload();
-
-  } catch (err) {
-    console.error(err);
-    mostrarToast("❌ Error cargando backup");
-  }
-});
-
-}
-
-// 👉 Guardar snapshot
-const ok = await guardarSnapshot(snapshotAGuardar);
-if (!ok) return;
-
-await cargarSnapshot();
-
-// 🔍 Detectar si realmente cambió (post-save)
-const snapshotDespuesStr = JSON.stringify(snapshotPrevio);
-
-if (snapshotNuevoStr !== snapshotDespuesStr) {
-  console.warn("⚠️ Algo raro: snapshot no coincide después de guardar");
-}
-
-// ✅ Descargar backup automático
-try {
-  const res = await fetch("/api/export-snapshots", {
-    headers: {
-      "x-admin-key": getAdminKey()
+    if (baseActual === basePrevia) {
+      mostrarToast("⚠️ No hay cambios para guardar");
+      return;
     }
-  });
 
-  if (!res.ok) throw new Error("Export falló");
+    const ok = await guardarSnapshot(snapshotAGuardar);
+    if (!ok) return;
 
-  const data = await res.json();
+    await cargarSnapshot();
 
-  const jsonStr = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonStr], { type: "application/json" });
-
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  const fecha = new Date().toISOString().replace(/[:.]/g, "-");
-
-  a.href = url;
-  a.download = `backup-snapshots-${fecha}.json`;
-  a.click();
-
-  URL.revokeObjectURL(url);
-
-  console.log("✅ Backup automático descargado");
-} catch (err) {
-  console.error("❌ Error en backup automático:", err);
-}
+    try {
+      await descargarBackupAutomatico();
+      console.log("✅ Backup automático descargado");
+    } catch (err) {
+      console.error("❌ Error en backup automático:", err);
+      mostrarToast("⚠️ Snapshot guardado, pero falló el backup");
+    }
 
     renderTarjetasPaises(modoEdicionActivo);
     escribirCruces();
@@ -1330,6 +1305,65 @@ try {
     if (a) a.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
     if (b) b.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
     renderMonCruces();
+  });
+
+  // 📂 Import backup (CTRL + SHIFT + B)
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey && event.shiftKey && event.key === "B") {
+      event.preventDefault();
+      document.getElementById("input-backup")?.click();
+    }
+  });
+
+  document.getElementById("input-backup")?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      mostrarToast("❌ Archivo inválido");
+      e.target.value = "";
+      return;
+    }
+
+    if (!json?.snapshots || !Array.isArray(json.snapshots)) {
+      mostrarToast("❌ Formato incorrecto");
+      e.target.value = "";
+      return;
+    }
+
+    const confirmar = confirm("⚠️ Esto reemplazará TODA la base. ¿Continuar?");
+    if (!confirmar) {
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/import-snapshots", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": getAdminKey()
+        },
+        body: JSON.stringify(json)
+      });
+
+      const r = await res.json();
+
+      if (!res.ok) throw new Error(r.error || "Error importando backup");
+
+      mostrarToast(`✅ Backup cargado (${r.total})`);
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      console.error(err);
+      mostrarToast("❌ Error cargando backup");
+    } finally {
+      e.target.value = "";
+    }
   });
 }
 
