@@ -176,7 +176,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/healthz", async (req, res) => {
   try {
     if (isDbAvailable()) {
-      await pool.query("SELECT 1");
       return res.status(200).json({ ok: true, storage: "postgres" });
     }
 
