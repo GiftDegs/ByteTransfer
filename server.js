@@ -29,6 +29,8 @@ const { getBcvRates } = require("./services/bcvService");
 
 const { getReferencias } = require("./services/referenceService");
 
+const { resolveQuote } = require("./services/quoteResolverService");
+
 const {
   getActiveCurrencies,
   getActiveCurrencyCodes,
@@ -586,52 +588,62 @@ if (lowConfidenceCurrencies.length) {
 });
 
 app.post("/api/binance", async (req, res) => {
-  const { fiat, tradeType, page = 1, payTypes = [], transAmount } = req.body || {};
+  const { fiat, tradeType } = req.body || {};
 
   if (!fiat || !tradeType) {
     return res.status(400).json({ error: "Parámetros inválidos" });
   }
 
-  if (!isSupportedCurrency(fiat)) {
-  return res.status(400).json({ error: `Moneda no soportada: ${fiat}` });
+  const currency = String(fiat).toUpperCase();
+  const side = String(tradeType).toUpperCase() === "BUY" ? "buy" : "sell";
+
+  if (!isSupportedCurrency(currency)) {
+    return res.status(400).json({ error: `Moneda no soportada: ${currency}` });
   }
 
   try {
-    // BRL temporal: luego se moverá a brlService.js
-    if (fiat === "BRL") {
-      const brl = await getDynamicBrlPrice();
-      const price = tradeType === "BUY" ? brl.buy : brl.sell;
+    const quote = await resolveQuote(currency, side);
+    const price = Number(quote?.price);
 
-      if (!Number.isFinite(price)) {
-        return res.status(500).json({ error: "No se pudo obtener precio BRL" });
-      }
-
-      return res.json({
-        data: [
-          {
-            adv: {
-              price: String(price),
-              minSingleTransAmount: "0",
-              isAdvBanned: false,
-            },
-          },
-        ],
-        source: brl.source,
+    if (!Number.isFinite(price) || price <= 0) {
+      return res.status(500).json({
+        error: "No se pudo obtener precio",
+        detail: quote?.error || "Precio inválido",
+        quote,
       });
     }
 
-    const data = await callBinanceP2P({
-      fiat,
-      tradeType,
-      page,
-      payTypes,
-      transAmount,
+    return res.json({
+      data: [
+        {
+          adv: {
+            price: String(price),
+            minSingleTransAmount: "0",
+            isAdvBanned: false,
+          },
+        },
+      ],
+      source: quote.source,
+      provider: quote.provider,
+      stale: !!quote.stale,
+      fallback: !!quote.fallback,
+      fallback_reason: quote.fallback_reason || null,
+      audit: {
+        raw_count: quote.raw_count ?? null,
+        used_count: quote.used_count ?? null,
+        aggregation: quote.aggregation ?? null,
+        trimLowest: quote.trimLowest ?? null,
+        trimHighest: quote.trimHighest ?? null,
+        transAmount: quote.transAmount ?? null,
+        payTypes: quote.payTypes ?? [],
+      },
     });
-
-    return res.json(data);
   } catch (e) {
-    console.error("❌ /api/binance:", e.message);
-    return res.status(500).json({ error: "Fallo conexión Binance" });
+    console.error("❌ /api/binance resolver:", currency, tradeType, e.message);
+    return res.status(500).json({
+      error: "Fallo resolviendo cotización",
+      detail: e.message,
+    });
   }
 });
 
