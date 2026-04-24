@@ -1,7 +1,7 @@
 import { DOM } from "./dom.js";
 import { paisesDisponibles, CONFIG } from "../core/config.js";
 import { formatearTasa, formatearFecha, formatearMontoConMoneda, redondearPorMoneda, userLocale } from "../core/utils.js";
-import { calcularCruce } from "../core/fx.js";
+import { calcularCruce, obtenerTasaVisible } from "../core/fx.js";
 import { obtenerTasa, obtenerBCV } from "../services/rates.js";
 import { obtenerStatus } from "../services/status.js";
 import { mostrarToast } from "./toasts.js";
@@ -311,7 +311,12 @@ function showBack(show = true) {
     const manual = await obtenerStatus();
     ops = evaluateOps(null, manual);
   } catch {
-    ops = evaluateOps(null, { open: null, message: "" });
+    ops = evaluateOps(null, {
+      calculatorState: "schedule",
+      open: null,
+      message: "",
+      weeklySchedule: null,
+    });
   }
   updateHorarioPill();
 })();
@@ -320,10 +325,20 @@ function updateHorarioPill() {
   const el = document.getElementById("statusHeader");
   if (!el) return;
 
-  const hoy = openingTextTodayLocal(userLocale);
+  const hoy = openingTextTodayLocal(userLocale, ops?.weeklySchedule || null);
   const abierto = ops.open === true;
+  const source = ops?.source || "schedule";
+  const mensaje = String(ops?.message || "").trim();
+
+  let etiqueta = abierto ? "ABIERTO" : "CERRADO";
+  if (source === "manual_open") etiqueta = "ABIERTO";
+  if (source === "manual_closed") etiqueta = "CERRADO";
 
   el.className = "mt-1 text-base sm:text-lg inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full border shadow-sm";
+
+  const mensajeHtml = mensaje
+    ? `<span class="text-xs sm:text-sm opacity-90">${mensaje}</span>`
+    : "";
 
   el.innerHTML = abierto
     ? `<div class="flex flex-col items-center text-center">
@@ -331,18 +346,20 @@ function updateHorarioPill() {
            <span class="relative inline-flex h-3 w-3 rounded-full bg-emerald-600">
              <span class="absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
            </span>
-           ABIERTO
+           ${etiqueta}
          </span>
          <span class="text-sm opacity-90 animate-pulse">${hoy}</span>
+         ${mensajeHtml}
        </div>`
     : `<div class="flex flex-col items-center text-center">
          <span class="flex items-center gap-1 font-bold text-red-900 dark:text-white">
            <span class="relative inline-flex h-3 w-3 rounded-full bg-red-600">
              <span class="absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75 animate-ping"></span>
            </span>
-           CERRADO
+           ${etiqueta}
          </span>
          <span class="text-sm opacity-90 animate-pulse">${hoy}</span>
+         ${mensajeHtml}
        </div>`;
 
   if (abierto) {
@@ -718,16 +735,27 @@ async function mostrarPaso3() {
     origen: origenSeleccionado,
     destino: destinoSeleccionado,
     mode,
-    tasa: (Number.isFinite(Number(tasaCruda)) && Number(tasaCruda) > 0) ? Number(tasaCruda) : null,
+    tasa: Number.isFinite(Number(tasa)) && Number(tasa) > 0 ? Number(tasa) : null,
     tasaCompraUSD: Number.isFinite(Number(compra)) ? Number(compra) : null,
     tasaDesactualizada: !ops.fresh,
     snapshotTs: fecha,
-    ops
+    ops,
+    publicConfig: {
+      calculatorState: manual?.calculatorState || "schedule",
+      message: manual?.message || "",
+      weeklySchedule: manual?.weeklySchedule || null,
+      source: manual?.source || null,
+    }
   });
 
-  if (tieneTasa) {
-    tasa = tNum;
-    DOM.tasaValue.textContent = formatearTasa(tasa);
+    if (tieneTasa) {
+    const tasaVisibleCruda = obtenerTasaVisible(origenSeleccionado, destinoSeleccionado, tNum);
+    const tasaVisibleTexto = formatearTasa(tasaVisibleCruda);
+
+    // Esta es la tasa literal que ve el cliente y con la que se calcula
+    tasa = Number(tasaVisibleTexto);
+
+    DOM.tasaValue.textContent = tasaVisibleTexto;
     DOM.tasaFecha.textContent = formatearFecha(fecha);
 
     if (ops.fresh) {
@@ -781,7 +809,14 @@ function cambiarPaso(tipo) {
   updateAyudaRangos();
 
   if (!ops.allowWhats) {
-    mostrarToast(DOM, "⚠️ Modo referencia: cálculos orientativos. WhatsApp deshabilitado.");
+    const motivo =
+      ops?.source === "manual_closed"
+        ? "Calculadora cerrada manualmente. Solo referencia."
+        : !ops?.fresh
+          ? "Tasa desactualizada. Solo referencia."
+          : "Modo referencia: cálculos orientativos. WhatsApp deshabilitado.";
+
+    mostrarToast(DOM, `⚠️ ${motivo}`);
   }
 
   DOM.step1.classList.add("hidden");
@@ -955,7 +990,7 @@ async function ejecutarCalculo() {
     maximumFractionDigits: 2,
   });
   const calcFmt = formatearMontoConMoneda(calcRed, mode === "enviar" ? d.codigo : o.codigo);
-  const tasaFmt = formatearTasa(tasa);
+  const tasaFmt = DOM.tasaValue?.textContent || formatearTasa(tasa);
 
   lastCalc = {
     mode,

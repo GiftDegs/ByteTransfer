@@ -1,219 +1,104 @@
-// main.js — Panel Admin ByteTransfer (con monitoreo + drawer configurar)
-// ------------------------------------------------------
+// main.js — ByteTransfer Admin Premium v2
 "use strict";
 
-console.log("✅ Admin cargado");
+console.log("✅ Admin premium cargado");
 
-// ===== Admin Key (simple) =====
-function getAdminKey() {
-  return sessionStorage.getItem("BT_ADMIN_KEY") || ""; // mejor que localStorage
-}
-function setAdminKey(key) {
-  sessionStorage.setItem("BT_ADMIN_KEY", key);
-}
-function clearAdminKey() {
-  sessionStorage.removeItem("BT_ADMIN_KEY");
-}
-
-function ensureAuthModal() {
-  if (document.getElementById("bt-auth-overlay")) return;
-
-  const overlay = document.createElement("div");
-  overlay.id = "bt-auth-overlay";
-  overlay.className =
-    "fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4";
-
-  overlay.innerHTML = `
-    <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden">
-<div class="px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-700 text-white">
-  <div class="flex items-start justify-between gap-4">
-    <div>
-      <div class="text-lg font-bold">ByteTransfer Admin</div>
-      <div class="text-sm opacity-90 mt-1">Ingresa tu clave para continuar</div>
-    </div>
-
-    <img
-      src="/logo.png"
-      alt="ByteTransfer"
-      class="h-10 w-10 rounded-xl bg-white/10 p-1.5 object-contain"
-    />
-  </div>
-</div>
-
-      <div class="p-6">
-        <label class="text-sm font-semibold text-gray-700">Admin Key</label>
-<div class="mt-2 relative">
-  <input id="bt-auth-key" type="password"
-    class="w-full pr-12 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    placeholder="••••••••••••••" autocomplete="current-password" />
-
-  <button id="bt-auth-toggle"
-    type="button"
-    class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-    aria-label="Mostrar clave"
-    title="Mostrar clave">
-    <svg id="bt-eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
-      <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
-      <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-    </svg>
-
-    <svg id="bt-eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" class="hidden">
-      <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        d="M3 3l18 18"/>
-      <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        d="M10.58 10.58A3 3 0 0 0 12 15a3 3 0 0 0 1.42-.36"/>
-      <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        d="M9.88 5.09A10.3 10.3 0 0 1 12 5c6.5 0 10 7 10 7a17.5 17.5 0 0 1-4.2 5.1"/>
-      <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        d="M6.11 6.11C3.8 8 2 12 2 12s3.5 7 10 7c1.1 0 2.1-.17 3.02-.49"/>
-    </svg>
-  </button>
-</div>
-
-        <div id="bt-auth-error" class="mt-3 text-sm text-red-600 hidden"></div>
-
-        <div class="mt-5 flex items-center justify-between gap-3">
-          <button id="bt-auth-clear"
-            class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">
-            Limpiar
-          </button>
-          <button id="bt-auth-submit"
-            class="px-5 py-2 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800">
-            Entrar
-          </button>
-        </div>
-
-        <div class="mt-4 text-xs text-gray-500">
-          Tip: si cambias la key en Render, tendrás que volver a ingresar aquí.
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-
-  overlay.querySelector("#bt-auth-clear").addEventListener("click", () => {
-    overlay.querySelector("#bt-auth-key").value = "";
-    hideAuthError();
-  });
-
-  overlay.querySelector("#bt-auth-key").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") overlay.querySelector("#bt-auth-submit").click();
-  });
-
-  const input = overlay.querySelector("#bt-auth-key");
-  const toggle = overlay.querySelector("#bt-auth-toggle");
-  const eyeOpen = overlay.querySelector("#bt-eye-open");
-  const eyeClosed = overlay.querySelector("#bt-eye-closed");
-
-  toggle.addEventListener("click", () => {
-    const showing = input.type === "text";
-    input.type = showing ? "password" : "text";
-
-    eyeOpen.classList.toggle("hidden", !showing);
-    eyeClosed.classList.toggle("hidden", showing);
-  });
-}
-
-function showAuthError(msg) {
-  const el = document.getElementById("bt-auth-error");
-  if (!el) return;
-  el.textContent = msg;
-  el.classList.remove("hidden");
-}
-function hideAuthError() {
-  const el = document.getElementById("bt-auth-error");
-  if (!el) return;
-  el.textContent = "";
-  el.classList.add("hidden");
-}
-
-function lockUI() {
-  ensureAuthModal();
-  document.getElementById("bt-auth-overlay").classList.remove("hidden");
-}
-function unlockUI() {
-  const ov = document.getElementById("bt-auth-overlay");
-  if (ov) ov.classList.add("hidden");
-}
-
-async function verifyAdminKey(key) {
-  const res = await fetch("/api/admin/verify", {
-    method: "GET",
-    headers: { "x-admin-key": key },
-    cache: "no-store",
-  });
-
-  if (res.ok) return { ok: true };
-
-  const j = await res.json().catch(() => null);
-  return { ok: false, status: res.status, error: j?.error || `HTTP ${res.status}` };
-}
-
-async function requireAdminAccess() {
-  lockUI();
-
-  const existing = getAdminKey();
-  if (existing) {
-    const v = await verifyAdminKey(existing);
-    if (v.ok) {
-      unlockUI();
-      return true;
-    }
-    clearAdminKey();
-  }
-
-  const btn = document.getElementById("bt-auth-submit");
-  const input = document.getElementById("bt-auth-key");
-
-  return await new Promise((resolve) => {
-    btn.addEventListener("click", async () => {
-      hideAuthError();
-      const key = (input.value || "").trim();
-      if (!key) return showAuthError("Ingresa la clave.");
-
-      btn.disabled = true;
-      btn.textContent = "Verificando...";
-
-      const v = await verifyAdminKey(key);
-
-      btn.disabled = false;
-      btn.textContent = "Entrar";
-
-      if (!v.ok) {
-        if (v.status === 503) return showAuthError("Admin deshabilitado: falta configurar ADMIN_KEY en el servidor.");
-        return showAuthError("Clave incorrecta.");
-      }
-
-      setAdminKey(key);
-      unlockUI();
-      resolve(true);
-    }, { once: false });
-  });
-}
-
-// -------------------------
-// Configuración y estado
-// -------------------------
-const paises = [
-  { fiat: "ARS", nombre: "Argentina", emoji: "🇦🇷" },
-  { fiat: "COP", nombre: "Colombia",  emoji: "🇨🇴" },
-  { fiat: "MXN", nombre: "México",    emoji: "🇲🇽" },
-  { fiat: "PEN", nombre: "Perú",      emoji: "🇵🇪" },
-  { fiat: "CLP", nombre: "Chile",     emoji: "🇨🇱" },
-  { fiat: "BRL", nombre: "Brasil",    emoji: "🇧🇷" },
-  { fiat: "VES", nombre: "Venezuela", emoji: "🇻🇪" }
+// =====================================================
+// ESTADO
+// =====================================================
+let paises = [
+  { fiat: "VES", nombre: "Venezuela", flag: "VE", emoji: "VE" },
+  { fiat: "ARS", nombre: "Argentina", flag: "AR", emoji: "AR" },
+  { fiat: "COP", nombre: "Colombia", flag: "CO", emoji: "CO" },
+  { fiat: "PEN", nombre: "Perú", flag: "PE", emoji: "PE" },
+  { fiat: "CLP", nombre: "Chile", flag: "CL", emoji: "CL" },
+  { fiat: "MXN", nombre: "México", flag: "MX", emoji: "MX" },
+  { fiat: "BRL", nombre: "Brasil", flag: "BR", emoji: "BR" },
 ];
 
-const ajustesPorDefecto = { ARS: 8, COP: 8, MXN: 15, PEN: 7, CLP: 7, BRL: 8, VES: 4 };
+function normalizarMonedaConfig(c) {
+  return {
+    fiat: String(c.code || c.fiat || "").toUpperCase(),
+    nombre: c.name || c.nombre || c.code || "",
+    flag: c.flag || "",
+    emoji: c.flag || c.code || "",
+    active: c.active !== false,
+    order: Number(c.order) || 999,
+    supportsBuy: c.supportsBuy !== false,
+    supportsSell: c.supportsSell !== false,
+  };
+}
+
+async function cargarMonedasConfiguradas() {
+  try {
+    const res = await fetch("/api/currencies", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+    const lista = Array.isArray(json?.currencies) ? json.currencies : [];
+
+    const normalizadas = lista
+      .map(normalizarMonedaConfig)
+      .filter((c) => c.fiat && c.active)
+      .sort((a, b) => a.order - b.order);
+
+    if (normalizadas.length) {
+      paises = normalizadas;
+      console.log("✅ Monedas cargadas desde backend:", paises.map((p) => p.fiat));
+    }
+  } catch (e) {
+    console.warn("⚠️ No se pudieron cargar monedas desde backend. Usando fallback local:", e.message);
+  }
+}
+
+const reglasVisualesCruces = {
+  "COP-VES": {
+    invertForCustomer: true,
+    label: "COP → VES",
+    detalle: "Vista comercial Colombia",
+  },
+};
+
+function obtenerReglaVisualCruce(origen, destino) {
+  return reglasVisualesCruces?.[`${origen}-${destino}`] || null;
+}
+
+function obtenerTasaVisibleCruce(origen, destino, tasaInterna) {
+  const n = Number(tasaInterna);
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  const regla = obtenerReglaVisualCruce(origen, destino);
+
+  if (regla?.invertForCustomer) {
+    return 1 / n;
+  }
+
+  return n;
+}
+
+function obtenerEtiquetaVisualCruce(origen, destino) {
+  const regla = obtenerReglaVisualCruce(origen, destino);
+  return regla?.label || `${origen} → ${destino}`;
+}
 
 let referenciasExternas = null;
 let datosPaises = {};
 let snapshotPrevio = {};
 let crucesAnteriores = {};
 let modoEdicionActivo = false;
+
+let margenesCruce = {};
+let borradorMargenesCruce = {};
+let limiteCrucesVisible = 24;
+let crucesRenderActuales = {};
+let crucesAntesVisibles = {};
+let snapshotCrucesAntesVisibles = {};
+let crucesBaseHistorica = {};
+let baseMonitoreoCruces = {};
+let baseMonitoreoMargenes = {};
+
+const STORAGE_KEY_PERFILES = "BT_PERFILES_MARGENES";
+let perfilesMargenes = {};
 
 let filtroPais = null;
 let rolVista = "origen";
@@ -225,1168 +110,433 @@ let mercadoPaises = {};
 let referenciasMercado = null;
 let pollingActivo = true;
 let pollingInterval = null;
+let pollingMs = 60000;
 let ultimoTick = null;
 
-let monRolVista = "origen";
-let monBuscar = "";
+let filtroMasivoOrigen = "";
+let filtroMasivoDestino = "";
+let borradorEdicionMasiva = {};
 
-// -------------------------
-// Utilidades (UI/format)
-// -------------------------
-function ensureToast() {
-  if (document.getElementById("toastMensaje")) return;
+let vistaPrincipalActiva = "monitoreo";
+let configTabActiva = "precios";
+let guardadoEnCurso = false;
+let timerBotonGuardadoOk = null;
+let ultimoResumenGuardado = null;
+let timerBotonUltimosCambiosPremium = null;
+let timerTopbarHumana = null;
+let timerResumenBorradorDebounce = null;
+let timerEstadoGuardadoDebounce = null;
 
-  const div = document.createElement("div");
-  div.id = "toastMensaje";
-  div.className =
-    "fixed top-4 right-4 z-[999] hidden bg-black/80 text-white px-4 py-2 rounded-lg shadow-lg text-sm";
-  document.body.appendChild(div);
-}
-
-function mostrarToast(msg) {
-  ensureToast();
-  const el = document.getElementById("toastMensaje");
-  if (!el) return;
-  el.textContent = msg;
-  el.classList.remove("hidden");
-  el.style.opacity = "1";
-  el.style.transform = "scale(1)";
-  setTimeout(() => {
-    el.style.opacity = "0";
-    el.style.transform = "scale(0.95)";
-    setTimeout(() => {
-      el.classList.add("hidden");
-      el.textContent = "";
-    }, 250);
-  }, 2600);
-}
-
-function formatearTasa(v) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return null;
-  if (n >= 10) return +n.toFixed(1);
-  if (n >= 1) return +n.toFixed(2);
-  if (n >= 0.01) return +n.toFixed(3);
-  if (n >= 0.001) return +n.toFixed(4);
-  if (n >= 0.00099) return +n.toFixed(5);
-  return +n.toFixed(6);
-}
-
-function pintarDelta(el, marketVal, snapVal, labelSnapshot) {
-  if (!el) return;
-
-  const m = Number(marketVal);
-  const s = Number(snapVal);
-
-  if (!Number.isFinite(m)) {
-    el.textContent = "—";
-    el.title = "";
-    return;
-  }
-
-  const mInt = Math.round(m);
-
-  if (!Number.isFinite(s) || s === 0) {
-    el.textContent = String(mInt);
-    el.title = labelSnapshot ? `${labelSnapshot}: —` : "";
-    return;
-  }
-
-  const sInt = Math.round(s);
-  const dAbs = m - s;
-  const dAbsInt = Math.round(dAbs);
-  const dPct = (dAbs / s) * 100;
-
-  const cls =
-    dPct > 0 ? "text-green-600" :
-    dPct < 0 ? "text-red-600" :
-    "text-blue-600";
-
-  const signAbs = dAbsInt > 0 ? `+${dAbsInt}` : `${dAbsInt}`;
-  const signPct = dPct > 0 ? `+${dPct.toFixed(2)}` : `${dPct.toFixed(2)}`;
-
-  el.innerHTML = `
-    <div class="leading-none">${mInt}</div>
-    <div class="mt-1 text-xs ${cls} font-semibold tabular-nums">
-      ${signAbs} (${signPct}%)
-    </div>
-  `;
-
-  el.title = labelSnapshot ? `${labelSnapshot}: ${sInt}` : `Snapshot: ${sInt}`;
-}
-
-function iconoCambio(n, p) {
-  if (p == null || !Number.isFinite(p)) return "⏺";
-  if (n > p) return "🔼";
-  if (n < p) return "🔽";
-  return "⏺";
-}
-
-function claseCambio(n, p) {
-  if (p == null || !Number.isFinite(p)) return "text-blue-600";
-  if (n > p) return "text-green-600";
-  if (n < p) return "text-red-600";
-  return "text-blue-600";
-}
-
+// =====================================================
+// TOPBAR / CAMBIOS
+// =====================================================
 function mostrarAdvertenciaPendiente(mostrar = true) {
   const adv = document.getElementById("advertencia-pendiente");
   if (adv) adv.classList.toggle("hidden", !mostrar);
+
+  actualizarBotonCancelarBorrador();
+  actualizarTopbar();
+  actualizarEstadoGuardadoUI();
 }
 
-function manejarFinDeLlamadas() {
-  if (llamadasPendientes === 0) {
-    if (timerAdvertencia) clearTimeout(timerAdvertencia);
-    timerAdvertencia = setTimeout(() => {
-      mostrarAdvertenciaPendiente(true);
-    }, 250);
-  }
+function fijarBaseMonitoreoCruces(crucesBase = {}, margenesBase = {}) {
+  baseMonitoreoCruces = { ...(crucesBase || {}) };
+  baseMonitoreoMargenes = { ...(margenesBase || {}) };
 }
 
-function construirBaseComparableActual() {
-  return {
-    datos: datosPaises,
-    cruces: crucesAnteriores,
-    referencias: {
-      bcv: referenciasExternas?.bcv || null,
-      usdt_ves: referenciasExternas?.usdt_ves || null,
-    },
-  };
-}
+function actualizarTopbar() {
+  const ultima = document.getElementById("ultima-actualizacion");
 
-function construirBaseComparablePrevia() {
-  const datos = {};
+  if (ultima) {
+    const fechaBase = snapshotPrevio?.guardado_en || snapshotPrevio?.timestamp || null;
 
-  for (const p of paises) {
-    const sp = snapshotPrevio?.[p.fiat] || {};
-    datos[p.fiat] = {
-      compra: Number.isFinite(sp.compra) ? sp.compra : null,
-      venta: Number.isFinite(sp.venta) ? sp.venta : null,
-      ajuste: Number.isFinite(sp.ajuste) ? sp.ajuste : (sp.ajuste ?? ajustesPorDefecto[p.fiat]),
-    };
-  }
+    if (fechaBase) {
+      const relativo = obtenerTextoTiempoRelativo(fechaBase);
+      const exacto = formatearFechaHoraCorta(fechaBase);
 
-  return {
-    datos,
-    cruces: snapshotPrevio?.cruces || {},
-    referencias: {
-      bcv: snapshotPrevio?.referencias?.bcv || null,
-      usdt_ves: snapshotPrevio?.referencias?.usdt_ves || null,
-    },
-  };
-}
-
-async function descargarBackupAutomatico() {
-  const res = await fetch("/api/export-snapshots", {
-    headers: {
-      "x-admin-key": getAdminKey()
+      ultima.textContent = relativo;
+      ultima.title = `Último guardado: ${exacto}`;
+    } else {
+      ultima.textContent = "—";
+      ultima.title = "";
     }
-  });
-
-  if (!res.ok) throw new Error(`Export falló (${res.status})`);
-
-  const data = await res.json();
-
-  const jsonStr = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  const fecha = new Date().toISOString().replace(/[:.]/g, "-");
-
-  a.href = url;
-  a.download = `backup-snapshots-${fecha}.json`;
-
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  URL.revokeObjectURL(url);
-}
-
-// -------------------------
-// Referencias (BCV / USDT-VES)
-// -------------------------
-async function obtenerReferencias() {
-  const res = await fetch("/api/referencias", { cache: "no-store" });
-  if (!res.ok) throw new Error("No referencias");
-  return await res.json();
-}
-
-function setRefValue(el, val) {
-  if (!el) return;
-  const v = (val ?? "");
-  if (el.tagName === "INPUT") {
-    el.value = v === "—" ? "" : v;
-    if (!v) el.placeholder = "—";
-  } else {
-    el.textContent = v || "—";
   }
+
+  actualizarEstadoGuardadoUI();
 }
 
-function renderReferencias() {
-  if (!referenciasExternas) return;
+function hayCambiosDePreciosEnInputs() {
+  for (const p of paises) {
+    const fiat = p.fiat;
+    const compraInput = parseFloat(
+      document.querySelector(`input[data-fi="${fiat}"][data-tipo="compra"]`)?.value
+    );
+    const ventaInput = parseFloat(
+      document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value
+    );
 
-  const usdEl = document.getElementById("ref-bcv-usd");
-  const eurEl = document.getElementById("ref-bcv-eur");
-  const usdtEl = document.getElementById("ref-usdt-ves");
-  const fechaEl = document.getElementById("ref-fecha");
+    const compraActual = Number(datosPaises?.[fiat]?.compra);
+    const ventaActual = Number(datosPaises?.[fiat]?.venta);
 
-  setRefValue(usdEl, referenciasExternas.bcv?.usd ?? "—");
-  setRefValue(eurEl, referenciasExternas.bcv?.eur ?? "—");
-  if (usdtEl) usdtEl.textContent = referenciasExternas.usdt_ves?.mid ?? "—";
-
-  if (fechaEl) {
-    const base = referenciasExternas.actualizado_en
-      ? `Actualizado: ${new Date(referenciasExternas.actualizado_en).toLocaleString()}`
-      : "—";
-
-    const manual = referenciasExternas?.bcv?.manual ? " • BCV: MANUAL" : "";
-    fechaEl.textContent = base + manual;
+    if (Number.isFinite(compraInput) && compraInput !== compraActual) return true;
+    if (Number.isFinite(ventaInput) && ventaInput !== ventaActual) return true;
   }
+  return false;
 }
 
-// -------------------------
-// Carga/guardado de snapshot
-// -------------------------
-async function cargarSnapshot() {
+function obtenerEstadoGuardadoUI() {
   try {
-    const res = await fetch("/api/snapshot", { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
+    const analisis = analizarGuardado();
 
-    snapshotPrevio = json || {};
-
-    datosPaises = {};
-    for (const p of paises) {
-      const sp = snapshotPrevio[p.fiat] || {};
-      datosPaises[p.fiat] = {
-        compra: Number.isFinite(sp.compra) ? sp.compra : null,
-        venta:  Number.isFinite(sp.venta)  ? sp.venta  : null,
-        ajuste: Number.isFinite(sp.ajuste) ? sp.ajuste : (sp.ajuste ?? ajustesPorDefecto[p.fiat])
+    if (analisis.bloqueos.length) {
+      return {
+        estado: "revision",
+        texto: "Revisión requerida",
+        hayCambios: analisis.hayCambios,
+        bloqueos: analisis.bloqueos.length,
+        advertencias: analisis.advertencias.length,
       };
     }
 
-    crucesAnteriores = snapshotPrevio.cruces || {};
-    referenciasExternas = snapshotPrevio.referencias || null;
-    renderReferencias();
-
-    const fechaBase = snapshotPrevio.guardado_en || snapshotPrevio.timestamp || null;
-
-    if (fechaBase) {
-      const f = new Date(fechaBase);
-
-      const el = document.getElementById("ultima-actualizacion");
-      if (el) el.textContent = `🕒 Última actualización: ${f.toLocaleString()}`;
-
-      const monSnap = document.getElementById("mon-snapshot-time");
-      if (monSnap) monSnap.textContent = `Snapshot: ${f.toLocaleString()}`;
-    }
-  } catch (err) {
-    console.error("❌ cargarSnapshot", err);
-    mostrarToast("❌ No se pudo cargar el snapshot");
-  }
-}
-
-async function guardarSnapshot(datos) {
-  try {
-    const body = { ...datos, cruces: crucesAnteriores };
-    const res = await fetch("/api/guardar-snapshot", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-key": getAdminKey(),
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => null);
-      mostrarToast(`❌ No se guardó: ${errJson?.error || "Error"}`);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    mostrarToast("❌ Error de red al guardar");
-    return false;
-  }
-}
-
-// -------------------------
-// Binance (para configurar y para monitoreo)
-// -------------------------
-async function fetchPrecio(fiat, tipo) {
-  if (fiat === "BRL") {
-    try {
-      const res = await fetch("/api/brl-price", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const j = await res.json();
-      if (tipo === "BUY" && Number.isFinite(Number(j.buy))) return Number(j.buy);
-      if (tipo === "SELL" && Number.isFinite(Number(j.sell))) return Number(j.sell);
-    } catch (e) {
-      console.error("❌ BRL dinámico admin:", e.message || e);
+    if (analisis.hayCambios) {
+      return {
+        estado: "pendiente",
+        texto: "Cambios pendientes",
+        hayCambios: true,
+        bloqueos: 0,
+        advertencias: analisis.advertencias.length,
+      };
     }
 
-    return tipo === "BUY" ? 5.5 : 5;
-  }
-
-  const USDT_LIMITE_VES = 150;
-  const precios = [];
-  try {
-    if (tipo === "SELL" && fiat === "VES") {
-      const precioCompra = await fetchPrecio(fiat, "BUY");
-      if (!precioCompra) return null;
-      return parseFloat((precioCompra * 0.9975).toFixed(6));
-    }
-
-    const res = await fetch("/api/binance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fiat, tradeType: tipo, rows: 100 })
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const j = await res.json();
-    const comerciales = j.data || [];
-
-    for (const item of comerciales) {
-      const adv = item?.adv;
-      if (!adv) continue;
-
-      const precio = parseFloat(adv.price);
-      const minVES = parseFloat(adv.minSingleTransAmount) || Infinity;
-      const permitido = !adv.isAdvBanned;
-
-      if (!precio || !permitido) continue;
-
-      if (fiat === "VES" && tipo === "SELL") {
-        const usdtNecesario = minVES / precio;
-        if (usdtNecesario > USDT_LIMITE_VES) continue;
-      }
-
-      precios.push(precio);
-      if (precios.length === 20) break;
-    }
-
-    if (!precios.length) return null;
-    const promedio = precios.reduce((a, b) => a + b, 0) / precios.length;
-    return parseFloat(promedio.toFixed(6));
-  } catch (e) {
-    console.error("❌ fetchPrecio:", fiat, tipo, e.message || e);
-    return null;
-  }
-}
-
-// -------------------------
-// Render tarjetas (configurar)
-// -------------------------
-function renderTarjetasPaises(modoEdicion = false) {
-  const cont = document.getElementById("tarjetas-paises");
-  if (!cont) return;
-
-  const tablaAntigua = document.getElementById("tabla-paises-body")?.parentElement?.parentElement;
-  if (tablaAntigua) tablaAntigua.remove();
-
-  cont.innerHTML = "";
-
-  const renderInput = (valor, color, tipo, fiat) => {
-    const claseColor = color === "green" ? "text-green-900" : "text-red-900";
-    const texto = formatearTasa(valor);
-    if (!modoEdicion) {
-      return `<div class="mt-1 font-bold text-xl sm:text-2xl leading-tight ${claseColor} break-words truncate max-w-full">${texto}</div>`;
-    }
-    return `
-      <input type="number"
-        step="any"
-        data-fi="${fiat}"
-        data-tipo="${tipo}"
-        value="${valor ?? ""}"
-        class="w-full px-2 py-1 mt-1 border border-gray-300 rounded-md text-center text-black bg-white ${claseColor}
-               text-sm truncate focus:outline-none focus:ring-2 focus:ring-blue-400" />
-    `;
-  };
-
-  paises.forEach(p => {
-    const datos = datosPaises[p.fiat] || {};
-    const compra = datos.compra;
-    const venta  = datos.venta;
-    const ajuste = datos.ajuste ?? ajustesPorDefecto[p.fiat];
-    const emoji = p.emoji || "🌐";
-
-    const tarjeta = document.createElement("div");
-    tarjeta.className = "backdrop-card text-gray-900 p-3 sm:p-4 flex flex-col justify-between min-h-[140px]";
-
-    tarjeta.innerHTML = `
-      <div>
-        <h3 class="text-sm font-semibold tracking-wide mb-2">${emoji} ${p.nombre} (${p.fiat})</h3>
-        <div class="flex flex-col gap-2">
-          <div class="flex-1 bg-green-100 border border-green-300 rounded-md p-2 text-center text-xs">
-            <h4 class="text-[11px] font-medium text-green-700">Compra</h4>
-            ${renderInput(compra, "green", "compra", p.fiat)}
-          </div>
-          <div class="flex-1 bg-red-100 border border-red-300 rounded-md p-2 text-center text-xs">
-            <h4 class="text-[11px] font-medium text-red-700">Venta</h4>
-            ${renderInput(venta, "red", "venta", p.fiat)}
-          </div>
-        </div>
-      </div>
-      <div class="mt-2 text-[11px] text-black-700 flex justify-between items-center">
-        <span>Ajuste (%)</span>
-        ${
-          modoEdicion
-            ? `<input type="number"
-                 step="any"
-                 data-fi="${p.fiat}"
-                 data-tipo="ajuste"
-                 value="${ajuste}"
-                 class="w-24 text-center font-semibold text-sm px-2 py-1.5 rounded-md border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />`
-            : `<div class="w-12 text-right font-semibold text-gray-800">${ajuste} %</div>`
-        }
-      </div>
-    `;
-    cont.appendChild(tarjeta);
-  });
-
-  setTimeout(() => {
-    const inputs = cont.querySelectorAll("input[data-fi]");
-    inputs.forEach(input => {
-      input.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
-    });
-  }, 0);
-}
-
-// -------------------------
-// Cálculo de cruces (configurar) usando datosPaises
-// -------------------------
-function escribirCruces() {
-  const cont = document.getElementById("cruces-container");
-  const header = document.getElementById("cruce-encabezado");
-  if (!cont) return;
-
-  cont.innerHTML = "";
-  cont.className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-5";
-
-  const activos = new Set(paises.map(p => p.fiat));
-  if (header) {
-    header.textContent = filtroPais
-      ? (rolVista === "origen" ? `Mostrando cruces desde ${filtroPais}` : `Mostrando cruces hacia ${filtroPais}`)
-      : "Mostrando todos los cruces";
-  }
-
-  activos.forEach(origen => {
-    activos.forEach(destino => {
-      if (origen === destino) return;
-
-      const o = datosPaises[origen];
-      const d = datosPaises[destino];
-      if (!o || !d || !o.compra || !d.venta) return;
-
-      const ajuste = Number.isFinite(o.ajuste) ? o.ajuste : ajustesPorDefecto[origen];
-      datosPaises[origen].ajuste = ajuste;
-
-      let tasaBase = (destino === "VES" && origen === "COP")
-        ? 1 / (d.venta / o.compra)
-        : d.venta / o.compra;
-
-      const factor =
-        (origen === "COP" && destino === "VES")
-          ? (1 + ajuste / 100)
-          : (1 - ajuste / 100);
-
-      const tasaFinal = parseFloat((tasaBase * factor).toFixed(6));
-
-      const clave = `${origen}-${destino}`;
-      const anterior = crucesAnteriores[clave];
-      crucesAnteriores[clave] = tasaFinal;
-
-      if (filtroPais) {
-        if (rolVista === "origen" && origen !== filtroPais) return;
-        if (rolVista === "destino" && destino !== filtroPais) return;
-      }
-
-      const color = claseCambio(tasaFinal, anterior);
-      const emoji = iconoCambio(tasaFinal, anterior);
-      const flagOrigen  = paises.find(p => p.fiat === origen)?.emoji || "";
-      const flagDestino = paises.find(p => p.fiat === destino)?.emoji || "";
-
-      const card = document.createElement("div");
-      card.className = "relative backdrop-card p-3 text-sm sm:text-base transition-transform duration-200 hover:scale-[1.01]";
-      card.innerHTML = `
-        <span class="absolute top-2 right-2 text-xs sm:text-sm opacity-70 ${color} select-none pointer-events-none">${emoji}</span>
-
-        <div class="flex justify-center">
-          <h4 class="text-xs sm:text-sm font-semibold text-center">
-            <span class="inline-flex items-center gap-1">
-              <span>${flagOrigen}</span><span class="font-medium">${origen}</span>
-              <span class="text-gray-400">→</span>
-              <span>${flagDestino}</span><span class="font-medium">${destino}</span>
-            </span>
-          </h4>
-        </div>
-
-        <div class="mt-2 text-center">
-          <span class="block font-mono tabular-nums ${color} text-2xl sm:text-3xl font-extrabold leading-tight break-all">
-            ${formatearTasa(tasaFinal)}
-          </span>
-        </div>
-
-        <div class="mt-2 grid grid-cols-2 gap-2 text-[11px] sm:text-xs text-gray-600">
-          <div class="flex items-center gap-1 min-w-0 whitespace-nowrap">
-            <span class="text-gray-500">Tasa base</span>:
-            <span class="font-mono tabular-nums truncate max-w-[100px] sm:max-w-[140px]">${formatearTasa(tasaBase)}</span>
-          </div>
-          <div class="text-right whitespace-nowrap">
-            <span class="text-gray-500">Ajuste</span>: ${ajuste}%
-          </div>
-        </div>
-      `;
-      cont.appendChild(card);
-    });
-  });
-}
-
-// -------------------------
-// Popover y filtros (configurar)
-// -------------------------
-function openPopover() {
-  const pop = document.getElementById("popover-paises");
-  const btn = document.getElementById("btn-seleccionar-pais");
-  if (!pop || !btn) return;
-  const rect = btn.getBoundingClientRect();
-  pop.style.top = `${rect.bottom + 4}px`;
-  pop.style.left = `${rect.left}px`;
-  pop.classList.remove("hidden");
-}
-
-function closePopover() {
-  const pop = document.getElementById("popover-paises");
-  if (pop) pop.classList.add("hidden");
-}
-
-function resetFiltros() {
-  filtroPais = null;
-  rolVista = "origen";
-  const label = document.getElementById("pais-seleccionado");
-  if (label) label.innerText = "Todos";
-  const tabO = document.getElementById("tab-origen");
-  const tabD = document.getElementById("tab-destino");
-  if (tabO) tabO.className = "px-4 py-2 bg-white text-blue-600 font-semibold";
-  if (tabD) tabD.className = "px-4 py-2 bg-gray-100 text-gray-600";
-  escribirCruces();
-}
-
-function initPopover() {
-  const ul = document.getElementById("lista-paises");
-  if (!ul) return;
-
-  ul.innerHTML = "";
-  paises.forEach(p => {
-    const li = document.createElement("li");
-    const btn = document.createElement("button");
-    btn.className = "w-full text-left p-3 hover:bg-blue-50";
-    btn.innerText = `${p.nombre} (${p.fiat})`;
-    btn.dataset.fi = p.fiat;
-    btn.addEventListener("click", () => {
-      filtroPais = p.fiat;
-      const label = document.getElementById("pais-seleccionado");
-      if (label) label.innerText = p.nombre;
-      closePopover();
-      escribirCruces();
-    });
-    li.appendChild(btn);
-    ul.appendChild(li);
-  });
-
-  document.addEventListener("click", e => {
-    const pop = document.getElementById("popover-paises");
-    const btn = document.getElementById("btn-seleccionar-pais");
-    if (!pop || !btn) return;
-    if (!pop.contains(e.target) && !btn.contains(e.target)) closePopover();
-  });
-}
-
-// ======================================================
-// MONITOREO (NO guarda / NO modifica datosPaises)
-// ======================================================
-async function obtenerMercadoLive() {
-  const resultado = {};
-  for (const p of paises) {
-    const fiat = p.fiat;
-    const compra = await fetchPrecio(fiat, "BUY");
-    const venta = await fetchPrecio(fiat, "SELL");
-    resultado[fiat] = { compra, venta };
-  }
-  mercadoPaises = resultado;
-
-  try {
-    referenciasMercado = await obtenerReferencias();
-  } catch {
-    referenciasMercado = null;
-  }
-
-  ultimoTick = new Date();
-  const monMarket = document.getElementById("mon-market-time");
-  if (monMarket) monMarket.textContent = `Market: ${ultimoTick.toLocaleString()}`;
-
-  return resultado;
-}
-
-function renderMonitoreo() {
-  const snapRefs = snapshotPrevio?.referencias || null;
-
-  {
-    const usdEl = document.getElementById("mon-bcv-usd");
-    const eurEl = document.getElementById("mon-bcv-eur");
-
-    const marketUsd = referenciasMercado?.bcv?.usd ?? null;
-    const marketEur = referenciasMercado?.bcv?.eur ?? null;
-
-    const snapUsd = snapRefs?.bcv?.usd ?? null;
-    const snapEur = snapRefs?.bcv?.eur ?? null;
-
-    pintarDelta(usdEl, marketUsd, snapUsd, "Snapshot BCV USD");
-    pintarDelta(eurEl, marketEur, snapEur, "Snapshot BCV EUR");
-  }
-
-  {
-    const usdtEl = document.getElementById("mon-usdt-ves");
-
-    const marketUsdtVes = referenciasMercado?.usdt_ves?.mid ?? null;
-    const snapUsdtVes = snapRefs?.usdt_ves?.mid ?? null;
-
-    pintarDelta(usdtEl, marketUsdtVes, snapUsdtVes, "Snapshot USDT→VES");
-  }
-
-  const refFecha = document.getElementById("mon-ref-fecha");
-  if (refFecha) {
-    refFecha.textContent = referenciasMercado?.actualizado_en
-      ? `Refs: ${new Date(referenciasMercado.actualizado_en).toLocaleString()}`
-      : "—";
-  }
-
-  const cont = document.getElementById("mon-grid-monedas");
-  if (!cont) return;
-  cont.innerHTML = "";
-
-  let top = { fiat: null, delta: 0, snap: null, market: null };
-
-  for (const p of paises) {
-    const s = snapshotPrevio?.[p.fiat];
-    const m = mercadoPaises?.[p.fiat];
-    if (!s || !m) continue;
-
-    const sC = Number(s.compra);
-    const sV = Number(s.venta);
-    const mC = Number(m.compra);
-    const mV = Number(m.venta);
-
-    if (!Number.isFinite(sC) || !Number.isFinite(sV) || !Number.isFinite(mC) || !Number.isFinite(mV)) continue;
-
-    const midSnap = (sC + sV) / 2;
-    const midMarket = (mC + mV) / 2;
-    const deltaPct = ((midMarket - midSnap) / midSnap) * 100;
-
-    if (Math.abs(deltaPct) > Math.abs(top.delta)) {
-      top = { fiat: p.fiat, delta: deltaPct, snap: midSnap, market: midMarket };
-    }
-
-    const card = document.createElement("div");
-    card.className = "backdrop-card p-3 text-sm";
-    const cls = deltaPct > 0 ? "text-green-600" : deltaPct < 0 ? "text-red-600" : "";
-    card.innerHTML = `
-      <div class="font-semibold">${p.emoji} ${p.fiat}</div>
-      <div class="mt-1 text-xs opacity-70">Snapshot</div>
-      <div class="font-mono">${Math.round(midSnap)}</div>
-      <div class="mt-1 text-xs opacity-70">Market</div>
-      <div class="font-mono">${Math.round(midMarket)}</div>
-      <div class="mt-2 font-semibold ${cls}">
-        ${deltaPct.toFixed(2)} %
-      </div>
-    `;
-    cont.appendChild(card);
-  }
-
-  const estado = document.getElementById("mon-estado");
-  const rec = document.getElementById("mon-recomendacion");
-  const recSub = document.getElementById("mon-recomendacion-sub");
-  const topMov = document.getElementById("mon-top-mov");
-  const topMovSub = document.getElementById("mon-top-mov-sub");
-
-  const MARGEN_MIN_POR_ORIGEN = { PEN: 6, CLP: 6 };
-  const MARGEN_MIN_DEFAULT = 8;
-
-  function umbralCaidaCritica(origenFiat) {
-    const margen = MARGEN_MIN_POR_ORIGEN[origenFiat] ?? MARGEN_MIN_DEFAULT;
-    const crit = margen - 4.5;
-    return Math.max(1.0, crit);
-  }
-
-  const UMBRAL_SUBIDA_ABSURDA = 10.0;
-  let topAbs = { fiat: null, delta: 0, snap: null, market: null };
-  let peorEstado = { sev: -1, fiat: null, delta: null, crit: null };
-
-  function evaluarEstado(fiat, deltaPct) {
-    if (!Number.isFinite(deltaPct)) return { sev: -1 };
-    const crit = umbralCaidaCritica(fiat);
-    const warn = Math.max(1.0, crit - 0.5);
-
-    if (deltaPct <= -crit) return { sev: 3, crit, label: "🔥 Riesgo margen", rec: "Actualizar snapshot YA" };
-    if (deltaPct <= -warn) return { sev: 2, crit, label: "⚠️ Bajando", rec: "Vigilar / preparar update" };
-    if (deltaPct >= UMBRAL_SUBIDA_ABSURDA) return { sev: 1, crit, label: "🟣 Subida absurda", rec: "Actualizar por control" };
-    return { sev: 0, crit, label: "✅ Estable", rec: "No requiere acción" };
-  }
-
-  for (const p of paises) {
-    const s = snapshotPrevio?.[p.fiat];
-    const m = mercadoPaises?.[p.fiat];
-    if (!s || !m) continue;
-
-    const sC = Number(s.compra);
-    const sV = Number(s.venta);
-    const mC = Number(m.compra);
-    const mV = Number(m.venta);
-    if (!Number.isFinite(sC) || !Number.isFinite(sV) || !Number.isFinite(mC) || !Number.isFinite(mV)) continue;
-
-    const midSnap = (sC + sV) / 2;
-    const midMarket = (mC + mV) / 2;
-    const deltaPct = ((midMarket - midSnap) / midSnap) * 100;
-
-    if (Math.abs(deltaPct) > Math.abs(topAbs.delta)) {
-      topAbs = { fiat: p.fiat, delta: deltaPct, snap: midSnap, market: midMarket };
-    }
-
-    const st = evaluarEstado(p.fiat, deltaPct);
-    if (st.sev > peorEstado.sev) {
-      peorEstado = { ...st, fiat: p.fiat, delta: deltaPct };
-    } else if (st.sev === peorEstado.sev && st.sev >= 2) {
-      if (deltaPct < (peorEstado.delta ?? 999)) peorEstado = { ...st, fiat: p.fiat, delta: deltaPct };
-    }
-  }
-
-  if (topMov) topMov.textContent = topAbs.fiat ? `${topAbs.fiat} ${topAbs.delta.toFixed(2)}%` : "—";
-  if (topMovSub) topMovSub.textContent = topAbs.fiat
-    ? `Snapshot ~${Math.round(topAbs.snap)} | Market ~${Math.round(topAbs.market)}`
-    : "—";
-
-  if (!peorEstado.fiat) {
-    if (estado) estado.textContent = "Estado: —";
-    if (rec) rec.textContent = "—";
-    if (recSub) recSub.textContent = "—";
-  } else {
-    const crit = peorEstado.crit;
-    if (estado) estado.textContent = peorEstado.label;
-    if (rec) rec.textContent = peorEstado.rec;
-
-    const margen = (MARGEN_MIN_POR_ORIGEN[peorEstado.fiat] ?? MARGEN_MIN_DEFAULT);
-    const critTxt = `Umbral caída crítica ~${crit.toFixed(1)}% (margen mín ${margen}%)`;
-
-    if (recSub) {
-      recSub.textContent =
-        `Peor caso: ${peorEstado.fiat} (${peorEstado.delta.toFixed(2)}%). ${critTxt}.`;
-    }
-  }
-
-  const pollStatus = document.getElementById("mon-poll-status");
-  const pollNext = document.getElementById("mon-poll-next");
-  if (pollStatus) pollStatus.textContent = pollingActivo ? "Activo" : "Pausado";
-  if (pollNext) pollNext.textContent = pollingActivo ? "• cada 60s" : "• detenido";
-
-  renderMonCruces();
-}
-
-async function tickMonitoreo() {
-  if (!pollingActivo) return;
-  try {
-    await obtenerMercadoLive();
-    renderMonitoreo();
-  } catch (e) {
-    console.error("❌ tickMonitoreo", e);
-  }
-}
-
-function iniciarPolling() {
-  if (pollingInterval) clearInterval(pollingInterval);
-  pollingInterval = setInterval(tickMonitoreo, 60000);
-}
-
-function detenerPolling() {
-  if (pollingInterval) clearInterval(pollingInterval);
-  pollingInterval = null;
-}
-
-// -------------------------
-// Cruces MONITOREO (consulta rápida)
-// -------------------------
-function renderMonCruces() {
-  const cont = document.getElementById("mon-cruces-container");
-  const header = document.getElementById("mon-cruce-encabezado");
-  if (!cont) return;
-
-  cont.innerHTML = "";
-
-  const activos = new Set(paises.map(p => p.fiat));
-  const buscar = (monBuscar || "").trim().toUpperCase();
-
-  if (header) {
-    header.textContent = buscar
-      ? `Filtro: "${buscar}"`
-      : (monRolVista === "origen" ? "Cruces por origen" : "Cruces por destino");
-  }
-
-  const matches = (fiat) => !buscar || fiat.includes(buscar);
-
-  activos.forEach(origen => {
-    activos.forEach(destino => {
-      if (origen === destino) return;
-
-      if (monRolVista === "origen" && buscar && !matches(origen) && !matches(destino)) return;
-      if (monRolVista === "destino" && buscar && !matches(destino) && !matches(origen)) return;
-
-      const o = datosPaises[origen];
-      const d = datosPaises[destino];
-      if (!o || !d || !o.compra || !d.venta) return;
-
-      const ajuste = Number.isFinite(o.ajuste) ? o.ajuste : ajustesPorDefecto[origen];
-
-      let tasaBase = (destino === "VES" && origen === "COP")
-        ? 1 / (d.venta / o.compra)
-        : d.venta / o.compra;
-
-      const factor =
-        (origen === "COP" && destino === "VES")
-          ? (1 + ajuste / 100)
-          : (1 - ajuste / 100);
-
-      const tasaFinal = parseFloat((tasaBase * factor).toFixed(6));
-
-      const flagOrigen  = paises.find(p => p.fiat === origen)?.emoji || "";
-      const flagDestino = paises.find(p => p.fiat === destino)?.emoji || "";
-
-      const card = document.createElement("div");
-      card.className = "backdrop-card p-3 text-sm";
-      card.innerHTML = `
-        <div class="text-xs font-semibold opacity-90 text-center">
-          ${flagOrigen} ${origen} → ${flagDestino} ${destino}
-        </div>
-        <div class="mt-2 text-center font-mono text-xl font-extrabold">
-          ${formatearTasa(tasaFinal)}
-        </div>
-      `;
-      cont.appendChild(card);
-    });
-  });
-}
-
-// ======================================================
-// EVENTOS UI (configurar + monitoreo)
-// ======================================================
-function bindUI() {
-  const inUsd = document.getElementById("ref-bcv-usd");
-  const inEur = document.getElementById("ref-bcv-eur");
-  if (inUsd) inUsd.disabled = !modoEdicionActivo;
-  if (inEur) inEur.disabled = !modoEdicionActivo;
-
-  if (!referenciasExternas) referenciasExternas = {};
-  if (!referenciasExternas.bcv) referenciasExternas.bcv = { usd: null, eur: null };
-
-  document.getElementById("ref-bcv-usd")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
-  document.getElementById("ref-bcv-eur")?.addEventListener("input", () => mostrarAdvertenciaPendiente(true));
-
-  document.getElementById("btn-seleccionar-pais")?.addEventListener("click", e => {
-    e.stopPropagation();
-    openPopover();
-  });
-  document.getElementById("btn-resetear")?.addEventListener("click", resetFiltros);
-
-  document.getElementById("tab-origen")?.addEventListener("click", () => {
-    rolVista = "origen";
-    const tabO = document.getElementById("tab-origen");
-    const tabD = document.getElementById("tab-destino");
-    if (tabO) tabO.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
-    if (tabD) tabD.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
-    escribirCruces();
-  });
-
-  document.getElementById("tab-destino")?.addEventListener("click", () => {
-    rolVista = "destino";
-    const tabO = document.getElementById("tab-origen");
-    const tabD = document.getElementById("tab-destino");
-    if (tabD) tabD.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
-    if (tabO) tabO.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
-    escribirCruces();
-  });
-
-  document.getElementById("btn-toggle-edicion")?.addEventListener("click", () => {
-    modoEdicionActivo = !modoEdicionActivo;
-    renderTarjetasPaises(modoEdicionActivo);
-    mostrarAdvertenciaPendiente(false);
-
-    const inUsd2 = document.getElementById("ref-bcv-usd");
-    const inEur2 = document.getElementById("ref-bcv-eur");
-    if (inUsd2) inUsd2.disabled = !modoEdicionActivo;
-    if (inEur2) inEur2.disabled = !modoEdicionActivo;
-
-    const btn = document.getElementById("btn-toggle-edicion");
-    if (btn) btn.textContent = modoEdicionActivo ? "🔒 Finalizar Edición" : "✏️ Editar Precios";
-  });
-
-  document.getElementById("btn-refrescar")?.addEventListener("click", () => {
-    document.getElementById("modal-confirmacion")?.classList.remove("hidden");
-  });
-
-  window.cerrarModalConfirmacion = function cerrarModalConfirmacion() {
-    document.getElementById("modal-confirmacion")?.classList.add("hidden");
-  };
-
-  document.getElementById("btn-confirmar-binance")?.addEventListener("click", async () => {
-    window.cerrarModalConfirmacion?.();
-
-    for (const p of paises) {
-      const fiat = p.fiat;
-      if (!datosPaises[fiat]) datosPaises[fiat] = {};
-      const inputAjuste = document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`);
-      const ajusteNuevo = inputAjuste ? parseFloat(inputAjuste.value) : null;
-      const ajustePrevio = datosPaises[fiat].ajuste;
-      datosPaises[fiat].ajuste =
-        Number.isFinite(ajusteNuevo) ? ajusteNuevo : (Number.isFinite(ajustePrevio) ? ajustePrevio : ajustesPorDefecto[fiat]);
-
-      datosPaises[fiat].compra = null;
-      datosPaises[fiat].venta  = null;
-    }
-
-    renderTarjetasPaises(modoEdicionActivo);
-
-    llamadasPendientes = paises.length * 2;
-    for (const p of paises) {
-      const fiat = p.fiat;
-      const compra = await fetchPrecio(fiat, "BUY");
-      llamadasPendientes--;
-      const venta  = await fetchPrecio(fiat, "SELL");
-      llamadasPendientes--;
-
-      datosPaises[fiat].compra = compra;
-      datosPaises[fiat].venta  = venta;
-    }
-
-    manejarFinDeLlamadas();
-    renderTarjetasPaises(modoEdicionActivo);
-    escribirCruces();
-
-    try {
-      referenciasExternas = await obtenerReferencias();
-      renderReferencias();
-    } catch {
-      mostrarToast("⚠️ No se pudieron actualizar referencias");
-    }
-
-    mostrarAdvertenciaPendiente(true);
-  });
-
-  document.getElementById("btn-aplicar-ajustes")?.addEventListener("click", () => {
-    for (const p of paises) {
-      const fiat = p.fiat;
-      const ajuste = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`)?.value);
-      const compra = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="compra"]`)?.value);
-      const venta  = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value);
-
-      if (!datosPaises[fiat]) datosPaises[fiat] = {};
-      datosPaises[fiat].ajuste = Number.isFinite(ajuste) ? ajuste : (datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat]);
-      if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
-      if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
-    }
-    renderTarjetasPaises(modoEdicionActivo);
-    escribirCruces();
-    mostrarAdvertenciaPendiente(true);
-  });
-
-  document.getElementById("btn-guardar-ajustes")?.addEventListener("click", async () => {
-    for (const p of paises) {
-      const fiat = p.fiat;
-      const ajuste = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="ajuste"]`)?.value);
-      const compra = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="compra"]`)?.value);
-      const venta  = parseFloat(document.querySelector(`input[data-fi="${fiat}"][data-tipo="venta"]`)?.value);
-
-      if (!datosPaises[fiat]) datosPaises[fiat] = {};
-      datosPaises[fiat].ajuste = Number.isFinite(ajuste)
-        ? ajuste
-        : (datosPaises[fiat].ajuste ?? ajustesPorDefecto[fiat]);
-
-      if (Number.isFinite(compra)) datosPaises[fiat].compra = compra;
-      if (Number.isFinite(venta))  datosPaises[fiat].venta  = venta;
-    }
-
-    try {
-      referenciasExternas = await obtenerReferencias();
-      renderReferencias();
-    } catch {
-      mostrarToast("⚠️ No se pudieron actualizar referencias");
-    }
-
-    const ahoraIso = new Date().toISOString();
-    const snapshotAGuardar = {
-      ...datosPaises,
-      cruces: crucesAnteriores,
-      referencias: referenciasExternas,
-      timestamp: ahoraIso
+    return {
+      estado: "guardado",
+      texto: "Todo guardado",
+      hayCambios: false,
+      bloqueos: 0,
+      advertencias: 0,
     };
+  } catch {
+    return {
+      estado: "pendiente",
+      texto: "Cambios pendientes",
+      hayCambios: true,
+      bloqueos: 0,
+      advertencias: 0,
+    };
+  }
+}
 
-    const baseActual = JSON.stringify(construirBaseComparableActual());
-    const basePrevia = JSON.stringify(construirBaseComparablePrevia());
+function actualizarEstadoGuardadoUI() {
+  const badgeEstado = document.getElementById("badge-estado-global");
+  const btnGuardar = document.getElementById("btn-guardar-ajustes");
+  const adv = document.getElementById("advertencia-pendiente");
 
-    if (baseActual === basePrevia) {
-      mostrarToast("⚠️ No hay cambios para guardar");
+  if (guardadoEnCurso) {
+    if (adv) adv.classList.remove("hidden");
+
+    if (badgeEstado) {
+      badgeEstado.textContent = "Guardando...";
+      badgeEstado.className =
+        "inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/15";
+    }
+
+    if (btnGuardar) {
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = "Guardando...";
+      btnGuardar.classList.remove("opacity-60");
+    }
+
+    actualizarBotonCancelarBorrador();
+    return;
+  }
+
+  const estado = obtenerEstadoGuardadoUI();
+
+  if (estado.hayCambios) {
+    ocultarBotonUltimosCambios();
+  }
+
+  if (adv) {
+    adv.classList.toggle("hidden", estado.estado === "guardado");
+  }
+
+  if (badgeEstado) {
+    if (estado.estado === "revision") {
+      badgeEstado.textContent = "Revisión requerida";
+      badgeEstado.className =
+        "inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/15";
+    } else if (estado.estado === "pendiente") {
+      badgeEstado.textContent = "Cambios pendientes";
+      badgeEstado.className =
+        "inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/15";
+    } else {
+      badgeEstado.textContent = "Todo guardado";
+      badgeEstado.className =
+        "inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/15";
+    }
+  }
+
+  if (btnGuardar) {
+    btnGuardar.disabled = !estado.hayCambios;
+
+    if (estado.estado === "revision") {
+      btnGuardar.textContent = "Revisión requerida";
+      btnGuardar.classList.remove("opacity-60");
+    } else if (estado.estado === "pendiente") {
+      btnGuardar.textContent = "Guardar cambios";
+      btnGuardar.classList.remove("opacity-60");
+    } else {
+      btnGuardar.textContent = "Guardar cambios";
+      btnGuardar.classList.add("opacity-60");
+    }
+  }
+}
+
+function actualizarBotonCancelarBorrador() {
+  const btnCancelar = document.getElementById("btn-cancelar-borrador");
+  const adv = document.getElementById("advertencia-pendiente");
+  if (!btnCancelar) return;
+
+  if (guardadoEnCurso) {
+    btnCancelar.disabled = true;
+    btnCancelar.classList.add("hidden", "opacity-60");
+    return;
+  }
+
+  const hayPendienteVisible = !!adv && !adv.classList.contains("hidden");
+
+  if (hayPendienteVisible) {
+    btnCancelar.disabled = false;
+    btnCancelar.classList.remove("hidden", "opacity-60");
+  } else {
+    btnCancelar.disabled = true;
+    btnCancelar.classList.add("hidden", "opacity-60");
+  }
+}
+
+function limpiarTimerBotonGuardadoOk() {
+  if (timerBotonGuardadoOk) {
+    clearTimeout(timerBotonGuardadoOk);
+    timerBotonGuardadoOk = null;
+  }
+}
+
+function setEstadoBotonGuardar(tipo = "normal") {
+  const btnGuardar = document.getElementById("btn-guardar-ajustes");
+  if (!btnGuardar) return;
+
+  limpiarTimerBotonGuardadoOk();
+
+  if (tipo === "guardando") {
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = "Guardando...";
+    btnGuardar.classList.remove("opacity-60");
+    return;
+  }
+
+  if (tipo === "guardado") {
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = "Guardado ✓";
+    btnGuardar.classList.remove("opacity-60");
+
+    timerBotonGuardadoOk = setTimeout(() => {
+      actualizarEstadoGuardadoUI();
+    }, 1400);
+    return;
+  }
+
+  actualizarEstadoGuardadoUI();
+}
+
+function ensureBotonUltimosCambios() {
+  let btn = document.getElementById("btn-ver-ultimos-cambios");
+  if (btn) return btn;
+
+  const btnGuardar = document.getElementById("btn-guardar-ajustes");
+  if (!btnGuardar || !btnGuardar.parentElement) return null;
+
+  btn = document.createElement("button");
+  btn.id = "btn-ver-ultimos-cambios";
+  btn.type = "button";
+  btn.textContent = "Ver últimos cambios";
+  btn.className =
+    "hidden ml-2 inline-flex items-center justify-center gap-2 text-center px-3 py-2 min-w-[230px] rounded-xl text-xs font-medium bg-slate-900/5 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-900/10 dark:hover:bg-white/15 transition-all duration-300";
+
+  btn.addEventListener("click", () => {
+    if (!ultimoResumenGuardado?.cambios?.length) {
+      mostrarToast("⚠️ No hay un resumen guardado reciente");
       return;
     }
 
-    const ok = await guardarSnapshot(snapshotAGuardar);
-    if (!ok) return;
+    mostrarResumenCambios(ultimoResumenGuardado.cambios, {
+      advertencias: ultimoResumenGuardado.advertencias || [],
+      bloqueos: [],
+      autoClose: false,
+    });
+  });
 
-    await cargarSnapshot();
+  btnGuardar.insertAdjacentElement("afterend", btn);
+  return btn;
+}
 
-    try {
-      await descargarBackupAutomatico();
-      console.log("✅ Backup automático descargado");
-    } catch (err) {
-      console.error("❌ Error en backup automático:", err);
-      mostrarToast("⚠️ Snapshot guardado, pero falló el backup");
+function mostrarBotonUltimosCambios() {
+  const btn = ensureBotonUltimosCambios();
+  if (!btn) return;
+
+  if (timerBotonUltimosCambiosPremium) {
+    clearTimeout(timerBotonUltimosCambiosPremium);
+    timerBotonUltimosCambiosPremium = null;
+  }
+
+  const hora = formatearHoraCorta(ultimoResumenGuardado?.guardadoEn);
+
+  btn.innerHTML = hora
+    ? `<span aria-hidden="true">✓</span><span>Ver últimos cambios · ${hora}</span>`
+    : `<span aria-hidden="true">✓</span><span>Ver últimos cambios</span>`;
+
+  limpiarEstadoPremiumBotonUltimosCambios();
+  btn.classList.remove("hidden");
+
+  btn.classList.remove(
+    "bg-slate-900/5",
+    "dark:bg-white/10",
+    "text-slate-700",
+    "dark:text-slate-200",
+    "border-slate-200/70",
+    "dark:border-slate-700/70"
+  );
+
+  btn.classList.add(
+    "bg-emerald-500/10",
+    "text-emerald-700",
+    "dark:text-emerald-300",
+    "border-emerald-500/20"
+  );
+
+  timerBotonUltimosCambiosPremium = setTimeout(() => {
+    if (!btn.classList.contains("hidden")) {
+      btn.classList.remove(
+        "bg-emerald-500/10",
+        "text-emerald-700",
+        "dark:text-emerald-300",
+        "border-emerald-500/20"
+      );
+
+      btn.classList.add(
+        "bg-slate-900/5",
+        "dark:bg-white/10",
+        "text-slate-700",
+        "dark:text-slate-200",
+        "border-slate-200/70",
+        "dark:border-slate-700/70"
+      );
     }
 
-    renderTarjetasPaises(modoEdicionActivo);
-    escribirCruces();
-    renderMonitoreo();
-    mostrarAdvertenciaPendiente(false);
-    mostrarToast("✅ Snapshot guardado");
-  });
+    timerBotonUltimosCambiosPremium = null;
+  }, 2600);
+}
 
-  document.getElementById("btn-mon-refresh")?.addEventListener("click", async () => {
-    await tickMonitoreo();
-    mostrarToast("🔄 Chequeo listo");
-  });
+function limpiarEstadoPremiumBotonUltimosCambios() {
+  const btn = document.getElementById("btn-ver-ultimos-cambios");
+  if (!btn) return;
 
-  document.getElementById("btn-mon-toggle")?.addEventListener("click", (e) => {
-    pollingActivo = !pollingActivo;
-    if (e?.target) e.target.textContent = pollingActivo ? "⏸️ Pausar" : "▶️ Reanudar";
-    if (pollingActivo) iniciarPolling();
-    else detenerPolling();
-    renderMonitoreo();
-  });
+  btn.className =
+    "hidden ml-2 inline-flex items-center justify-center gap-2 text-center px-3 py-2 min-w-[230px] rounded-xl text-xs font-medium bg-slate-900/5 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/70 hover:bg-slate-900/10 dark:hover:bg-white/15 transition-all duration-300";
+}
 
-  document.getElementById("mon-tab-origen")?.addEventListener("click", () => {
-    monRolVista = "origen";
-    const a = document.getElementById("mon-tab-origen");
-    const b = document.getElementById("mon-tab-destino");
-    if (a) a.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
-    if (b) b.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
-    renderMonCruces();
-  });
+function ocultarBotonUltimosCambios() {
+  const btn = document.getElementById("btn-ver-ultimos-cambios");
+  if (!btn) return;
 
-  document.getElementById("mon-tab-destino")?.addEventListener("click", () => {
-    monRolVista = "destino";
-    const a = document.getElementById("mon-tab-origen");
-    const b = document.getElementById("mon-tab-destino");
-    if (b) b.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
-    if (a) a.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
-    renderMonCruces();
-  });
+  if (timerBotonUltimosCambiosPremium) {
+    clearTimeout(timerBotonUltimosCambiosPremium);
+    timerBotonUltimosCambiosPremium = null;
+  }
 
-  document.getElementById("mon-buscar-cruce")?.addEventListener("input", (e) => {
-    monBuscar = e.target.value || "";
-    renderMonCruces();
-  });
+  limpiarEstadoPremiumBotonUltimosCambios();
+  btn.classList.add("hidden");
+}
 
-  document.getElementById("mon-resetear")?.addEventListener("click", () => {
-    monBuscar = "";
-    const inp = document.getElementById("mon-buscar-cruce");
-    if (inp) inp.value = "";
-    monRolVista = "origen";
-    const a = document.getElementById("mon-tab-origen");
-    const b = document.getElementById("mon-tab-destino");
-    if (a) a.className = "px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold";
-    if (b) b.className = "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600";
-    renderMonCruces();
-  });
+function formatearFechaHoraCorta(fechaIso) {
+  if (!fechaIso) return "—";
 
-  // 📂 Import backup (CTRL + SHIFT + B)
-  document.addEventListener("keydown", (event) => {
-    if (event.ctrlKey && event.shiftKey && event.key === "B") {
-      event.preventDefault();
-      document.getElementById("input-backup")?.click();
-    }
-  });
+  const fecha = new Date(fechaIso);
+  if (Number.isNaN(fecha.getTime())) return "—";
 
-  document.getElementById("input-backup")?.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const text = await file.text();
-
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch {
-      mostrarToast("❌ Archivo inválido");
-      e.target.value = "";
-      return;
-    }
-
-    if (!json?.snapshots || !Array.isArray(json.snapshots)) {
-      mostrarToast("❌ Formato incorrecto");
-      e.target.value = "";
-      return;
-    }
-
-    const confirmar = confirm("⚠️ Esto reemplazará TODA la base. ¿Continuar?");
-    if (!confirmar) {
-      e.target.value = "";
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/import-snapshots", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-key": getAdminKey()
-        },
-        body: JSON.stringify(json)
-      });
-
-      const r = await res.json();
-
-      if (!res.ok) throw new Error(r.error || "Error importando backup");
-
-      mostrarToast(`✅ Backup cargado (${r.total})`);
-      setTimeout(() => location.reload(), 800);
-    } catch (err) {
-      console.error(err);
-      mostrarToast("❌ Error cargando backup");
-    } finally {
-      e.target.value = "";
-    }
+  return fecha.toLocaleString([], {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
-// -------------------------
-// Init
-// -------------------------
-(async () => {
-  const loader = document.getElementById("loader");
-  if (loader) loader.style.display = "flex";
+function obtenerTextoTiempoRelativo(fechaIso) {
+  if (!fechaIso) return "—";
 
-  ensureToast();
-  await requireAdminAccess();
-  bindUI();
+  const fecha = new Date(fechaIso);
+  if (Number.isNaN(fecha.getTime())) return "—";
 
-  await cargarSnapshot();
-  initPopover();
+  const ahora = new Date();
+  const diffMs = ahora - fecha;
+  const diffSeg = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSeg / 60);
+  const diffHoras = Math.floor(diffMin / 60);
+  const diffDias = Math.floor(diffHoras / 24);
 
-  renderTarjetasPaises(modoEdicionActivo);
-  escribirCruces();
-  mostrarAdvertenciaPendiente(false);
+  if (diffSeg < 10) return "Guardado hace unos segundos";
+  if (diffSeg < 60) return `Guardado hace ${diffSeg} seg`;
+  if (diffMin < 60) return `Guardado hace ${diffMin} min`;
+  if (diffHoras < 24) return `Hoy a las ${formatearHoraCorta(fechaIso)}`;
+  if (diffDias === 1) return `Ayer a las ${formatearHoraCorta(fechaIso)}`;
 
-  await tickMonitoreo();
-  iniciarPolling();
+  return formatearFechaHoraCorta(fechaIso);
+}
 
-  if (loader) loader.style.display = "none";
-})();
+function formatearHoraCorta(fechaIso) {
+  if (!fechaIso) return "";
+
+  const fecha = new Date(fechaIso);
+  if (Number.isNaN(fecha.getTime())) return "";
+
+  return fecha.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function iniciarRefrescoTopbarHumana() {
+  if (timerTopbarHumana) {
+    clearInterval(timerTopbarHumana);
+    timerTopbarHumana = null;
+  }
+
+  timerTopbarHumana = setInterval(() => {
+    actualizarTopbar();
+  }, 30000);
+}
+
+function refrescarRevisionDebounced(delay = 120) {
+  if (timerResumenBorradorDebounce) {
+    clearTimeout(timerResumenBorradorDebounce);
+    timerResumenBorradorDebounce = null;
+  }
+
+  timerResumenBorradorDebounce = setTimeout(() => {
+    renderResumenBorrador();
+    timerResumenBorradorDebounce = null;
+  }, delay);
+}
+
+function refrescarEstadoGuardadoDebounced(delay = 120) {
+  if (timerEstadoGuardadoDebounce) {
+    clearTimeout(timerEstadoGuardadoDebounce);
+    timerEstadoGuardadoDebounce = null;
+  }
+
+  timerEstadoGuardadoDebounce = setTimeout(() => {
+    actualizarEstadoGuardadoUI();
+    timerEstadoGuardadoDebounce = null;
+  }, delay);
+}

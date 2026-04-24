@@ -9,7 +9,8 @@ const state = {
   tasaDesactualizada: true,
   lastCalc: null,
   snapshotTs: null,
-  ops: { open: false, fresh: false, allowWhats: false, message: '' }
+  ops: { open: false, fresh: false, allowWhats: false, message: '', source: 'schedule' },
+  publicConfig: null,
 };
 
 

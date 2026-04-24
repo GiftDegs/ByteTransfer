@@ -6,14 +6,19 @@ import { wireEvents, mostrarPaso1, getLastCalc, getOpsState } from "./ui/steps.j
 window.onload = () => {
   initRipple();
   initSharing(DOM, getLastCalc, getOpsState);
-  // Ocultar todo y arrancar paso 1 desde steps.js
-  DOM.mainHeader.classList.add("hidden");
+
+  // Mostrar header desde el inicio para que el estado abierto/cerrado se vea apenas carga
+  DOM.mainHeader.classList.remove("hidden");
+
+  // La tasa todavía no hace falta mostrarla en el arranque
   DOM.tasaWrap.classList.add("hidden");
+
   DOM.step1.classList.add("hidden");
   DOM.step2.classList.add("hidden");
   DOM.resultado.classList.add("hidden");
   DOM.step2Destino.classList.add("hidden");
   DOM.step1Origen.classList.remove("hidden");
+
   wireEvents();
   mostrarPaso1();
 };

@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel de Tasas</title>
+    <title>ByteTransfer Admin</title>
 
     <script>
       (function () {
         try {
-          const saved = localStorage.getItem('bt_theme');
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const shouldDark = saved ? saved === 'dark' : prefersDark;
-          document.documentElement.classList.toggle('dark', shouldDark);
+          const saved = localStorage.getItem("bt_theme");
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const shouldDark = saved ? saved === "dark" : prefersDark;
+          document.documentElement.classList.toggle("dark", shouldDark);
         } catch (_) {}
       })();
     </script>
@@ -19,410 +19,1103 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
+        darkMode: "class",
         theme: {
           extend: {
             colors: {
-              brandBlue: '#1F6BFF',
-              brandTeal: '#13E6C6',
-              bgLight: '#F4FBFF',
-              bgDark: '#050B1A',
-              surfaceDark: '#0B1224',
+              brandBlue: "#4C7DFF",
+              brandTeal: "#13E6C6",
+              bgLight: "#F6F8FB",
+              bgDark: "#0B0F14",
+              surfaceDark: "#11161D",
+              surfaceDark2: "#161C24",
+              borderDark: "rgba(255,255,255,0.08)",
+            },
+            boxShadow: {
+              soft: "0 10px 30px rgba(0,0,0,0.12)",
+              panel: "0 20px 50px rgba(0,0,0,0.20)",
             },
           },
         },
       };
     </script>
 
+    <script src="/admin/auth.js" defer></script>
+    <script src="/admin/ui.js" defer></script>
+    <script src="/admin/tabs.js" defer></script>
+    <script src="/admin/precios.js" defer></script>
+    <script src="/admin/margenes.js" defer></script>
+    <script src="/admin/perfiles.js" defer></script>
+    <script src="/admin/gestor-masivo.js" defer></script>
+    <script src="/admin/operacion-publica.js" defer></script>
+    <script src="/admin/cruces.js" defer></script>
+    <script src="/admin/monitoreo.js" defer></script>
+    <script src="/admin/guardado.js" defer></script>
+    <script src="/admin/snapshot.js" defer></script>
+    <script src="/admin/mercado.js" defer></script>
+    <script src="/admin/events.js" defer></script>
+    <script src="/admin/init.js" defer></script>
     <script src="/admin/main.js" defer></script>
 
     <style>
-      .backdrop-card {
-        background-color: rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(12px);
-        border-radius: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-      .backdrop-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-      }
-      .backdrop-input {
-        background-color: rgba(255, 255, 255, 0.5);
-        border: 1px solid rgba(200, 200, 255, 0.2);
-        border-radius: 0.5rem;
-        padding: 0.5rem;
-        backdrop-filter: blur(6px);
-        color: #111;
-      }
-      .dark .backdrop-input {
-        background-color: rgba(50, 50, 80, 0.4);
-        color: #eee;
+      :root {
+        color-scheme: light dark;
       }
 
-      /* Drawer animation */
-      .drawer-panel {
-        transform: translateX(100%);
-        transition: transform 220ms ease;
-      }
-      .drawer-open .drawer-panel {
-        transform: translateX(0);
+      body {
+        font-feature-settings: "tnum" 1, "cv02" 1, "cv03" 1, "cv04" 1;
       }
 
-      /* Sticky header blur */
-      .topbar {
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
+      .app-shell {
+  background:
+    radial-gradient(circle at top left, rgba(76, 125, 255, 0.05), transparent 26%),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.04), transparent 22%),
+    linear-gradient(180deg, #F8FAFC 0%, #EEF2F7 100%);
+}
+
+.dark .app-shell {
+  background:
+    radial-gradient(circle at top left, rgba(76, 125, 255, 0.10), transparent 28%),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.08), transparent 26%),
+    linear-gradient(180deg, #0b0f14 0%, #0f141b 100%);
+}
+
+      .dark .app-surface {
+        background: rgba(17, 22, 29, 0.88);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.24);
       }
+
+.app-surface {
+  background: rgba(255,255,255,0.98);
+  border: 1px solid rgba(15,23,42,0.05);
+  box-shadow: 0 10px 28px rgba(15,23,42,0.06);
+  backdrop-filter: blur(8px);
+}
+
+.premium-card {
+  background: rgba(255,255,255,0.985);
+  border: 1px solid rgba(15,23,42,0.06);
+  box-shadow: 0 8px 22px rgba(15,23,42,0.045);
+  backdrop-filter: blur(6px);
+}
+
+      .dark .premium-card {
+        background: rgba(22, 28, 36, 0.92);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+      }
+
+      .tab-chip {
+        border: 1px solid rgba(255,255,255,0.06);
+        transition: all 160ms ease;
+      }
+
+      .tab-chip:hover {
+        transform: translateY(-1px);
+      }
+
+      .subtab-chip {
+        transition: all 160ms ease;
+      }
+
+      .subtab-chip:hover {
+        transform: translateY(-1px);
+      }
+
+.input-premium {
+  border: 1px solid rgba(148,163,184,0.28);
+  background: #FFFFFF;
+  color: #0F172A;
+  border-radius: 14px;
+  padding: 0.72rem 0.9rem;
+  outline: none;
+  transition: all 150ms ease;
+}
+
+      .input-premium:focus {
+        border-color: rgba(76, 125, 255, 0.65);
+        box-shadow: 0 0 0 4px rgba(76, 125, 255, 0.16);
+      }
+
+      .dark .input-premium {
+        background: rgba(255,255,255,0.04);
+        border-color: rgba(255,255,255,0.08);
+        color: #f5f7fa;
+      }
+
+      .dark select,
+      .dark option {
+        background: #161C24;
+        color: #F5F7FA;
+      }
+
+      select,
+      option {
+        color: #111827;
+      }
+
+      .dark .input-premium:focus {
+        border-color: rgba(76, 125, 255, 0.72);
+        box-shadow: 0 0 0 4px rgba(76, 125, 255, 0.14);
+      }
+
+      .btn-primary {
+        background: #4C7DFF;
+        color: white;
+        border-radius: 14px;
+        padding: 0.78rem 1rem;
+        font-weight: 600;
+        transition: all 150ms ease;
+      }
+
+      .btn-primary:hover {
+        filter: brightness(1.05);
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: rgba(76, 125, 255, 0.10);
+        color: #2d5bdb;
+        border: 1px solid rgba(76, 125, 255, 0.16);
+        border-radius: 14px;
+        padding: 0.78rem 1rem;
+        font-weight: 600;
+        transition: all 150ms ease;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset;
+      }
+
+      .dark .btn-secondary {
+        background: rgba(255,255,255,0.05);
+        color: #d8e2ff;
+        border-color: rgba(255,255,255,0.08);
+      }
+
+      .btn-secondary:hover,
+      .btn-ghost:hover,
+      .btn-danger:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: inherit;
+        border: 1px solid rgba(148,163,184,0.20);
+        border-radius: 14px;
+        padding: 0.78rem 1rem;
+        font-weight: 600;
+        transition: all 150ms ease;
+      }
+
+      .btn-danger {
+        background: rgba(239,68,68,0.12);
+        color: #dc2626;
+        border: 1px solid rgba(239,68,68,0.18);
+        border-radius: 14px;
+        padding: 0.78rem 1rem;
+        font-weight: 600;
+        transition: all 150ms ease;
+      }
+
+      .dark .btn-danger {
+        color: #fca5a5;
+      }
+
+      .segmented {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 4px;
+      }
+
+.light-segmented {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(15,23,42,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+      }
+      
     </style>
   </head>
 
-  <body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-gray-100 transition-colors duration-300 p-6">
-    <!-- Loader -->
-    <div id="loader" class="fixed inset-0 flex items-center justify-center z-50 bg-white dark:bg-black bg-opacity-80 backdrop-blur">
-      <div class="flex items-center space-x-3">
-        <svg class="animate-spin h-6 w-6 text-brandBlue" viewBox="0 0 24 24" fill="none">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-        </svg>
-        <span class="text-sm">⏳ Cargando datos...</span>
+  <body class="bg-bgLight dark:bg-bgDark text-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <div class="min-h-screen app-shell dark:app-shell">
+      <!-- Loader -->
+      <div id="loader" class="fixed inset-0 flex items-center justify-center z-50 bg-white/90 dark:bg-black/90 backdrop-blur">
+        <div class="w-full max-w-md px-6">
+          <div class="rounded-3xl app-surface p-6">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="h-12 w-12 rounded-2xl bg-brandBlue/10 flex items-center justify-center">
+                <img src="/logo.png" alt="ByteTransfer" class="h-7 w-7 object-contain" />
+              </div>
+              <div>
+                <div class="text-lg font-semibold tracking-tight">ByteTransfer Admin</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Inicializando sistema</div>
+              </div>
+            </div>
+
+            <div class="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <span id="loader-etapa">Preparando carga...</span>
+              <span id="loader-porcentaje">0%</span>
+            </div>
+
+            <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+              <div
+                id="loader-barra"
+                class="h-full rounded-full bg-brandBlue transition-all duration-500"
+                style="width: 0%;"
+              ></div>
+            </div>
+
+            <div id="loader-detalle" class="text-xs text-slate-500 dark:text-slate-400 mt-3 min-h-[18px]">
+              Iniciando...
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Topbar (modo Monitoreo por defecto) -->
-    <div class="topbar sticky top-0 z-40 -mx-6 px-6 py-3 mb-6 bg-white/60 dark:bg-black/30 border-b border-white/40 dark:border-white/10">
-      <div class="max-w-6xl mx-auto flex items-center gap-3">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="text-xl font-extrabold whitespace-nowrap">📊 Panel de Tasas</div>
-          <div class="hidden sm:flex items-center gap-2 text-xs opacity-80 min-w-0">
-            <span id="mon-snapshot-time" class="truncate">Snapshot: —</span>
-            <span class="opacity-40">•</span>
-            <span id="mon-market-time" class="truncate">Market: —</span>
-          </div>
-        </div>
-
-        <div class="flex-1"></div>
-
-        <!-- Estado (lo pintaremos luego en main.js) -->
-        <div id="mon-estado" class="hidden sm:flex items-center text-xs px-3 py-1 rounded-full border border-white/40 dark:border-white/10 bg-white/40 dark:bg-white/5">
-          Estado: —
-        </div>
-
-        <!-- CTA principal: Configurar (abre drawer) -->
-        <button
-          id="btn-abrir-config"
-          class="px-4 py-2 bg-brandBlue hover:bg-brandBlue/90 text-white rounded-full shadow transition text-sm font-semibold"
-          title="Configurar y guardar snapshot"
-        >
-          ⚙️ Configurar tasas
-        </button>
-
-        <!-- Tema -->
-        <button
-          id="modoToggle"
-          class="px-3 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white rounded-full shadow hover:brightness-110 transition text-sm"
-        >
-          🌞 Claro
-        </button>
-      </div>
-    </div>
-
-    <div class="max-w-6xl mx-auto">
-      <!-- Vista Monitoreo (default) -->
-      <section id="vista-monitoreo" class="space-y-6">
-        <!-- Ticker Referencias (compacto) -->
-        <div class="backdrop-card p-4">
-          <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <div class="flex items-baseline gap-2">
-              <span class="text-xs opacity-70">BCV USD</span>
-              <span id="mon-bcv-usd" class="text-2xl font-extrabold">—</span>
-            </div>
-            <div class="flex items-baseline gap-2">
-              <span class="text-xs opacity-70">BCV EUR</span>
-              <span id="mon-bcv-eur" class="text-2xl font-extrabold">—</span>
-            </div>
-            <div class="flex items-baseline gap-2">
-              <span class="text-xs opacity-70">USDT → VES</span>
-              <span id="mon-usdt-ves" class="text-2xl font-extrabold">—</span>
-            </div>
-
-            <div class="flex-1"></div>
-
-            <div class="text-xs opacity-70" id="mon-ref-fecha">—</div>
-          </div>
-        </div>
-
-        <!-- Resumen / Alertas (lo pintaremos luego desde main.js) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div class="backdrop-card p-4">
-            <div class="text-xs opacity-70 mb-1">Recomendación</div>
-            <div id="mon-recomendacion" class="text-lg font-bold">—</div>
-            <div id="mon-recomendacion-sub" class="text-xs opacity-70 mt-2">—</div>
-          </div>
-
-          <div class="backdrop-card p-4">
-            <div class="text-xs opacity-70 mb-1">Mayor movimiento</div>
-            <div id="mon-top-mov" class="text-lg font-bold">—</div>
-            <div id="mon-top-mov-sub" class="text-xs opacity-70 mt-2">—</div>
-          </div>
-
-          <div class="backdrop-card p-4">
-            <div class="text-xs opacity-70 mb-1">Monitoreo</div>
-            <div class="flex items-center gap-2">
-              <span id="mon-poll-status" class="text-lg font-bold">—</span>
-              <span class="text-xs opacity-70" id="mon-poll-next">—</span>
-            </div>
-            <div class="mt-3 flex gap-2">
-              <button id="btn-mon-refresh" class="px-3 py-2 bg-gray-900/10 dark:bg-white/10 hover:brightness-110 rounded-lg text-sm">
-                🔄 Chequear ahora
-              </button>
-              <button id="btn-mon-toggle" class="px-3 py-2 bg-gray-900/10 dark:bg-white/10 hover:brightness-110 rounded-lg text-sm">
-                ⏸️ Pausar
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Grid Monedas (resumen) -->
-        <div class="backdrop-card p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-lg font-bold">🧭 Monedas (resumen)</h2>
-            <div class="text-xs opacity-70">Vista para decidir si actualizar snapshot</div>
-          </div>
-          <div id="mon-grid-monedas" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            <!-- main.js pintará aquí -->
-          </div>
-          <div class="text-xs opacity-70 mt-3">
-            Tip: el panel de configuración abre a la derecha. El monitoreo no modifica el snapshot hasta que lo guardes.
-          </div>
-        </div>
-
-        <!-- Cruces clave (colapsable, secundario) -->
-        <details class="backdrop-card p-4">
-          <summary class="cursor-pointer select-none flex items-center justify-between">
-            <span class="text-lg font-bold">💱 Cruces (consulta rápida)</span>
-            <span class="text-xs opacity-70">Abrir / cerrar</span>
-          </summary>
-
-          <div class="mt-4">
-            <div class="flex flex-wrap gap-4 items-center mb-4">
-              <div class="flex border rounded-lg overflow-hidden shadow-sm">
-                <button id="mon-tab-origen" class="px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold">Origen →</button>
-                <button id="mon-tab-destino" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600">← Destino</button>
+      <!-- Header -->
+      <header class="sticky top-0 z-40 border-b border-black/5 dark:border-white/10 bg-white/92 dark:bg-[#0B0F14]/80 backdrop-blur-xl">
+        <div class="max-w-[1600px] mx-auto px-6 py-5">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+            <div class="flex items-center gap-4 min-w-0">
+              <div class="h-14 w-14 rounded-2xl bg-brandBlue/10 flex items-center justify-center border border-black/5 dark:border-white/10 shrink-0">
+                <img src="/logo.png" alt="ByteTransfer" class="h-8 w-8 object-contain" />
               </div>
 
-              <div class="flex-1 min-w-[220px]">
-                <input id="mon-buscar-cruce" class="w-full backdrop-input" placeholder="Buscar cruce (ej: ARS, COP, VES)..." />
+              <div class="min-w-0">
+                <div class="text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">ByteTransfer</div>
+                <div class="text-2xl sm:text-3xl font-semibold tracking-tight truncate">Admin Console</div>
+                <div class="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <span id="mon-snapshot-time">Snapshot: —</span>
+                  <span class="opacity-30">•</span>
+                  <span id="mon-market-time">Market: —</span>
+                </div>
               </div>
-
-              <button id="mon-resetear" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded shadow hover:bg-gray-400">
-                🧹 Limpiar
-              </button>
             </div>
 
-            <div id="mon-cruce-encabezado" class="text-sm font-semibold mb-3 opacity-90"></div>
-            <div id="mon-cruces-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+              <div class="flex flex-wrap items-center gap-3">
+                <span
+                  id="badge-entorno"
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium bg-slate-900/5 dark:bg-white/5 border border-black/5 dark:border-white/10"
+                >
+                  <span class="status-dot bg-emerald-500"></span>
+                  LOCAL
+                </span>
+
+                <span
+                  id="badge-estado-global"
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/15"
+                >
+                  Cambios pendientes
+                </span>
+
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn-secondary text-sm"
+                >
+                  Ir a calculadora
+                </a>
+
+                <button
+                  id="modoToggle"
+                  class="btn-ghost text-sm"
+                >
+                  Claro / Oscuro
+                </button>
+              </div>
           </div>
-        </details>
-      </section>
-    </div>
+        </div>
+      </header>
 
-    <!-- Drawer Configuración -->
-    <div id="drawer" class="fixed inset-0 z-50 hidden">
-      <!-- overlay -->
-      <div id="drawer-overlay" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-
-      <!-- panel -->
-      <div class="drawer-panel absolute right-0 top-0 h-full w-full max-w-[980px] bg-white/80 dark:bg-surfaceDark/90 border-l border-white/40 dark:border-white/10 shadow-2xl overflow-y-auto">
-        <div class="p-5 sm:p-6">
-          <!-- Header drawer -->
-          <div class="flex items-start gap-3 mb-5">
-            <div class="min-w-0">
-              <div class="text-xl font-extrabold">⚙️ Configurar tasas (snapshot)</div>
-              <div id="ultima-actualizacion" class="text-xs opacity-70 mt-1">—</div>
-            </div>
-
-            <div class="flex-1"></div>
+      <!-- Main shell -->
+      <main class="max-w-[1600px] mx-auto px-6 py-6">
+        <!-- Main tabs -->
+        <div class="mb-6">
+          <div class="segmented light-segmented dark:segmented inline-flex flex-wrap gap-2 p-2 rounded-2xl">
+            <button
+              id="tab-main-monitoreo"
+              class="tab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+              type="button"
+            >
+              Monitoreo
+            </button>
 
             <button
-              id="btn-cerrar-config"
-              class="px-3 py-2 rounded-lg bg-gray-900/10 dark:bg-white/10 hover:brightness-110 text-sm"
-              title="Volver a monitoreo"
+              id="tab-main-configuracion"
+              class="tab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-transparent text-slate-600 dark:text-slate-300"
+              type="button"
             >
-              ✖ Cerrar
+              Configuración
+            </button>
+
+            <button
+              id="tab-main-cruces"
+              class="tab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-transparent text-slate-600 dark:text-slate-300"
+              type="button"
+            >
+              Cruces
+            </button>
+
+            <button
+              id="tab-main-monedas"
+              class="tab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-transparent text-slate-600 dark:text-slate-300"
+              type="button"
+            >
+              Monedas
+            </button>
+
+            <button
+              id="tab-main-historial"
+              class="tab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-transparent text-slate-600 dark:text-slate-300"
+              type="button"
+            >
+              Historial
             </button>
           </div>
+        </div>
 
-          <!-- Referencias externas (config) -->
-          <div class="backdrop-card p-4 mb-6">
-            <h2 class="text-lg font-bold mb-2">📌 Referencias</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-<div>
-  <div class="text-xs opacity-70">BCV USD</div>
-  <input
-    id="ref-bcv-usd"
-    type="number"
-    step="any"
-    disabled
-    class="w-full mt-1 px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md text-center text-black bg-white dark:bg-gray-900 dark:text-white text-2xl font-extrabold focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
-    placeholder="—"
-  />
-  <div class="text-[11px] opacity-70 mt-1">Editable solo en modo edición</div>
-</div>
+        <!-- MONITOREO -->
+        <section id="vista-monitoreo" class="space-y-6">
+          <div class="premium-card rounded-3xl p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="premium-card rounded-2xl p-5">
+                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">BCV USD</div>
+                <div id="mon-bcv-usd" class="text-3xl font-semibold tracking-tight mt-2">—</div>
+              </div>
 
-<div>
-  <div class="text-xs opacity-70">BCV EUR</div>
-  <input
-    id="ref-bcv-eur"
-    type="number"
-    step="any"
-    disabled
-    class="w-full mt-1 px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md text-center text-black bg-white dark:bg-gray-900 dark:text-white text-2xl font-extrabold focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-70"
-    placeholder="—"
-  />
-  <div class="text-[11px] opacity-70 mt-1">Editable solo en modo edición</div>
-</div>
-              <div>
-                <div class="text-xs opacity-70">USDT → VES</div>
-                <div id="ref-usdt-ves" class="text-2xl font-extrabold">—</div>
+              <div class="premium-card rounded-2xl p-5">
+                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">BCV EUR</div>
+                <div id="mon-bcv-eur" class="text-3xl font-semibold tracking-tight mt-2">—</div>
+              </div>
+
+              <div class="premium-card rounded-2xl p-5">
+                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">USDT → VES</div>
+                <div id="mon-usdt-ves" class="text-3xl font-semibold tracking-tight mt-2">—</div>
               </div>
             </div>
-            <div class="text-xs opacity-70 mt-2" id="ref-fecha">—</div>
+
+            <div id="mon-ref-fecha" class="text-xs text-slate-500 dark:text-slate-400 mt-4">—</div>
           </div>
 
-          <div
-            id="advertencia-pendiente"
-            class="bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded hidden"
-          >
-            ⚠️ <strong>Importante:</strong> Se han actualizado los precios. Debes presionar <strong>💾 Guardar Ajustes</strong>.
-          </div>
+          <div class="premium-card rounded-3xl p-6">
+            <div
+              id="alertas-semaforo"
+              class="rounded-3xl border border-black/5 dark:border-white/10 bg-white/60 dark:bg-white/5 p-5"
+            >
+              <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Centro de Alertas</div>
+                  <h2 id="alertas-titulo-global" class="text-3xl font-semibold tracking-tight mt-2">
+                    Analizando sistema...
+                  </h2>
+                  <p id="alertas-subtitulo" class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                    Analizando cruces y márgenes en tiempo real...
+                  </p>
+                </div>
 
-          <!-- Acciones -->
-          <div class="flex flex-wrap gap-3 mb-8 border-b border-gray-300 dark:border-gray-700 pb-4">
-            <button id="btn-refrescar" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow">
-              🔄 Actualizar Precios
-            </button>
-            <button id="btn-toggle-edicion" class="px-4 py-2 bg-brandTeal hover:brightness-110 text-white rounded shadow">
-              ✏️ Editar Precios
-            </button>
-            <button id="btn-aplicar-ajustes" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded shadow">
-              🔃 Aplicar Ajustes
-            </button>
-            <button id="btn-guardar-ajustes" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">
-              💾 Guardar Ajustes
-            </button>
-          </div>
-
-          <!-- Popover País -->
-          <div id="popover-paises" class="absolute bg-white dark:bg-gray-800 rounded shadow-lg w-64 max-h-80 overflow-auto hidden z-50">
-            <ul id="lista-paises" class="divide-y divide-gray-200 dark:divide-gray-600"></ul>
-          </div>
-
-          <!-- Tarjetas -->
-          <div id="tarjetas-paises" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-10"></div>
-
-          <!-- Selector país -->
-          <div class="flex flex-wrap gap-4 mb-8 items-center">
-            <button id="btn-seleccionar-pais" class="px-4 py-2 bg-brandBlue text-white rounded-lg shadow hover:bg-brandBlue/90">
-              🌐 País: <span id="pais-seleccionado">Todos</span>
-            </button>
-
-            <div class="flex border rounded-lg overflow-hidden shadow-sm">
-              <button id="tab-origen" class="px-4 py-2 bg-white dark:bg-gray-800 text-brandBlue font-semibold">Origen →</button>
-              <button id="tab-destino" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600">← Destino</button>
+                <div>
+                  <span
+                    id="alertas-badge-global"
+                    class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-slate-900/5 dark:bg-white/10"
+                  >
+                    Cargando
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <button id="btn-resetear" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded shadow hover:bg-gray-400">
-              🧹 Limpiar filtros
+            <div id="alertas-top3" class="grid grid-cols-1 xl:grid-cols-3 gap-4 mt-4"></div>
+
+            <div class="mt-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+              <div id="alertas-resumen-extra" class="text-sm text-slate-600 dark:text-slate-300">
+                Sin datos todavía.
+              </div>
+
+              <div id="alertas-accion" class="text-sm font-medium text-slate-800 dark:text-slate-100">
+                Esperando análisis...
+              </div>
+            </div>
+          </div>
+
+          <div class="premium-card rounded-3xl p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold">Monitoreo del sistema</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Estado operativo general del panel.
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span id="mon-poll-status" class="text-sm font-medium">—</span>
+                <span id="mon-poll-next" class="text-xs text-slate-500 dark:text-slate-400">—</span>
+                <button id="btn-mon-refresh" class="btn-secondary text-sm px-4 py-2">Actualizar</button>
+                <button id="btn-mon-toggle" class="btn-ghost text-sm px-4 py-2">Pausar</button>
+              </div>
+            </div>
+
+            <div id="mon-estado" class="hidden">Estado: —</div>
+            <div id="mon-recomendacion" class="hidden">—</div>
+            <div id="mon-recomendacion-sub" class="hidden">—</div>
+            <div id="mon-top-mov" class="hidden">—</div>
+            <div id="mon-top-mov-sub" class="hidden">—</div>
+          </div>
+        </section>
+
+        <!-- CONFIGURACIÓN -->
+        <section id="vista-configuracion" class="hidden">
+          <div class="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
+            <!-- Main config content -->
+            <div class="space-y-6">
+              <!-- Config header -->
+              <div class="premium-card rounded-3xl p-6">
+                <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                  <div>
+                    <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Configuración</div>
+                    <h1 class="text-3xl font-semibold tracking-tight mt-2">Centro de control operativo</h1>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
+                      Administra precios, márgenes y comportamiento del sistema desde una estructura modular.
+                    </p>
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-3">
+                    <div class="premium-card rounded-2xl px-4 py-3">
+                      <div class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Último snapshot</div>
+                      <div id="ultima-actualizacion" class="text-sm font-medium mt-1">—</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Config subtabs -->
+                <div class="mt-6">
+                  <div class="segmented light-segmented dark:segmented inline-flex flex-wrap gap-2 p-2 rounded-2xl">
+                    <button
+                      id="tab-config-precios"
+                      class="subtab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                      type="button"
+                    >
+                      Precios
+                    </button>
+
+                    <button
+                      id="tab-config-margenes"
+                      class="subtab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-transparent text-slate-600 dark:text-slate-300"
+                      type="button"
+                    >
+                      Márgenes
+                    </button>
+
+                    <button
+                      id="tab-config-sistema"
+                      class="subtab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-transparent text-slate-600 dark:text-slate-300"
+                      type="button"
+                    >
+                      Sistema
+                    </button>
+
+                    <button
+                      id="tab-config-operacion"
+                      class="subtab-chip px-4 py-2.5 rounded-xl text-sm font-medium bg-transparent text-slate-600 dark:text-slate-300"
+                      type="button"
+                    >
+                      Operación pública
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PRECIOS -->
+              <div id="config-panel-precios" class="space-y-6">
+                <div class="premium-card rounded-3xl p-6">
+                  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                    <div>
+                      <div class="text-lg font-semibold tracking-tight">Referencias y precios</div>
+                      <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Todos los valores base del sistema viven aquí.
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                      <button id="btn-refrescar" class="btn-secondary text-sm">Actualizar precios</button>
+                      <button id="btn-toggle-edicion" class="btn-ghost text-sm">Editar precios</button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div class="premium-card rounded-2xl p-5">
+                      <div class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-2">BCV USD</div>
+                      <input
+                        id="ref-bcv-usd"
+                        type="number"
+                        step="any"
+                        disabled
+                        class="input-premium w-full text-2xl font-semibold text-center"
+                        placeholder="—"
+                      />
+                    </div>
+
+                    <div class="premium-card rounded-2xl p-5">
+                      <div class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-2">BCV EUR</div>
+                      <input
+                        id="ref-bcv-eur"
+                        type="number"
+                        step="any"
+                        disabled
+                        class="input-premium w-full text-2xl font-semibold text-center"
+                        placeholder="—"
+                      />
+                    </div>
+
+                    <div class="premium-card rounded-2xl p-5">
+                      <div class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-2">USDT → VES</div>
+                      <div id="ref-usdt-ves" class="text-3xl font-semibold tracking-tight mt-2">—</div>
+                    </div>
+                  </div>
+
+                  <div id="ref-fecha" class="text-xs text-slate-500 dark:text-slate-400 mt-4">—</div>
+                </div>
+
+                <div class="premium-card rounded-3xl p-6">
+                  <div class="flex items-center justify-between gap-3 mb-5">
+                    <div>
+                      <div class="text-lg font-semibold tracking-tight">Monedas</div>
+                      <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Compra y venta por moneda, editables dentro del borrador.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="tarjetas-paises" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                </div>
+              </div>
+
+              <!-- MÁRGENES -->
+              <div id="config-panel-margenes" class="hidden space-y-6">
+                <div class="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6">
+                  <div class="premium-card rounded-3xl p-6">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                      <div>
+                        <div class="text-lg font-semibold tracking-tight">Perfiles</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          Configuraciones guardadas de márgenes.
+                        </div>
+                      </div>
+
+                      <button id="btn-guardar-perfil-margen" class="btn-secondary text-sm">Crear perfil</button>
+                    </div>
+
+                    <div class="space-y-3">
+                      <input
+                        id="perfil-margen-nombre"
+                        type="text"
+                        placeholder="Nombre del perfil"
+                        class="input-premium w-full"
+                      />
+
+                      <select id="perfil-margen-select" class="input-premium w-full">
+                        <option value="">Sin perfiles</option>
+                      </select>
+                    </div>
+
+                    <div id="perfil-margen-info" class="text-sm text-slate-500 dark:text-slate-400 mt-4">
+                      Aún no hay perfiles guardados.
+                    </div>
+
+                    <div class="mt-4 grid gap-3">
+                      <button id="btn-aplicar-perfil-margen" class="btn-primary text-sm">Abrir / aplicar perfil</button>
+                      <button id="btn-sobrescribir-perfil-margen" class="btn-secondary text-sm">Sobrescribir perfil actual</button>
+                      <button id="btn-eliminar-perfil-margen" class="btn-danger text-sm">Eliminar perfil</button>
+                    </div>
+                  </div>
+
+                  <div class="premium-card rounded-3xl p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                      <div>
+                        <div class="text-lg font-semibold tracking-tight">Gestor de márgenes</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          Ajustes masivos y edición granular por cruce.
+                        </div>
+                      </div>
+
+                      <div class="flex flex-wrap gap-3">
+                        <button id="masivo-resetear-filtrados" class="btn-ghost text-sm">Resetear a 5%</button>
+                        <button id="masivo-aplicar-editadas" class="btn-secondary text-sm">Aplicar filas editadas</button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-6">
+                      <div>
+                        <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">Origen</label>
+                        <select id="masivo-filtro-origen" class="input-premium w-full">
+                          <option value="">Todos</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">Destino</label>
+                        <select id="masivo-filtro-destino" class="input-premium w-full">
+                          <option value="">Todos</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">Valor</label>
+                        <input
+                          id="masivo-valor"
+                          type="number"
+                          step="any"
+                          placeholder="0.00"
+                          class="input-premium w-full"
+                        />
+                      </div>
+
+                      <div class="flex items-end">
+                        <button id="masivo-limpiar-filtros" class="btn-ghost text-sm w-full">Limpiar filtros</button>
+                      </div>
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap gap-3">
+                      <button id="masivo-sumar" class="btn-secondary text-sm">Sumar</button>
+                      <button id="masivo-restar" class="btn-secondary text-sm">Restar</button>
+                      <button id="masivo-reemplazar" class="btn-primary text-sm">Reemplazar</button>
+                    </div>
+
+                    <div id="masivo-info" class="text-sm text-slate-500 dark:text-slate-400 mt-4">
+                      Sin filtros activos. Mostrando todos los cruces del borrador.
+                    </div>
+
+                    <div id="masivo-info-extra" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      0 filas visibles · 0 filas editadas manualmente.
+                    </div>
+
+                    <div class="mt-5 overflow-auto rounded-2xl border border-black/5 dark:border-white/10">
+                      <table class="min-w-full text-sm">
+                        <thead class="bg-black/5 dark:bg-white/5">
+                          <tr>
+                            <th class="text-left px-4 py-3 font-medium">Origen</th>
+                            <th class="text-left px-4 py-3 font-medium">Destino</th>
+                            <th class="text-left px-4 py-3 font-medium">Margen</th>
+                            <th class="text-left px-4 py-3 font-medium">Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody id="masivo-tabla-body"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SISTEMA -->
+              <div id="config-panel-sistema" class="hidden space-y-6">
+                <div class="premium-card rounded-3xl p-6">
+                  <div class="text-lg font-semibold tracking-tight">Sistema</div>
+                  <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Configuración interna del comportamiento operativo.
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    <div class="premium-card rounded-2xl p-5">
+                      <div class="text-sm font-medium">Polling</div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Frecuencia de refresco del monitoreo.</div>
+
+                      <div class="mt-4">
+                        <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">
+                          Intervalo
+                        </label>
+                        <select id="config-polling-interval" class="input-premium w-full">
+                          <option value="30">30 segundos</option>
+                          <option value="60" selected>60 segundos</option>
+                          <option value="120">120 segundos</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="premium-card rounded-2xl p-5">
+                      <div class="text-sm font-medium">Alertas</div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Sensibilidad y tolerancias del centro de alertas.</div>
+
+                      <div class="mt-4 space-y-4">
+                        <div>
+                          <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">
+                            Tolerancia OK
+                          </label>
+                          <input id="config-alerta-tolerancia-ok" type="number" step="any" class="input-premium w-full" value="0.25" />
+                        </div>
+
+                        <div>
+                          <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">
+                            Umbral vigilancia
+                          </label>
+                          <input id="config-alerta-tolerancia-vigilar" type="number" step="any" class="input-premium w-full" value="1.0" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- OPERACIÓN PÚBLICA -->
+              <div id="config-panel-operacion" class="hidden space-y-6">
+                <div class="premium-card rounded-3xl p-6">
+                  <div class="text-lg font-semibold tracking-tight">Operación pública</div>
+                  <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Comportamiento visible para la calculadora pública.
+                  </div>
+
+                  <div class="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="premium-card rounded-2xl px-4 py-3">
+                      <div class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        Estado actual
+                      </div>
+                      <div id="config-operacion-estado-actual" class="text-sm font-medium mt-1">
+                        Sin cargar
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                      <button id="btn-aplicar-operacion-publica" class="btn-primary text-sm">
+                        Aplicar operación pública
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    <div class="premium-card rounded-2xl p-5">
+                      <div class="text-sm font-medium">Estado de calculadora</div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Abre o cierra la calculadora pública manualmente.</div>
+
+                      <div class="mt-4">
+                        <select id="config-calculadora-estado" class="input-premium w-full">
+                          <option value="open">Abierta</option>
+                          <option value="closed">Cerrada</option>
+                          <option value="schedule">Usar horario</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="premium-card rounded-2xl p-5">
+                      <div class="text-sm font-medium">Mensaje operativo</div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Texto visible para el usuario final.</div>
+
+                      <div class="mt-4">
+                        <input id="config-calculadora-mensaje" type="text" class="input-premium w-full" placeholder="Servicio operativo con normalidad" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="premium-card rounded-2xl p-5 mt-6">
+                    <div class="text-sm font-medium">Horarios por día</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Definición operativa semanal para la calculadora pública.
+                    </div>
+
+                    <div class="mt-5 overflow-auto rounded-2xl border border-black/5 dark:border-white/10">
+                      <table class="min-w-full text-sm">
+                        <thead class="bg-black/5 dark:bg-white/5">
+                          <tr>
+                            <th class="text-left px-4 py-3 font-medium">Día</th>
+                            <th class="text-left px-4 py-3 font-medium">Activo</th>
+                            <th class="text-left px-4 py-3 font-medium">Desde</th>
+                            <th class="text-left px-4 py-3 font-medium">Hasta</th>
+                          </tr>
+                          <div id="config-zona-info" class="premium-card rounded-2xl p-4 mb-4"></div>
+                        </thead>
+                        <tbody id="config-horarios-body">
+                          <tr class="border-t border-black/5 dark:border-white/10">
+                            <td class="px-4 py-3">Lunes</td>
+                            <td class="px-4 py-3"><input type="checkbox" checked /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="11:00" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="22:00" /></td>
+                          </tr>
+                          <tr class="border-t border-black/5 dark:border-white/10">
+                            <td class="px-4 py-3">Martes</td>
+                            <td class="px-4 py-3"><input type="checkbox" checked /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="11:00" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="22:00" /></td>
+                          </tr>
+                          <tr class="border-t border-black/5 dark:border-white/10">
+                            <td class="px-4 py-3">Miércoles</td>
+                            <td class="px-4 py-3"><input type="checkbox" checked /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="11:00" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="22:00" /></td>
+                          </tr>
+                          <tr class="border-t border-black/5 dark:border-white/10">
+                            <td class="px-4 py-3">Jueves</td>
+                            <td class="px-4 py-3"><input type="checkbox" checked /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="11:00" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="22:00" /></td>
+                          </tr>
+                          <tr class="border-t border-black/5 dark:border-white/10">
+                            <td class="px-4 py-3">Viernes</td>
+                            <td class="px-4 py-3"><input type="checkbox" checked /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="11:00" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="22:00" /></td>
+                          </tr>
+                          <tr class="border-t border-black/5 dark:border-white/10">
+                            <td class="px-4 py-3">Sábado</td>
+                            <td class="px-4 py-3"><input type="checkbox" checked /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="11:00" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" value="19:00" /></td>
+                          </tr>
+                          <tr class="border-t border-black/5 dark:border-white/10">
+                            <td class="px-4 py-3">Domingo</td>
+                            <td class="px-4 py-3"><input type="checkbox" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" /></td>
+                            <td class="px-4 py-3"><input type="time" class="input-premium w-full" /></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Draft panel -->
+            <aside class="space-y-6">
+              <div class="premium-card rounded-3xl p-6 sticky top-[132px]">
+                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Borrador</div>
+                <div class="text-2xl font-semibold tracking-tight mt-2">Cambios pendientes</div>
+
+                <div id="resumen-borrador" class="mt-5">
+                  <div class="premium-card rounded-2xl p-4">
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <div class="text-sm font-medium">Estado actual</div>
+                        <p id="resumen-borrador-texto" class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          Sin cambios preparados.
+                        </p>
+                      </div>
+
+                      <div
+                        id="resumen-borrador-badge"
+                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-900/5 dark:bg-white/10"
+                      >
+                        Sin borrador
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  id="advertencia-pendiente"
+                  class="hidden mt-4 rounded-2xl border border-amber-500/15 bg-amber-500/10 text-amber-800 dark:text-amber-200 p-4 text-sm"
+                >
+                  Hay cambios preparados. Previsualiza y luego guarda si estás conforme.
+                </div>
+
+                <div class="mt-6 grid gap-3">
+                  <button id="btn-aplicar-cambios" class="btn-secondary text-sm">Previsualizar cambios</button>
+                  <button id="btn-guardar-ajustes" class="btn-primary text-sm">Guardar cambios</button>
+                  <button id="btn-cancelar-borrador" class="btn-ghost text-sm">Cancelar borrador</button>
+                </div>
+
+                <div class="mt-6 text-xs text-slate-500 dark:text-slate-400">
+                  El borrador debe persistir hasta que lo guardes o lo canceles manualmente.
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+<!-- CRUCES -->
+<section id="vista-cruces" class="hidden">
+  <div class="premium-card rounded-3xl p-6">
+    <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+      <div>
+        <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Cruces</div>
+        <h2 class="text-3xl font-semibold tracking-tight mt-2">Consulta de cruces</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+          Valores actuales de una moneda frente a otra, sin lógica competitiva ni alertas de ranking.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <button id="btn-volver-config-desde-cruces" class="btn-ghost text-sm">
+          Volver a Configuración
+        </button>
+
+        <button id="btn-guardar-desde-cruces" class="btn-primary text-sm">
+          Guardar cambios
+        </button>
+
+        <button id="btn-cancelar-desde-cruces" class="btn-ghost text-sm">
+          Cancelar borrador
+        </button>
+
+        <button id="btn-resetear" class="btn-ghost text-sm">
+          Limpiar filtros
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="mt-6 flex flex-wrap gap-4 items-end">
+      <!-- País -->
+      <div class="min-w-[220px]">
+        <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">
+          País
+        </label>
+
+        <select id="select-pais-cruces" class="input-premium w-full">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <!-- Mostrar -->
+      <div class="min-w-[180px]">
+        <label class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 block mb-2">
+          Mostrar
+        </label>
+
+        <select id="select-limite-cruces" class="input-premium w-full">
+          <option value="12">12 cruces</option>
+          <option value="24" selected>24 cruces</option>
+          <option value="48">48 cruces</option>
+          <option value="999">Todos</option>
+        </select>
+      </div>
+
+      <!-- Origen / Destino -->
+      <div class="segmented light-segmented dark:segmented inline-flex gap-2 p-2 rounded-2xl">
+        <button
+          id="tab-origen"
+          class="subtab-chip px-4 py-2 rounded-xl text-sm font-medium bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+        >
+          Origen
+        </button>
+
+        <button
+          id="tab-destino"
+          class="subtab-chip px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"
+        >
+          Destino
+        </button>
+      </div>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div class="mt-6">
+      <div
+        id="cruce-encabezado"
+        class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-4"
+      ></div>
+
+      <div
+        id="cruces-container"
+        class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4"
+      ></div>
+    </div>
+  </div>
+</section>
+
+        <!-- MONEDAS -->
+        <section id="vista-monedas" class="hidden">
+          <div class="premium-card rounded-3xl p-6">
+            <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Monedas</div>
+            <h2 class="text-3xl font-semibold tracking-tight mt-2">Resumen por moneda</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              Variación entre snapshot y mercado live por moneda.
+            </p>
+
+            <div id="mon-grid-monedas" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-6"></div>
+          </div>
+        </section>
+
+        <!-- HISTORIAL -->
+        <section id="vista-historial" class="hidden">
+          <div class="premium-card rounded-3xl p-6">
+            <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Historial</div>
+            <h2 class="text-3xl font-semibold tracking-tight mt-2">Snapshots y auditoría</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              Espacio reservado para snapshots, cambios guardados y restauración futura.
+            </p>
+
+            <div class="premium-card rounded-2xl p-8 mt-6 text-center">
+              <div class="text-lg font-medium">Módulo en preparación</div>
+              <div class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                Aquí vivirá el historial real del sistema.
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Modales / utilitarios existentes -->
+      <div id="modal-confirmacion" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+        <div class="app-surface rounded-3xl p-6 w-full max-w-md text-center">
+          <h2 class="text-xl font-semibold tracking-tight">Actualizar precios desde mercado</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+            Se traerán precios nuevos para revisar antes de guardar.
+          </p>
+          <div class="mt-6 flex justify-center gap-3">
+            <button onclick="cerrarModalConfirmacion()" class="btn-ghost text-sm">
+              Cancelar
+            </button>
+            <button id="btn-confirmar-binance" class="btn-primary text-sm">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="modal-resumen-cambios"
+        class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/45 backdrop-blur-sm p-4"
+      >
+        <div class="w-full max-w-2xl rounded-3xl app-surface overflow-hidden">
+          <div class="flex items-center justify-between px-6 py-5 border-b border-black/5 dark:border-white/10">
+            <div>
+              <div class="text-xl font-semibold tracking-tight">Cambios guardados</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Resumen visual del último guardado
+              </div>
+            </div>
+
+            <button
+              id="btn-cerrar-resumen-cambios"
+              class="btn-ghost text-sm px-4 py-2"
+              type="button"
+            >
+              Cerrar
             </button>
           </div>
 
-          <h2 class="text-2xl font-bold mb-4">💱 Tasas de Cruce</h2>
-          <div class="space-y-4 mb-10">
-            <div id="cruce-encabezado" class="text-lg font-semibold"></div>
-            <div id="cruces-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
-          </div>
-
-          <div class="text-xs opacity-70 pb-10">
-            Nota: esta vista modifica el snapshot solo cuando presionas <strong>Guardar Ajustes</strong>. El monitoreo no guarda cambios.
+          <div class="px-6 py-5">
+            <div
+              id="resumen-cambios-lista"
+              class="max-h-[420px] overflow-y-auto space-y-3"
+            ></div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Modal confirmación -->
-    <div id="modal-confirmacion" class="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-      <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-sm text-center">
-        <h2 class="text-lg font-bold mb-2">¿Actualizar precios desde Binance?</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-300">Se perderán valores manuales. ¿Confirmás?</p>
-        <div class="mt-4 flex justify-center gap-4">
-          <button onclick="cerrarModalConfirmacion()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded hover:bg-gray-400">
-            Cancelar
-          </button>
-          <button id="btn-confirmar-binance" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Sí, actualizar</button>
-        </div>
-      </div>
+      <input type="file" id="input-backup" accept=".json" class="hidden" />
     </div>
-
-    <!-- Botón flotante: ir a la app -->
-    <a
-      href="/index.html"
-      target="_blank"
-      class="fixed bottom-4 right-4 z-40 px-4 py-2 bg-brandBlue hover:bg-brandBlue/90 text-white rounded-full shadow-lg transition"
-    >
-      🚀 Ir a la app
-    </a>
 
     <script>
-      // Toggle tema (mismo que tenías, pero ya está en topbar)
-      const btn = document.getElementById('modoToggle');
+      const btn = document.getElementById("modoToggle");
 
       function actualizarToggle() {
-        const esOscuro = document.documentElement.classList.contains('dark');
-        btn.innerHTML = esOscuro ? '🌙 Oscuro' : '🌞 Claro';
+        const esOscuro = document.documentElement.classList.contains("dark");
+        btn.innerHTML = esOscuro ? "Modo oscuro" : "Modo claro";
       }
 
-      btn.addEventListener('click', () => {
-        document.documentElement.classList.toggle('dark');
-        localStorage.setItem('bt_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+      btn.addEventListener("click", () => {
+        document.documentElement.classList.toggle("dark");
+        localStorage.setItem("bt_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
         actualizarToggle();
       });
 
       actualizarToggle();
-
-      // Drawer open/close helpers (JS mínimo, el resto lo haremos en main.js también)
-      const drawer = document.getElementById('drawer');
-      const overlay = document.getElementById('drawer-overlay');
-      const btnOpen = document.getElementById('btn-abrir-config');
-      const btnClose = document.getElementById('btn-cerrar-config');
-
-      function abrirDrawer() {
-        drawer.classList.remove('hidden');
-        // trigger animation
-        requestAnimationFrame(() => {
-          drawer.classList.add('drawer-open');
-        });
-      }
-
-      function cerrarDrawer() {
-        drawer.classList.remove('drawer-open');
-        // esperar animación y ocultar
-        setTimeout(() => {
-          drawer.classList.add('hidden');
-        }, 220);
-      }
-
-      btnOpen?.addEventListener('click', abrirDrawer);
-      btnClose?.addEventListener('click', cerrarDrawer);
-      overlay?.addEventListener('click', cerrarDrawer);
-
-      // ESC para cerrar
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !drawer.classList.contains('hidden')) cerrarDrawer();
-      });
     </script>
-    <input type="file" id="input-backup" accept=".json" class="hidden" />
   </body>
 </html>
