@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "overrides": {
+    "MXN.buy": {
+      "amountMode": "usdt",
+      "amountUsdt": 700,
+      "payTypes": [
+        "BANK",
+        "BBVABank",
+        "MercadoPagoNew"
+      ]
+    },
+    "MXN.sell": {
+      "amountMode": "usdt",
+      "amountUsdt": 2000,
+      "payTypes": [
+        "BANK",
+        "BBVABank",
+        "MercadoPagoNew"
+      ]
+    },
+    "VES.buy": {
+      "amountMode": "usdt",
+      "amountUsdt": 399,
+      "payTypes": [
+        "Banesco"
+      ],
+      "rows": 50,
+      "aggregation": "median",
+      "trimLowest": 0,
+      "trimHighest": 0
+    },
+    "ARS.buy": {
+      "amountMode": "usdt",
+      "amountUsdt": 500,
+      "payTypes": [
+        "MercadoPagoNew",
+        "LemonCash",
+        "BancoBrubankNew",
+        "NaranjaX",
+        "BankArgentina",
+        "UalaNew"
+      ]
+    },
+    "ARS.sell": {
+      "amountMode": "usdt",
+      "amountUsdt": 300,
+      "payTypes": [
+        "MercadoPagoNew",
+        "LemonCash",
+        "BancoBrubankNew",
+        "NaranjaX",
+        "BankArgentina",
+        "UalaNew"
+      ]
+    },
+    "COP.sell": {
+      "amountMode": "usdt",
+      "amountUsdt": 100,
+      "payTypes": [
+        "BancolombiaSA",
+        "Nequi"
+      ]
+    },
+    "COP.buy": {
+      "amountMode": "usdt",
+      "amountUsdt": 500,
+      "payTypes": [
+        "BancolombiaSA",
+        "Nequi"
+      ]
+    },
+    "VES.sell": {
+      "amountMode": "usdt",
+      "amountUsdt": 450,
+      "payTypes": [
+        "Banesco"
+      ],
+      "rows": 30,
+      "aggregation": "median",
+      "trimLowest": 0,
+      "trimHighest": 0
+    },
+    "PEN.buy": {
+      "payTypes": [
+        "BancoDeCredito",
+        "Yape"
+      ]
+    },
+    "PEN.sell": {
+      "payTypes": [
+        "BancoDeCredito",
+        "Yape"
+      ]
+    },
+    "CLP.buy": {
+      "payTypes": [
+        "SpecificBank",
+        "BCIChile",
+        "BancoSantanderChile"
+      ]
+    },
+    "CLP.sell": {
+      "payTypes": [
+        "SpecificBank",
+        "BCIChile",
+        "BancoSantanderChile"
+      ]
+    }
+  },
+  "updated_at": "2026-04-27T23:09:41.755Z"
+}

@@ -34,6 +34,16 @@ function bindUI() {
     mostrarToast(`✅ Polling actualizado a ${seg}s`);
   });
 
+  document.getElementById("btn-recargar-quote-strategies")?.addEventListener("click", async () => {
+  await cargarPanelEstrategiasCotizacion();
+  mostrarToast("✅ Motor recargado");
+  });
+
+  document.getElementById("btn-recargar-method-compare")?.addEventListener("click", async () => {
+  await cargarComparacionMetodoCotizacion();
+  mostrarToast("✅ Comparación actualizada");
+  });
+
   document.getElementById("btn-sobrescribir-perfil-margen")?.addEventListener("click", () => {
     const select = document.getElementById("perfil-margen-select");
     sobrescribirPerfilActual(select?.value || "");

@@ -1,67 +1,88 @@
 "use strict";
 
 // =====================================================
-// BINANCE / MERCADO
+// MERCADO
 // =====================================================
-async function fetchPrecio(fiat, tipo) {
-  if (fiat === "BRL") {
-    try {
-      const res = await fetch("/api/brl-price", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+function normalizarTipoCotizacion(tipo) {
+  const t = String(tipo || "").toUpperCase();
 
-      const j = await res.json();
-      if (tipo === "BUY" && Number.isFinite(Number(j.buy))) return Number(j.buy.toFixed(2));
-      if (tipo === "SELL" && Number.isFinite(Number(j.sell))) return Number(j.sell.toFixed(2));
-    } catch (e) {
-      console.error("❌ BRL dinámico:", e.message || e);
-    }
-
-    return tipo === "BUY" ? 5.5 : 5;
+  if (t === "BUY") {
+    return {
+      tradeType: "BUY",
+      campo: "compra",
+    };
   }
 
-  const USDT_LIMITE_VES = 150;
-  const precios = [];
+  return {
+    tradeType: "SELL",
+    campo: "venta",
+  };
+}
 
+function guardarMetadataCotizacionMotor(fiat, tipo, payload, precio) {
+  const code = String(fiat || "").toUpperCase();
+  const { tradeType, campo } = normalizarTipoCotizacion(tipo);
+
+  if (!code || !campo) return;
+
+  if (!metadataCotizacionesMotor) {
+    metadataCotizacionesMotor = {};
+  }
+
+  if (!metadataCotizacionesMotor[code]) {
+    metadataCotizacionesMotor[code] = {};
+  }
+
+  metadataCotizacionesMotor[code][campo] = {
+    fiat: code,
+    campo,
+    tradeType,
+    precio,
+    provider: payload?.provider || null,
+    source: payload?.source || null,
+    stale: !!payload?.stale,
+    fallback: !!payload?.fallback,
+    fallback_reason: payload?.fallback_reason || null,
+    audit: payload?.audit || null,
+    captured_at: new Date().toISOString(),
+  };
+}
+
+async function fetchPrecio(fiat, tipo) {
   try {
-    if (tipo === "SELL" && fiat === "VES") {
-      const precioCompra = await fetchPrecio(fiat, "BUY");
-      if (!precioCompra) return null;
-      return Number((precioCompra * 0.9975).toFixed(2));
-    }
+    const { tradeType } = normalizarTipoCotizacion(tipo);
 
     const res = await fetch("/api/binance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fiat, tradeType: tipo, rows: 100 }),
+      cache: "no-store",
+      body: JSON.stringify({
+        fiat,
+        tradeType,
+      }),
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     const j = await res.json();
-    const comerciales = j.data || [];
 
-    for (const item of comerciales) {
-      const adv = item?.adv;
-      if (!adv) continue;
+    const precio =
+      Number(j?.price) ||
+      Number(j?.quote?.price) ||
+      Number(j?.data?.[0]?.adv?.price);
 
-      const precio = parseFloat(adv.price);
-      const minVES = parseFloat(adv.minSingleTransAmount) || Infinity;
-      const permitido = !adv.isAdvBanned;
-
-      if (!precio || !permitido) continue;
-
-      if (fiat === "VES" && tipo === "SELL") {
-        const usdtNecesario = minVES / precio;
-        if (usdtNecesario > USDT_LIMITE_VES) continue;
-      }
-
-      precios.push(precio);
-      if (precios.length === 20) break;
+    if (!Number.isFinite(precio) || precio <= 0) {
+      console.warn("⚠️ Precio inválido desde /api/binance:", fiat, tipo, j);
+      return null;
     }
 
-    if (!precios.length) return null;
+    guardarMetadataCotizacionMotor(fiat, tradeType, j, precio);
 
-    const promedio = precios.reduce((a, b) => a + b, 0) / precios.length;
-    return Number(promedio.toFixed(2));
+    console.log(
+      `✅ Motor único | ${String(fiat).toUpperCase()} ${tradeType} | ${precio} | ${j?.audit?.aggregation || "?"} | ${j?.audit?.used_count || "?"}/${j?.audit?.raw_count || "?"} anuncios | métodos: ${(j?.audit?.payTypes || []).join(", ") || "sin filtro"}`
+    );
+
+    return Number(precio.toFixed(2));
   } catch (e) {
     console.error("❌ fetchPrecio:", fiat, tipo, e.message || e);
     return null;

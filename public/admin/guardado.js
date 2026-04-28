@@ -140,6 +140,47 @@ function construirBaseComparablePrevia() {
   };
 }
 
+function obtenerMetadataMotorCambioPrecio(fiat, campo) {
+  const code = String(fiat || "").toUpperCase();
+  const keyCampo = String(campo || "").toLowerCase();
+
+  return metadataCotizacionesMotor?.[code]?.[keyCampo] || null;
+}
+
+function formatearResumenMotorPrecio(meta) {
+  if (!meta) return "";
+
+  const audit = meta.audit || {};
+  const aggregation = audit.aggregation === "median"
+    ? "mediana"
+    : audit.aggregation === "average"
+      ? "promedio"
+      : audit.aggregation || "método no informado";
+
+  const usados = audit.used_count ?? audit.usedCount ?? null;
+  const crudos = audit.raw_count ?? audit.rawCount ?? null;
+
+  const anuncios =
+    usados != null && crudos != null
+      ? `${usados}/${crudos} anuncios`
+      : "";
+
+  const bancos = Array.isArray(audit.payTypes) && audit.payTypes.length
+    ? audit.payTypes.join(", ")
+    : "sin filtro de banco";
+
+  const monto = Number.isFinite(Number(audit.transAmount))
+    ? `monto local: ${Number(audit.transAmount).toLocaleString("es-AR")}`
+    : "";
+
+  return [
+    aggregation,
+    anuncios,
+    bancos,
+    monto,
+  ].filter(Boolean).join(" · ");
+}
+
 function obtenerCambiosDatos(baseActual, basePrevia) {
   const cambios = [];
 
@@ -153,6 +194,9 @@ function obtenerCambiosDatos(baseActual, basePrevia) {
       const nuevo = normalizarNumeroComparable(actual[campo]);
 
       if (anterior !== nuevo) {
+        const motorMeta = obtenerMetadataMotorCambioPrecio(fiat, campo);
+        const motorResumen = formatearResumenMotorPrecio(motorMeta);
+
         cambios.push({
           tipo: "precio",
           grupo: "Precios",
@@ -161,6 +205,8 @@ function obtenerCambiosDatos(baseActual, basePrevia) {
           campo,
           anterior: anterior ?? "vacío",
           nuevo: nuevo ?? "vacío",
+          motorMeta,
+          motorResumen,
         });
       }
     }
@@ -448,11 +494,22 @@ function mostrarResumenCambios(cambios, opciones = {}) {
               <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 ${cambio.grupo}
               </div>
-              <div class="text-sm text-slate-700 dark:text-slate-200 mt-1 break-words">
-                <span class="font-mono">${anterior}</span>
-                <span class="mx-2 opacity-60">→</span>
-                <span class="font-mono font-semibold ${claseNuevo}">${nuevo}</span>
-              </div>
+                <div class="text-sm text-slate-700 dark:text-slate-200 mt-1 break-words">
+                  <span class="font-mono">${anterior}</span>
+                  <span class="mx-2 opacity-60">→</span>
+                  <span class="font-mono font-semibold ${claseNuevo}">${nuevo}</span>
+                </div>
+
+                ${
+                  cambio.tipo === "precio" && cambio.motorResumen
+                    ? `
+                      <div class="mt-2 rounded-lg border border-blue-500/10 bg-blue-500/5 px-2.5 py-2 text-xs text-slate-600 dark:text-slate-300">
+                        <span class="font-semibold text-blue-700 dark:text-blue-300">Motor:</span>
+                        ${cambio.motorResumen}
+                      </div>
+                    `
+                    : ""
+                }
             </div>
           `;
         }).join("")}
@@ -594,6 +651,77 @@ function detectarAdvertenciasPorCambios(cambios = []) {
   return advertencias;
 }
 
+function limpiarQuoteMetaParaSnapshot(meta = {}) {
+  const limpio = {};
+
+  for (const p of paises) {
+    const fiat = p.fiat;
+    const item = meta?.[fiat];
+
+    if (!item || typeof item !== "object") continue;
+
+    limpio[fiat] = {};
+
+    for (const campo of ["compra", "venta"]) {
+      const sideMeta = item?.[campo];
+      if (!sideMeta) continue;
+
+      const audit = sideMeta.audit || {};
+
+      limpio[fiat][campo] = {
+        fiat,
+        campo,
+        tradeType: sideMeta.tradeType || (campo === "compra" ? "BUY" : "SELL"),
+        precio: Number.isFinite(Number(sideMeta.precio))
+          ? Number(sideMeta.precio)
+          : null,
+        provider: sideMeta.provider || null,
+        source: sideMeta.source || null,
+        stale: !!sideMeta.stale,
+        fallback: !!sideMeta.fallback,
+        fallback_reason: sideMeta.fallback_reason || null,
+        aggregation: audit.aggregation || null,
+        raw_count: Number.isFinite(Number(audit.raw_count))
+          ? Number(audit.raw_count)
+          : null,
+        used_count: Number.isFinite(Number(audit.used_count))
+          ? Number(audit.used_count)
+          : null,
+        trimLowest: Number.isFinite(Number(audit.trimLowest))
+          ? Number(audit.trimLowest)
+          : 0,
+        trimHighest: Number.isFinite(Number(audit.trimHighest))
+          ? Number(audit.trimHighest)
+          : 0,
+        transAmount: Number.isFinite(Number(audit.transAmount))
+          ? Number(audit.transAmount)
+          : null,
+        payTypes: Array.isArray(audit.payTypes)
+          ? audit.payTypes.map(String)
+          : [],
+        captured_at: sideMeta.captured_at || new Date().toISOString(),
+      };
+    }
+
+    if (!Object.keys(limpio[fiat]).length) {
+      delete limpio[fiat];
+    }
+  }
+
+  return limpio;
+}
+
+function obtenerQuoteMetaSnapshot() {
+  const metaActual = limpiarQuoteMetaParaSnapshot(metadataCotizacionesMotor || {});
+  const metaPrevia = snapshotPrevio?.quoteMeta || {};
+
+  return {
+    ...(metaPrevia || {}),
+    ...(metaActual || {}),
+    updated_at: new Date().toISOString(),
+  };
+}
+
 function obtenerSystemConfigActualComparable() {
   return {
     pollingSeconds: Number.isFinite(Number(pollingMs))
@@ -636,17 +764,19 @@ function construirSnapshotAGuardar() {
   const ahoraIso = new Date().toISOString();
   const publicConfig = obtenerPublicConfigActualComparable();
   const systemConfig = obtenerSystemConfigActualComparable();
+  const quoteMeta = obtenerQuoteMetaSnapshot();
 
   return {
     ...datosPaises,
     cruces: calcularTodosLosCruces(
-    datosPaises,
-    asegurarMapaCompletoMargenes(5, margenesCruce || {})
-  ),
+      datosPaises,
+      asegurarMapaCompletoMargenes(5, margenesCruce || {})
+    ),
     margenesCruce,
     referencias: referenciasExternas,
     publicConfig,
     systemConfig,
+    quoteMeta,
     timestamp: ahoraIso,
   };
 }

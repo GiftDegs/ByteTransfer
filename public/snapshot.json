@@ -1,75 +1,75 @@
 {
   "ARS": {
-    "compra": 1468.06,
-    "venta": 1463.03
+    "compra": 1503.73,
+    "venta": 1496.19
   },
   "COP": {
-    "compra": 3545.82,
-    "venta": 3530.63
+    "compra": 3599.42,
+    "venta": 3567.15
   },
   "MXN": {
-    "compra": 17.54,
-    "venta": 17.5
+    "compra": 17.49,
+    "venta": 17.36
   },
   "PEN": {
-    "compra": 3.5,
-    "venta": 3.48
+    "compra": 3.52,
+    "venta": 3.5
   },
   "CLP": {
-    "compra": 900.16,
-    "venta": 895.61
+    "compra": 901.1,
+    "venta": 891.13
   },
   "BRL": {
-    "compra": 4.95,
-    "venta": 4.95
+    "compra": 4.96,
+    "venta": 4.97
   },
   "VES": {
-    "compra": 627.75,
-    "venta": 626.18
+    "compra": 649.85,
+    "venta": 644.28
   },
   "cruces": {
-    "VES-ARS": 2.097534,
-    "VES-COP": 5.061835,
-    "VES-PEN": 0.004989,
-    "VES-CLP": 1.284029,
-    "VES-MXN": 0.02509,
-    "VES-BRL": 0.007097,
-    "ARS-VES": 0.392413,
-    "ARS-COP": 2.188516,
-    "ARS-PEN": 0.002157,
-    "ARS-CLP": 0.555158,
-    "ARS-MXN": 0.010371,
-    "ARS-BRL": 0.002933,
-    "COP-VES": 0.162469,
-    "COP-ARS": 0.375472,
-    "COP-PEN": 0.000893,
-    "COP-CLP": 0.22985,
-    "COP-MXN": 0.004294,
-    "COP-BRL": 0.001215,
-    "PEN-VES": 168.174057,
-    "PEN-ARS": 380.3878,
-    "PEN-COP": 917.9638,
-    "PEN-CLP": 232.8586,
-    "PEN-MXN": 4.35,
-    "PEN-BRL": 1.230429,
-    "CLP-VES": 0.653894,
-    "CLP-ARS": 1.479023,
-    "CLP-COP": 3.569225,
-    "CLP-PEN": 0.003518,
-    "CLP-MXN": 0.016914,
-    "CLP-BRL": 0.004784,
-    "MXN-VES": 30.345097,
-    "MXN-ARS": 70.899401,
-    "MXN-COP": 171.096665,
-    "MXN-PEN": 0.168643,
-    "MXN-CLP": 43.401853,
-    "MXN-BRL": 0.23988,
-    "BRL-VES": 113.850909,
-    "BRL-ARS": 266.005455,
-    "BRL-COP": 641.932727,
-    "BRL-PEN": 0.632727,
-    "BRL-CLP": 162.838182,
-    "BRL-MXN": 3.181818
+    "VES-ARS": 2.072126,
+    "VES-COP": 4.940271,
+    "VES-PEN": 0.004847,
+    "VES-CLP": 1.234157,
+    "VES-MXN": 0.024042,
+    "VES-BRL": 0.006654,
+    "ARS-VES": 0.394178,
+    "ARS-COP": 2.158703,
+    "ARS-PEN": 0.002118,
+    "ARS-CLP": 0.539278,
+    "ARS-MXN": 0.010044,
+    "ARS-BRL": 0.002875,
+    "COP-VES": 0.164676,
+    "COP-ARS": 0.378265,
+    "COP-PEN": 0.000885,
+    "COP-CLP": 0.225294,
+    "COP-MXN": 0.004196,
+    "COP-BRL": 0.001201,
+    "PEN-VES": 172.052045,
+    "PEN-ARS": 386.799119,
+    "PEN-COP": 922.189347,
+    "PEN-CLP": 230.377358,
+    "PEN-MXN": 4.290682,
+    "PEN-BRL": 1.228381,
+    "CLP-VES": 0.672093,
+    "CLP-ARS": 1.510968,
+    "CLP-COP": 3.602382,
+    "CLP-PEN": 0.003535,
+    "CLP-MXN": 0.016761,
+    "CLP-BRL": 0.004798,
+    "MXN-VES": 31.311492,
+    "MXN-ARS": 72.713636,
+    "MXN-COP": 173.360635,
+    "MXN-PEN": 0.170097,
+    "MXN-CLP": 43.308205,
+    "MXN-BRL": 0.241538,
+    "BRL-VES": 116.905645,
+    "BRL-ARS": 271.486089,
+    "BRL-COP": 647.265121,
+    "BRL-PEN": 0.635081,
+    "BRL-CLP": 161.696976,
+    "BRL-MXN": 3.15
   },
   "margenesCruce": {
     "VES-ARS": 10,
@@ -77,7 +77,7 @@
     "VES-PEN": 10,
     "VES-CLP": 10,
     "VES-MXN": 10,
-    "VES-BRL": 10,
+    "VES-BRL": 13,
     "ARS-VES": 8,
     "ARS-COP": 9,
     "ARS-PEN": 9,
@@ -117,25 +117,25 @@
   },
   "referencias": {
     "bcv": {
-      "usd": 483.3379,
-      "eur": 567.013357,
+      "usd": 484.7404,
+      "eur": 567.40318,
       "fecha": null,
       "fuente": "mercantil",
-      "captured_at": "2026-04-24T13:03:25.371Z",
+      "captured_at": "2026-04-28T01:21:18.847Z",
       "stale": false,
       "fallback": false,
       "manual": true
     },
     "usdt_ves": {
-      "buy": 627.7513,
-      "sell": 626.181922,
-      "mid": 626.966611,
+      "buy": 644.76865,
+      "sell": 643.156728,
+      "mid": 643.962689,
       "source": "binance_p2p",
-      "captured_at": "2026-04-24T13:03:25.371Z",
+      "captured_at": "2026-04-28T01:21:18.847Z",
       "fallback": false,
       "stale": false
     },
-    "actualizado_en": "2026-04-24T13:03:25.371Z",
+    "actualizado_en": "2026-04-28T01:21:18.847Z",
     "ok": true,
     "errores": []
   },
@@ -183,6 +183,335 @@
   "systemConfig": {
     "pollingSeconds": 60
   },
-  "timestamp": "2026-04-24T13:03:27.682Z",
-  "guardado_en": "2026-04-24T13:03:27.685Z"
+  "timestamp": "2026-04-28T01:21:20.958Z",
+  "guardado_en": "2026-04-28T01:21:20.961Z",
+  "quoteMeta": {
+    "VES": {
+      "compra": {
+        "fiat": "VES",
+        "campo": "compra",
+        "tradeType": "BUY",
+        "precio": 649.8495,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "median",
+        "raw_count": 50,
+        "used_count": 50,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 257554,
+        "payTypes": [
+          "Banesco"
+        ],
+        "captured_at": "2026-04-28T01:21:16.378Z"
+      },
+      "venta": {
+        "fiat": "VES",
+        "campo": "venta",
+        "tradeType": "SELL",
+        "precio": 644.279,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "median",
+        "raw_count": 30,
+        "used_count": 30,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 290703,
+        "payTypes": [
+          "Banesco"
+        ],
+        "captured_at": "2026-04-28T01:21:16.380Z"
+      }
+    },
+    "ARS": {
+      "compra": {
+        "fiat": "ARS",
+        "campo": "compra",
+        "tradeType": "BUY",
+        "precio": 1503.7265,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 749828,
+        "payTypes": [
+          "MercadoPagoNew",
+          "LemonCash",
+          "BancoBrubankNew",
+          "NaranjaX",
+          "BankArgentina",
+          "UalaNew"
+        ],
+        "captured_at": "2026-04-28T01:21:16.382Z"
+      },
+      "venta": {
+        "fiat": "ARS",
+        "campo": "venta",
+        "tradeType": "SELL",
+        "precio": 1496.187,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 449179,
+        "payTypes": [
+          "MercadoPagoNew",
+          "LemonCash",
+          "BancoBrubankNew",
+          "NaranjaX",
+          "BankArgentina",
+          "UalaNew"
+        ],
+        "captured_at": "2026-04-28T01:21:16.384Z"
+      }
+    },
+    "COP": {
+      "compra": {
+        "fiat": "COP",
+        "campo": "compra",
+        "tradeType": "BUY",
+        "precio": 3599.421,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 1795467,
+        "payTypes": [
+          "BancolombiaSA",
+          "Nequi"
+        ],
+        "captured_at": "2026-04-28T01:21:16.385Z"
+      },
+      "venta": {
+        "fiat": "COP",
+        "campo": "venta",
+        "tradeType": "SELL",
+        "precio": 3567.154,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 358822,
+        "payTypes": [
+          "BancolombiaSA",
+          "Nequi"
+        ],
+        "captured_at": "2026-04-28T01:21:16.387Z"
+      }
+    },
+    "PEN": {
+      "compra": {
+        "fiat": "PEN",
+        "campo": "compra",
+        "tradeType": "BUY",
+        "precio": 3.521,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 351,
+        "payTypes": [
+          "BancoDeCredito",
+          "Yape"
+        ],
+        "captured_at": "2026-04-28T01:21:16.388Z"
+      },
+      "venta": {
+        "fiat": "PEN",
+        "campo": "venta",
+        "tradeType": "SELL",
+        "precio": 3.50025,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 350,
+        "payTypes": [
+          "BancoDeCredito",
+          "Yape"
+        ],
+        "captured_at": "2026-04-28T01:21:16.389Z"
+      }
+    },
+    "CLP": {
+      "compra": {
+        "fiat": "CLP",
+        "campo": "compra",
+        "tradeType": "BUY",
+        "precio": 901.095,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 89707,
+        "payTypes": [
+          "SpecificBank",
+          "BCIChile",
+          "BancoSantanderChile"
+        ],
+        "captured_at": "2026-04-28T01:21:16.390Z"
+      },
+      "venta": {
+        "fiat": "CLP",
+        "campo": "venta",
+        "tradeType": "SELL",
+        "precio": 891.126,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 89533,
+        "payTypes": [
+          "SpecificBank",
+          "BCIChile",
+          "BancoSantanderChile"
+        ],
+        "captured_at": "2026-04-28T01:21:16.392Z"
+      }
+    },
+    "MXN": {
+      "compra": {
+        "fiat": "MXN",
+        "campo": "compra",
+        "tradeType": "BUY",
+        "precio": 17.491,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 12229,
+        "payTypes": [
+          "BANK",
+          "BBVABank",
+          "MercadoPagoNew"
+        ],
+        "captured_at": "2026-04-28T01:21:16.393Z"
+      },
+      "venta": {
+        "fiat": "MXN",
+        "campo": "venta",
+        "tradeType": "SELL",
+        "precio": 17.3645,
+        "provider": "binance",
+        "source": "binance_p2p",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": "average",
+        "raw_count": 20,
+        "used_count": 20,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 34996,
+        "payTypes": [
+          "BANK",
+          "BBVABank",
+          "MercadoPagoNew"
+        ],
+        "captured_at": "2026-04-28T01:21:16.395Z"
+      }
+    },
+    "BRL": {
+      "compra": {
+        "fiat": "BRL",
+        "campo": "compra",
+        "tradeType": "BUY",
+        "precio": 4.9646,
+        "provider": "ptax",
+        "source": "ptax",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": null,
+        "raw_count": 0,
+        "used_count": 0,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 0,
+        "payTypes": [],
+        "captured_at": "2026-04-28T01:21:16.710Z"
+      },
+      "venta": {
+        "fiat": "BRL",
+        "campo": "venta",
+        "tradeType": "SELL",
+        "precio": 4.9652,
+        "provider": "ptax",
+        "source": "ptax",
+        "stale": false,
+        "fallback": false,
+        "fallback_reason": null,
+        "aggregation": null,
+        "raw_count": 0,
+        "used_count": 0,
+        "trimLowest": 0,
+        "trimHighest": 0,
+        "transAmount": 0,
+        "payTypes": [],
+        "captured_at": "2026-04-28T01:21:16.801Z"
+      }
+    },
+    "updated_at": "2026-04-28T01:21:20.958Z"
+  }
 }

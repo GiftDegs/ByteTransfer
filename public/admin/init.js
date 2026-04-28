@@ -33,6 +33,8 @@
     renderResumenBorrador();
     llenarSelectGestorMasivo();
     renderGestorMasivoMargenes();
+    await cargarPanelEstrategiasCotizacion();
+    await cargarComparacionMetodoCotizacion();
 
     setLoaderStep("Renderizando datos", 70, "Pintando precios y cruces...");
     renderTarjetasPaises(modoEdicionActivo);

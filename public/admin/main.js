@@ -83,6 +83,7 @@ function obtenerEtiquetaVisualCruce(origen, destino) {
 
 let referenciasExternas = null;
 let datosPaises = {};
+let metadataCotizacionesMotor = {};
 let snapshotPrevio = {};
 let crucesAnteriores = {};
 let modoEdicionActivo = false;

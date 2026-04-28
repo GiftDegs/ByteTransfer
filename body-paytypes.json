@@ -1,0 +1,8 @@
+﻿{
+  "changes": [
+    {
+      "code": "ARS",
+      "payTypes": ["MercadoPagoNew", "BancoBrubankNew", "BankArgentina"]
+    }
+  ]
+}

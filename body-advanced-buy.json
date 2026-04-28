@@ -1,0 +1,12 @@
+﻿{
+  "changes": [
+    {
+      "code": "VES",
+      "side": "buy",
+      "rows": 50,
+      "aggregation": "median",
+      "trimLowest": 0,
+      "trimHighest": 0
+    }
+  ]
+}
