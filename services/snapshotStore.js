@@ -97,6 +97,35 @@ async function readSnapshotsFromDb(limit = 20) {
   }));
 }
 
+async function readSnapshotByIdFromDb(id) {
+  if (!pool || !dbReady) return null;
+
+  const snapshotId = Number(id);
+  if (!Number.isSafeInteger(snapshotId) || snapshotId <= 0) {
+    return null;
+  }
+
+  const result = await pool.query(
+    `
+    SELECT id, data, guardado_en
+    FROM snapshots
+    WHERE id = $1
+    LIMIT 1
+    `,
+    [snapshotId]
+  );
+
+  if (!result.rows.length) return null;
+
+  const row = result.rows[0];
+
+  return {
+    id: row.id,
+    guardado_en: row.guardado_en,
+    data: row.data || {},
+  };
+}
+
 async function writeSnapshotToDb(obj) {
   if (!pool || !dbReady) {
     throw new Error("DB no disponible");
@@ -456,6 +485,7 @@ module.exports = {
   initDb,
   readLatestSnapshotFromDb,
   readSnapshotsFromDb,
+  readSnapshotByIdFromDb,
   writeSnapshotToDb,
   getSnapshotPath,
   readLocalSnapshot,

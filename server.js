@@ -10,6 +10,7 @@ const {
   initDb,
   readLatestSnapshotFromDb,
   readSnapshotsFromDb,
+  readSnapshotByIdFromDb,
   writeSnapshotToDb,
   getSnapshotPath,
   readLocalSnapshot,
@@ -244,6 +245,36 @@ app.get("/api/snapshots", async (req, res) => {
   } catch (e) {
     console.error("❌ /api/snapshots:", e.message);
     return res.status(500).json({ error: "Error leyendo snapshots" });
+  }
+});
+
+app.get("/api/snapshots/:id", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  if (!ADMIN_KEY) {
+    return res.status(503).json({ error: "ADMIN_KEY no configurada" });
+  }
+
+  const clientKey = req.headers["x-admin-key"];
+  if (!clientKey || clientKey !== ADMIN_KEY) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+
+  try {
+    if (!isDbAvailable()) {
+      return res.status(503).json({ error: "DB no disponible" });
+    }
+
+    const snapshot = await readSnapshotByIdFromDb(req.params.id);
+
+    if (!snapshot) {
+      return res.status(404).json({ error: "Snapshot no encontrado" });
+    }
+
+    return res.json(snapshot);
+  } catch (e) {
+    console.error("❌ /api/snapshots/:id:", e.message);
+    return res.status(500).json({ error: "Error leyendo snapshot" });
   }
 });
 
