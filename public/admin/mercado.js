@@ -78,9 +78,11 @@ async function fetchPrecio(fiat, tipo) {
 
     guardarMetadataCotizacionMotor(fiat, tradeType, j, precio);
 
-    console.log(
-      `✅ Motor único | ${String(fiat).toUpperCase()} ${tradeType} | ${precio} | ${j?.audit?.aggregation || "?"} | ${j?.audit?.used_count || "?"}/${j?.audit?.raw_count || "?"} anuncios | métodos: ${(j?.audit?.payTypes || []).join(", ") || "sin filtro"}`
-    );
+    if (window.BT_DEBUG_MOTOR === true) {
+      console.log(
+        `✅ Motor único | ${String(fiat).toUpperCase()} ${tradeType} | ${precio} | ${j?.audit?.aggregation || "?"} | ${j?.audit?.used_count || "?"}/${j?.audit?.raw_count || "?"} anuncios | métodos: ${(j?.audit?.payTypes || []).join(", ") || "sin filtro"}`
+      );
+    }
 
     return Number(precio.toFixed(2));
   } catch (e) {

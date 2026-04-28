@@ -1866,19 +1866,35 @@ const resumenConsulta = quote
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 text-sm">
         ${["buy", "sell"].map((side) => {
-          const item = quote?.[side];
-          if (!item || item.provider !== "binance") {
-            return `
-              <div class="rounded-xl bg-white/60 dark:bg-white/5 border border-black/5 dark:border-white/10 p-3">
-                <div class="text-xs text-slate-500 dark:text-slate-400">
-                  ${traducirLadoCotizacion(side)}
-                </div>
-                <div class="font-medium mt-1">
-                  No usa consulta P2P directa.
-                </div>
+        const item = quote?.[side];
+
+        if (!item || item.provider !== "binance") {
+          const fuenteNoP2P =
+            item?.provider === "ptax"
+              ? "PTAX · sin anuncios P2P"
+              : "No usa consulta P2P directa.";
+
+          const detalleNoP2P =
+            item?.provider === "ptax"
+              ? "Referencia oficial BRL del Banco Central de Brasil."
+              : "";
+
+          return `
+            <div class="rounded-xl bg-white/60 dark:bg-white/5 border border-black/5 dark:border-white/10 p-3">
+              <div class="text-xs text-slate-500 dark:text-slate-400">
+                ${traducirLadoCotizacion(side)}
               </div>
-            `;
-          }
+              <div class="font-medium mt-1">
+                ${fuenteNoP2P}
+              </div>
+              ${
+                detalleNoP2P
+                  ? `<div class="text-xs text-slate-500 dark:text-slate-400 mt-1">${detalleNoP2P}</div>`
+                  : ""
+              }
+            </div>
+          `;
+        }
 
           const amountUsdt = Number.isFinite(Number(item.amountUsdt))
             ? `${Number(item.amountUsdt).toLocaleString("es-AR")} USDT`
@@ -1945,12 +1961,10 @@ ${resumenConsulta}
     })
     .join("");
 
-      registrarEventosMontoMotor();
-      renderResumenBorradorMotor();
-      registrarEventosMontoMotor();
-      registrarEventosAvanzadosMotor();
+registrarEventosMontoMotor();
+registrarEventosAvanzadosMotor();
 registrarEventosPaytypesMotor();
-renderResumenBorradorMotor();
+renderResumenBorrador();
 }
 
 async function cargarPanelEstrategiasCotizacion() {

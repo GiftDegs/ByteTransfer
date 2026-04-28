@@ -170,8 +170,8 @@ function formatearResumenMotorPrecio(meta) {
     : "sin filtro de banco";
 
   const monto = Number.isFinite(Number(audit.transAmount))
-    ? `monto local: ${Number(audit.transAmount).toLocaleString("es-AR")}`
-    : "";
+    ? `consulta Binance: ${Number(audit.transAmount).toLocaleString("es-AR")}`
+    : null;
 
   return [
     aggregation,
@@ -668,6 +668,9 @@ function limpiarQuoteMetaParaSnapshot(meta = {}) {
 
       const audit = sideMeta.audit || {};
 
+      const provider = sideMeta.provider || null;
+      const esPtax = provider === "ptax";
+
       limpio[fiat][campo] = {
         fiat,
         campo,
@@ -675,30 +678,42 @@ function limpiarQuoteMetaParaSnapshot(meta = {}) {
         precio: Number.isFinite(Number(sideMeta.precio))
           ? Number(sideMeta.precio)
           : null,
-        provider: sideMeta.provider || null,
+        provider,
         source: sideMeta.source || null,
         stale: !!sideMeta.stale,
         fallback: !!sideMeta.fallback,
         fallback_reason: sideMeta.fallback_reason || null,
-        aggregation: audit.aggregation || null,
-        raw_count: Number.isFinite(Number(audit.raw_count))
-          ? Number(audit.raw_count)
-          : null,
-        used_count: Number.isFinite(Number(audit.used_count))
-          ? Number(audit.used_count)
-          : null,
-        trimLowest: Number.isFinite(Number(audit.trimLowest))
-          ? Number(audit.trimLowest)
-          : 0,
-        trimHighest: Number.isFinite(Number(audit.trimHighest))
-          ? Number(audit.trimHighest)
-          : 0,
-        transAmount: Number.isFinite(Number(audit.transAmount))
-          ? Number(audit.transAmount)
-          : null,
-        payTypes: Array.isArray(audit.payTypes)
-          ? audit.payTypes.map(String)
-          : [],
+        aggregation: esPtax ? null : audit.aggregation || null,
+        raw_count: esPtax
+          ? null
+          : Number.isFinite(Number(audit.raw_count))
+            ? Number(audit.raw_count)
+            : null,
+        used_count: esPtax
+          ? null
+          : Number.isFinite(Number(audit.used_count))
+            ? Number(audit.used_count)
+            : null,
+        trimLowest: esPtax
+          ? null
+          : Number.isFinite(Number(audit.trimLowest))
+            ? Number(audit.trimLowest)
+            : 0,
+        trimHighest: esPtax
+          ? null
+          : Number.isFinite(Number(audit.trimHighest))
+            ? Number(audit.trimHighest)
+            : 0,
+        transAmount: esPtax
+          ? null
+          : Number.isFinite(Number(audit.transAmount))
+            ? Number(audit.transAmount)
+            : null,
+        payTypes: esPtax
+          ? []
+          : Array.isArray(audit.payTypes)
+            ? audit.payTypes.map(String)
+            : [],
         captured_at: sideMeta.captured_at || new Date().toISOString(),
       };
     }
