@@ -104,16 +104,19 @@ function resumirSnapshotRow(row) {
     };
   }
 
-  return {
-    id: row.id,
-    guardado_en: row.guardado_en,
-    timestamp: data.timestamp || null,
-    monedas,
-    totales: {
-      monedas: Object.keys(monedas).length,
-      cruces: Object.keys(data.cruces || {}).length,
-      margenes: Object.keys(data.margenesCruce || {}).length,
-    },
+return {
+  id: row.id,
+  guardado_en: row.guardado_en,
+  timestamp: data.timestamp || null,
+  monedas,
+  cruces: data.cruces && typeof data.cruces === "object"
+    ? data.cruces
+    : {},
+  totales: {
+    monedas: Object.keys(monedas).length,
+    cruces: Object.keys(data.cruces || {}).length,
+    margenes: Object.keys(data.margenesCruce || {}).length,
+  },
     publicConfig: {
       calculatorState: data.publicConfig?.calculatorState || null,
       message: data.publicConfig?.message || "",
