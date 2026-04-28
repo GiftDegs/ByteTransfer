@@ -9,7 +9,10 @@ function bindUI() {
   document.getElementById("tab-main-configuracion")?.addEventListener("click", () => activarVistaPrincipal("configuracion"));
   document.getElementById("tab-main-cruces")?.addEventListener("click", () => activarVistaPrincipal("cruces"));
   document.getElementById("tab-main-monedas")?.addEventListener("click", () => activarVistaPrincipal("monedas"));
-  document.getElementById("tab-main-historial")?.addEventListener("click", () => activarVistaPrincipal("historial"));
+  document.getElementById("tab-main-historial")?.addEventListener("click", () => {
+  activarVistaPrincipal("historial");
+  cargarHistorialSnapshots();
+});
 
   // Config tabs
   document.getElementById("tab-config-precios")?.addEventListener("click", () => activarConfigTab("precios"));

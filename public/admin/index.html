@@ -54,6 +54,7 @@
     <script src="/admin/guardado.js" defer></script>
     <script src="/admin/snapshot.js" defer></script>
     <script src="/admin/mercado.js" defer></script>
+    <script src="/admin/historial.js" defer></script>
     <script src="/admin/events.js" defer></script>
     <script src="/admin/init.js" defer></script>
     <script src="/admin/main.js" defer></script>
@@ -1100,22 +1101,70 @@
           </div>
         </section>
 
-        <!-- HISTORIAL -->
-        <section id="vista-historial" class="hidden">
-          <div class="premium-card rounded-3xl p-6">
-            <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Historial</div>
-            <h2 class="text-3xl font-semibold tracking-tight mt-2">Snapshots y auditoría</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
-              Espacio reservado para snapshots, cambios guardados y restauración futura.
-            </p>
+          <!-- HISTORIAL -->
+          <section id="vista-historial" class="hidden">
+            <div class="space-y-5">
+              <div class="premium-card rounded-3xl p-6">
+                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Historial</div>
+                    <h2 class="text-3xl font-semibold tracking-tight mt-2">Historial operativo</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-3xl">
+                      Revisa snapshots guardados, evolución promedio por moneda y comparación entre cortes operativos.
+                    </p>
+                  </div>
 
-            <div class="premium-card rounded-2xl p-8 mt-6 text-center">
-              <div class="text-lg font-medium">Módulo en preparación</div>
-              <div class="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                Aquí vivirá el historial real del sistema.
+                  <div class="flex flex-wrap gap-2">
+                    <button id="btn-historial-recargar" class="btn-ghost text-sm">
+                      Recargar historial
+                    </button>
+                  </div>
+                </div>
+
+                <div id="historial-resumen" class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-5"></div>
+              </div>
+
+              <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] gap-5">
+                <div class="premium-card rounded-3xl p-5">
+                  <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 class="text-lg font-semibold">Snapshots recientes</h3>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Lista liviana basada en promedios de compra/venta.
+                      </p>
+                    </div>
+                    <div id="historial-estado" class="text-xs text-slate-500 dark:text-slate-400">
+                      —
+                    </div>
+                  </div>
+
+                  <div id="historial-lista" class="space-y-3"></div>
+                </div>
+
+                <div class="space-y-5">
+                  <div class="premium-card rounded-3xl p-5">
+                    <h3 class="text-lg font-semibold">Detalle del snapshot</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Selecciona un snapshot para revisar su corte operativo.
+                    </p>
+                    <div id="historial-detalle" class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                      Ningún snapshot seleccionado.
+                    </div>
+                  </div>
+
+                  <div class="premium-card rounded-3xl p-5">
+                    <h3 class="text-lg font-semibold">Comparación rápida</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Compara el snapshot seleccionado contra el snapshot más reciente.
+                    </p>
+                    <div id="historial-comparacion" class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                      Sin comparación activa.
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </section>
       </main>
 
