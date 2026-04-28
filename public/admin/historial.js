@@ -228,7 +228,8 @@ async function cargarHistorialSnapshots({ forzar = false } = {}) {
         renderHistorialLista();
         renderHistorialComparacionVacia();
         renderEvolucionMonedaHistorial();
-
+        renderEvolucionCruceHistorial();
+        
         if (historialSnapshots.length) {
         await cargarDetalleSnapshot(historialSnapshots[0].id, {
             limpiarComparacion: false,
@@ -607,6 +608,194 @@ function renderEvolucionMonedaHistorial() {
   renderGraficoMonedaHistorial(code, serie);
 }
 
+function formatearNombreCruceHistorial(clave = "") {
+  const [origen, destino] = String(clave).split("-");
+  if (!origen || !destino) return clave || "—";
+  return `${origen} → ${destino}`;
+}
+
+function obtenerSerieCruceHistorial(clave) {
+  return [...(historialSnapshots || [])]
+    .slice()
+    .reverse()
+    .map((snap) => ({
+      id: snap.id,
+      fecha: snap.guardado_en,
+      valor: snap?.cruces?.[clave] ?? snap?.data?.cruces?.[clave] ?? null,
+    }))
+    .filter((p) => Number.isFinite(Number(p.valor)));
+}
+
+function calcularStatsCruceHistorial(serie = []) {
+  if (!serie.length) {
+    return {
+      inicio: null,
+      actual: null,
+      cambioPct: null,
+      max: null,
+      min: null,
+    };
+  }
+
+  const valores = serie.map((p) => Number(p.valor)).filter(Number.isFinite);
+  const inicio = valores[0];
+  const actual = valores[valores.length - 1];
+
+  return {
+    inicio,
+    actual,
+    cambioPct: inicio ? ((actual - inicio) / inicio) * 100 : null,
+    max: Math.max(...valores),
+    min: Math.min(...valores),
+  };
+}
+
+function renderStatsCruceHistorial(clave, serie) {
+  const box = document.getElementById("historial-cruce-stats");
+  if (!box) return;
+
+  const stats = calcularStatsCruceHistorial(serie);
+
+  const cards = [
+    {
+      label: "Inicio",
+      value: formatearNumeroHistorial(stats.inicio, 6),
+      sub: "Primer snapshot",
+    },
+    {
+      label: "Actual",
+      value: formatearNumeroHistorial(stats.actual, 6),
+      sub: "Último snapshot",
+    },
+    {
+      label: "Cambio",
+      value: formatearPctHistorial(stats.cambioPct),
+      sub: "Variación total",
+      tone: Number(stats.cambioPct) >= 0 ? "up" : "down",
+    },
+    {
+      label: "Máximo",
+      value: formatearNumeroHistorial(stats.max, 6),
+      sub: "Punto más alto",
+    },
+    {
+      label: "Mínimo",
+      value: formatearNumeroHistorial(stats.min, 6),
+      sub: "Punto más bajo",
+    },
+  ];
+
+  box.innerHTML = cards.map((card) => {
+    const toneClass =
+      card.tone === "up"
+        ? "text-green-600 dark:text-green-400"
+        : card.tone === "down"
+          ? "text-red-600 dark:text-red-400"
+          : "text-slate-900 dark:text-white";
+
+    return `
+      <div class="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white/60 dark:bg-white/5 p-4">
+        <div class="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">${card.label}</div>
+        <div class="text-lg font-semibold mt-2 ${toneClass}">${card.value}</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">${card.sub}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderGraficoCruceHistorial(clave, serie) {
+  const box = document.getElementById("historial-cruce-chart");
+  if (!box) return;
+
+  const nombre = formatearNombreCruceHistorial(clave);
+
+  if (!serie.length) {
+    box.innerHTML = `
+      <div class="h-[220px] flex items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+        No hay datos suficientes para graficar ${nombre}.
+      </div>
+    `;
+    return;
+  }
+
+  if (serie.length === 1) {
+    box.innerHTML = `
+      <div class="h-[220px] flex items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+        Solo hay un snapshot para ${nombre}. Se necesitan al menos dos para ver evolución.
+      </div>
+    `;
+    return;
+  }
+
+  const width = 760;
+  const height = 220;
+  const paddingX = 38;
+  const paddingY = 28;
+
+  const valores = serie.map((p) => Number(p.valor));
+  const min = Math.min(...valores);
+  const max = Math.max(...valores);
+  const rango = max - min || 1;
+
+  const puntos = serie.map((p, index) => {
+    const x = paddingX + (index / Math.max(1, serie.length - 1)) * (width - paddingX * 2);
+    const y = height - paddingY - ((Number(p.valor) - min) / rango) * (height - paddingY * 2);
+
+    return {
+      ...p,
+      x,
+      y,
+    };
+  });
+
+  const path = puntos
+    .map((p, index) => `${index === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+    .join(" ");
+
+  const ultimo = puntos[puntos.length - 1];
+  const primero = puntos[0];
+
+  box.innerHTML = `
+    <div class="w-full overflow-x-auto">
+      <svg viewBox="0 0 ${width} ${height}" class="w-full min-w-[620px] h-[220px]" role="img" aria-label="Evolución histórica de ${nombre}">
+        <line x1="${paddingX}" y1="${paddingY}" x2="${paddingX}" y2="${height - paddingY}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />
+        <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />
+
+        <text x="${paddingX}" y="16" class="fill-slate-500 dark:fill-slate-400" font-size="11">
+          Max ${formatearNumeroHistorial(max, 6)}
+        </text>
+        <text x="${paddingX}" y="${height - 6}" class="fill-slate-500 dark:fill-slate-400" font-size="11">
+          Min ${formatearNumeroHistorial(min, 6)}
+        </text>
+
+        <path d="${path}" fill="none" class="stroke-violet-600 dark:stroke-violet-400" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+
+        ${puntos.map((p) => `
+          <circle cx="${p.x}" cy="${p.y}" r="4" class="fill-white dark:fill-slate-950 stroke-violet-600 dark:stroke-violet-400" stroke-width="2">
+            <title>Snapshot #${p.id}: ${formatearNumeroHistorial(p.valor, 6)}</title>
+          </circle>
+        `).join("")}
+
+        <text x="${primero.x}" y="${height - 10}" text-anchor="start" class="fill-slate-500 dark:fill-slate-400" font-size="11">
+          #${primero.id}
+        </text>
+        <text x="${ultimo.x}" y="${height - 10}" text-anchor="end" class="fill-slate-500 dark:fill-slate-400" font-size="11">
+          #${ultimo.id}
+        </text>
+      </svg>
+    </div>
+  `;
+}
+
+function renderEvolucionCruceHistorial() {
+  const select = document.getElementById("historial-cruce-select");
+  const clave = select?.value || "COP-VES";
+  const serie = obtenerSerieCruceHistorial(clave);
+
+  renderStatsCruceHistorial(clave, serie);
+  renderGraficoCruceHistorial(clave, serie);
+}
+
 function registrarEventosHistorial() {
   document.getElementById("btn-historial-recargar")?.addEventListener("click", () => {
     historialCargado = false;
@@ -629,6 +818,11 @@ function registrarEventosHistorial() {
   document.getElementById("historial-moneda-select")?.addEventListener("change", () => {
       renderEvolucionMonedaHistorial();
   });
+
+    document.getElementById("historial-cruce-select")?.addEventListener("change", () => {
+  renderEvolucionCruceHistorial();
+});
+
 }
 
 document.addEventListener("DOMContentLoaded", () => {
