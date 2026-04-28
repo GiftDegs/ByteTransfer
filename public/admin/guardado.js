@@ -149,6 +149,10 @@ function obtenerMetadataMotorCambioPrecio(fiat, campo) {
 
 function formatearResumenMotorPrecio(meta) {
   if (!meta) return "";
+  
+  if (meta?.provider === "ptax") {
+  return "PTAX · sin anuncios P2P";
+}
 
   const audit = meta.audit || {};
   const aggregation = audit.aggregation === "median"
