@@ -139,9 +139,19 @@ function renderHistorialLista() {
             <button class="btn-ghost text-xs" data-historial-detalle="${snap.id}">
               Ver detalle
             </button>
-            <button class="btn-ghost text-xs" data-historial-comparar="${snap.id}" ${index === 0 ? "disabled" : ""}>
-              Comparar con actual
-            </button>
+            ${
+            index === 0
+                ? `
+                <button class="btn-ghost text-xs opacity-50 cursor-not-allowed" disabled title="Este ya es el snapshot actual">
+                    Snapshot actual
+                </button>
+                `
+                : `
+                <button class="btn-ghost text-xs" data-historial-comparar="${snap.id}">
+                    Comparar con actual
+                </button>
+                `
+            }
           </div>
         </div>
 
@@ -211,13 +221,20 @@ async function cargarHistorialSnapshots({ forzar = false } = {}) {
       throw new Error(`HTTP ${res.status}`);
     }
 
-    historialSnapshots = await res.json();
-    historialCargado = true;
+        historialSnapshots = await res.json();
+        historialCargado = true;
 
-    renderHistorialResumen();
-    renderHistorialLista();
-    renderHistorialDetalleVacio();
-    renderHistorialComparacionVacia();
+        renderHistorialResumen();
+        renderHistorialLista();
+        renderHistorialComparacionVacia();
+
+        if (historialSnapshots.length) {
+        await cargarDetalleSnapshot(historialSnapshots[0].id, {
+            limpiarComparacion: false,
+        });
+        } else {
+        renderHistorialDetalleVacio();
+        }
   } catch (err) {
     console.error("[historial] cargarHistorialSnapshots:", err);
     if (estado) estado.textContent = "Error";
@@ -279,7 +296,7 @@ function renderDetalleSnapshot(data) {
   `;
 }
 
-async function cargarDetalleSnapshot(id) {
+async function cargarDetalleSnapshot(id, opciones = {}) {
   try {
     const res = await fetch(`/api/snapshots/${encodeURIComponent(id)}`, {
       cache: "no-store",
@@ -302,6 +319,10 @@ async function cargarDetalleSnapshot(id) {
     historialSnapshotSeleccionado = data;
     renderHistorialLista();
     renderDetalleSnapshot(data);
+
+if (opciones.limpiarComparacion !== false) {
+  renderHistorialComparacionVacia();
+}
   } catch (err) {
     console.error("[historial] cargarDetalleSnapshot:", err);
     mostrarToast("No se pudo cargar el detalle del snapshot");
