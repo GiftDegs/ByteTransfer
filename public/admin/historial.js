@@ -53,6 +53,21 @@ function obtenerPromedioMonedaSnapshot(snapshot, code) {
   return snapshot?.monedas?.[code]?.promedio ?? null;
 }
 
+function obtenerLimitePeriodoHistorial() {
+  const select = document.getElementById("historial-periodo-select");
+  const n = Number(select?.value || 20);
+
+  if (!Number.isFinite(n) || n <= 0) return 20;
+  return Math.max(1, Math.min(n, 100));
+}
+
+function obtenerSnapshotsPeriodoHistorial() {
+  const limite = obtenerLimitePeriodoHistorial();
+
+  return [...(historialSnapshots || [])]
+    .slice(0, limite);
+}
+
 function renderHistorialResumen() {
   const box = document.getElementById("historial-resumen");
   if (!box) return;
@@ -429,7 +444,7 @@ async function compararSnapshotConActual(id) {
 }
 
 function obtenerSerieMonedaHistorial(code) {
-  return [...(historialSnapshots || [])]
+  return obtenerSnapshotsPeriodoHistorial()
     .slice()
     .reverse()
     .map((snap) => ({
@@ -615,7 +630,7 @@ function formatearNombreCruceHistorial(clave = "") {
 }
 
 function obtenerSerieCruceHistorial(clave) {
-  return [...(historialSnapshots || [])]
+  return obtenerSnapshotsPeriodoHistorial()
     .slice()
     .reverse()
     .map((snap) => ({
@@ -819,9 +834,14 @@ function registrarEventosHistorial() {
       renderEvolucionMonedaHistorial();
   });
 
-    document.getElementById("historial-cruce-select")?.addEventListener("change", () => {
-  renderEvolucionCruceHistorial();
-});
+  document.getElementById("historial-cruce-select")?.addEventListener("change", () => {
+      renderEvolucionCruceHistorial();
+  });
+
+  document.getElementById("historial-periodo-select")?.addEventListener("change", () => {
+      renderEvolucionMonedaHistorial();
+      renderEvolucionCruceHistorial();
+  });
 
 }
 
