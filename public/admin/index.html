@@ -1124,6 +1124,35 @@
                 <div id="historial-resumen" class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-5"></div>
               </div>
 
+              <div class="premium-card rounded-3xl p-5">
+                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <h3 class="text-lg font-semibold">Evolución por moneda</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Promedio histórico entre compra y venta por snapshot.
+                    </p>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2">
+                    <select id="historial-moneda-select" class="input-control text-sm min-w-[140px]">
+                      <option value="VES">VES</option>
+                      <option value="ARS">ARS</option>
+                      <option value="COP">COP</option>
+                      <option value="PEN">PEN</option>
+                      <option value="CLP">CLP</option>
+                      <option value="MXN">MXN</option>
+                      <option value="BRL">BRL</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="historial-moneda-stats" class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5"></div>
+
+                <div class="mt-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white/50 dark:bg-white/5 p-4">
+                  <div id="historial-moneda-chart" class="min-h-[220px]"></div>
+                </div>
+              </div>
+
               <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] gap-5">
                 <div class="premium-card rounded-3xl p-5">
                   <div class="flex items-center justify-between gap-3 mb-4">
