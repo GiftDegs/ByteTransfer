@@ -75,6 +75,63 @@ async function readLatestSnapshotFromDb() {
   return result.rows[0].data || {};
 }
 
+function calcularPromedioSnapshot(compra, venta) {
+  const c = Number(compra);
+  const v = Number(venta);
+
+  if (!Number.isFinite(c) && !Number.isFinite(v)) return null;
+  if (Number.isFinite(c) && Number.isFinite(v)) return Number(((c + v) / 2).toFixed(6));
+  if (Number.isFinite(c)) return c;
+  return v;
+}
+
+function resumirSnapshotRow(row) {
+  const data = row?.data || {};
+  const monedas = {};
+  const codigos = ["VES", "ARS", "COP", "PEN", "CLP", "MXN", "BRL"];
+
+  for (const code of codigos) {
+    const item = data?.[code];
+    if (!item || typeof item !== "object") continue;
+
+    const compra = Number(item.compra);
+    const venta = Number(item.venta);
+
+    monedas[code] = {
+      compra: Number.isFinite(compra) ? compra : null,
+      venta: Number.isFinite(venta) ? venta : null,
+      promedio: calcularPromedioSnapshot(compra, venta),
+    };
+  }
+
+  return {
+    id: row.id,
+    guardado_en: row.guardado_en,
+    timestamp: data.timestamp || null,
+    monedas,
+    totales: {
+      monedas: Object.keys(monedas).length,
+      cruces: Object.keys(data.cruces || {}).length,
+      margenes: Object.keys(data.margenesCruce || {}).length,
+    },
+    publicConfig: {
+      calculatorState: data.publicConfig?.calculatorState || null,
+      message: data.publicConfig?.message || "",
+    },
+    referencias: {
+      bcv_usd: Number.isFinite(Number(data.referencias?.bcv?.usd))
+        ? Number(data.referencias.bcv.usd)
+        : null,
+      bcv_eur: Number.isFinite(Number(data.referencias?.bcv?.eur))
+        ? Number(data.referencias.bcv.eur)
+        : null,
+      usdt_ves_mid: Number.isFinite(Number(data.referencias?.usdt_ves?.mid))
+        ? Number(data.referencias.usdt_ves.mid)
+        : null,
+    },
+  };
+}
+
 async function readSnapshotsFromDb(limit = 20) {
   if (!pool || !dbReady) return [];
 
@@ -90,11 +147,7 @@ async function readSnapshotsFromDb(limit = 20) {
     [safeLimit]
   );
 
-  return result.rows.map((row) => ({
-    id: row.id,
-    guardado_en: row.guardado_en,
-    ...(row.data || {}),
-  }));
+  return result.rows.map(resumirSnapshotRow);
 }
 
 async function readSnapshotByIdFromDb(id) {

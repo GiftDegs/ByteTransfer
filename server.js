@@ -231,6 +231,140 @@ app.get("/api/snapshot", async (req, res) => {
   }
 });
 
+const MONEDAS_HISTORIAL = ["VES", "ARS", "COP", "PEN", "CLP", "MXN", "BRL"];
+
+function numeroHistorico(valor) {
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : null;
+}
+
+function variacionPctHistorica(anterior, nuevo) {
+  const a = Number(anterior);
+  const n = Number(nuevo);
+
+  if (!Number.isFinite(a) || !Number.isFinite(n) || a === 0) {
+    return null;
+  }
+
+  return Number((((n - a) / a) * 100).toFixed(6));
+}
+
+function promedioHistorico(compra, venta) {
+  const c = numeroHistorico(compra);
+  const v = numeroHistorico(venta);
+
+  if (c == null && v == null) return null;
+  if (c != null && v != null) return Number(((c + v) / 2).toFixed(6));
+  return c ?? v;
+}
+
+function compararMonedasSnapshot(base = {}, destino = {}) {
+  return MONEDAS_HISTORIAL.map((code) => {
+    const a = base?.[code] || {};
+    const b = destino?.[code] || {};
+
+    const compraAnterior = numeroHistorico(a.compra);
+    const compraNueva = numeroHistorico(b.compra);
+    const ventaAnterior = numeroHistorico(a.venta);
+    const ventaNueva = numeroHistorico(b.venta);
+
+    const promedioAnterior = promedioHistorico(compraAnterior, ventaAnterior);
+    const promedioNuevo = promedioHistorico(compraNueva, ventaNueva);
+
+    return {
+      code,
+      compra: {
+        anterior: compraAnterior,
+        nuevo: compraNueva,
+        delta: compraAnterior != null && compraNueva != null
+          ? Number((compraNueva - compraAnterior).toFixed(6))
+          : null,
+        pct: variacionPctHistorica(compraAnterior, compraNueva),
+      },
+      venta: {
+        anterior: ventaAnterior,
+        nuevo: ventaNueva,
+        delta: ventaAnterior != null && ventaNueva != null
+          ? Number((ventaNueva - ventaAnterior).toFixed(6))
+          : null,
+        pct: variacionPctHistorica(ventaAnterior, ventaNueva),
+      },
+      promedio: {
+        anterior: promedioAnterior,
+        nuevo: promedioNuevo,
+        delta: promedioAnterior != null && promedioNuevo != null
+          ? Number((promedioNuevo - promedioAnterior).toFixed(6))
+          : null,
+        pct: variacionPctHistorica(promedioAnterior, promedioNuevo),
+      },
+    };
+  });
+}
+
+function compararMapaNumericoSnapshot(base = {}, destino = {}) {
+  const claves = new Set([
+    ...Object.keys(base || {}),
+    ...Object.keys(destino || {}),
+  ]);
+
+  return [...claves].sort().map((key) => {
+    const anterior = numeroHistorico(base?.[key]);
+    const nuevo = numeroHistorico(destino?.[key]);
+
+    return {
+      key,
+      anterior,
+      nuevo,
+      delta: anterior != null && nuevo != null
+        ? Number((nuevo - anterior).toFixed(6))
+        : null,
+      pct: variacionPctHistorica(anterior, nuevo),
+    };
+  });
+}
+
+function resumirComparacionSnapshots(monedaCambios = [], cruceCambios = [], margenCambios = []) {
+  const movimientosMonedas = monedaCambios
+    .filter((m) => Number.isFinite(Number(m.promedio?.pct)))
+    .sort((a, b) => Math.abs(b.promedio.pct) - Math.abs(a.promedio.pct));
+
+  const movimientosCruces = cruceCambios
+    .filter((c) => Number.isFinite(Number(c.pct)))
+    .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+
+  const movimientosMargenes = margenCambios
+    .filter((m) => Number.isFinite(Number(m.delta)))
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+  return {
+    monedas: {
+      total: monedaCambios.length,
+      mas_movidas: movimientosMonedas.slice(0, 5),
+    },
+    cruces: {
+      total: cruceCambios.length,
+      mas_movidos: movimientosCruces.slice(0, 10),
+    },
+    margenes: {
+      total: margenCambios.length,
+      mas_movidos: movimientosMargenes.slice(0, 10),
+    },
+  };
+}
+
+function compararSnapshotsData(snapshotA = {}, snapshotB = {}) {
+  const monedas = compararMonedasSnapshot(snapshotA, snapshotB);
+  const cruces = compararMapaNumericoSnapshot(snapshotA?.cruces || {}, snapshotB?.cruces || {});
+  const margenes = compararMapaNumericoSnapshot(snapshotA?.margenesCruce || {}, snapshotB?.margenesCruce || {});
+
+  return {
+    resumen: resumirComparacionSnapshots(monedas, cruces, margenes),
+    monedas,
+    cruces,
+    margenes,
+  };
+}
+
 app.get("/api/snapshots", async (req, res) => {
   res.set("Cache-Control", "no-store");
 
@@ -243,8 +377,58 @@ app.get("/api/snapshots", async (req, res) => {
 
     return res.json([]);
   } catch (e) {
-    console.error("❌ /api/snapshots:", e.message);
+    console.error("[snapshots] Error leyendo snapshots:", e.message);
     return res.status(500).json({ error: "Error leyendo snapshots" });
+  }
+});
+
+app.get("/api/snapshots/compare", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  if (!ADMIN_KEY) {
+    return res.status(503).json({ error: "ADMIN_KEY no configurada" });
+  }
+
+  const clientKey = req.headers["x-admin-key"];
+  if (!clientKey || clientKey !== ADMIN_KEY) {
+    return res.status(401).json({ error: "No autorizado" });
+  }
+
+  try {
+    if (!isDbAvailable()) {
+      return res.status(503).json({ error: "DB no disponible" });
+    }
+
+    const fromId = req.query.from;
+    const toId = req.query.to;
+
+    const fromSnapshot = await readSnapshotByIdFromDb(fromId);
+    const toSnapshot = await readSnapshotByIdFromDb(toId);
+
+    if (!fromSnapshot) {
+      return res.status(404).json({ error: "Snapshot base no encontrado" });
+    }
+
+    if (!toSnapshot) {
+      return res.status(404).json({ error: "Snapshot destino no encontrado" });
+    }
+
+    const comparacion = compararSnapshotsData(fromSnapshot.data, toSnapshot.data);
+
+    return res.json({
+      from: {
+        id: fromSnapshot.id,
+        guardado_en: fromSnapshot.guardado_en,
+      },
+      to: {
+        id: toSnapshot.id,
+        guardado_en: toSnapshot.guardado_en,
+      },
+      ...comparacion,
+    });
+  } catch (e) {
+    console.error("[snapshots] Error comparando snapshots:", e.message);
+    return res.status(500).json({ error: "Error comparando snapshots" });
   }
 });
 
@@ -273,7 +457,7 @@ app.get("/api/snapshots/:id", async (req, res) => {
 
     return res.json(snapshot);
   } catch (e) {
-    console.error("❌ /api/snapshots/:id:", e.message);
+    console.error("[snapshots] Error leyendo snapshot por id:", e.message);
     return res.status(500).json({ error: "Error leyendo snapshot" });
   }
 });
