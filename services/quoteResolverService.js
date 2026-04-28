@@ -815,8 +815,24 @@ function calcularSpreadPct(buyPrice, sellPrice) {
   return formatearTasa(((buy - sell) / buy) * 100);
 }
 
+function esPtaxUltimoDiaHabil(quote) {
+  return (
+    quote?.provider === "ptax" &&
+    quote?.stale === true &&
+    quote?.fallback === false &&
+    quote?.fallback_reason === "last_valid_business_day"
+  );
+}
+
 function getQuoteConfidence(quote) {
   if (!quote) return "low";
+
+  if (quote.provider === "ptax") {
+    if (esPtaxUltimoDiaHabil(quote)) return "medium";
+    if (quote.fallback || quote.stale) return "low";
+    return "high";
+  }
+
   if (quote.fallback || quote.stale) return "low";
 
   if (quote.provider === "binance") {
@@ -828,15 +844,29 @@ function getQuoteConfidence(quote) {
     return "low";
   }
 
-  if (quote.provider === "ptax") {
-    return "high";
-  }
-
   if (quote.provider === "derived") {
     return quote.fallback || quote.stale ? "low" : "medium";
   }
 
   return "medium";
+}
+
+function agregarWarningEstadoCotizacion(warnings, currency, side, quote) {
+  if (!quote) return;
+
+  if (quote.fallback) {
+    warnings.push(`${currency}.${side} usa fallback`);
+    return;
+  }
+
+  if (esPtaxUltimoDiaHabil(quote)) {
+    warnings.push(`${currency}.${side} PTAX usa ultimo dia habil disponible`);
+    return;
+  }
+
+  if (quote.stale) {
+    warnings.push(`${currency}.${side} esta stale`);
+  }
 }
 
 function buildCurrencyAudit({ currency, buy, sell }) {
@@ -855,10 +885,8 @@ function buildCurrencyAudit({ currency, buy, sell }) {
 
   const warnings = [];
 
-  if (buy?.fallback) warnings.push(`${currency}.buy usa fallback`);
-  if (sell?.fallback) warnings.push(`${currency}.sell usa fallback`);
-  if (buy?.stale) warnings.push(`${currency}.buy está stale`);
-  if (sell?.stale) warnings.push(`${currency}.sell está stale`);
+  agregarWarningEstadoCotizacion(warnings, currency, "buy", buy);
+  agregarWarningEstadoCotizacion(warnings, currency, "sell", sell);
 
   if (spread_pct != null && Math.abs(spread_pct) > 3) {
     warnings.push(`${currency} spread alto: ${spread_pct}%`);
