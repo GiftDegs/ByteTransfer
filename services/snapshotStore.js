@@ -141,6 +141,8 @@ function writeLocalQuoteEngineConfig(obj) {
 }
 
 async function readQuoteEngineConfig() {
+  const localConfig = readLocalQuoteEngineConfig();
+
   if (pool && dbReady) {
     const result = await pool.query(
       `
@@ -152,11 +154,14 @@ async function readQuoteEngineConfig() {
       ["quote_engine_config"]
     );
 
-    if (!result.rows.length) return {};
-    return result.rows[0].value || {};
+    if (!result.rows.length) {
+      return localConfig || {};
+    }
+
+    return result.rows[0].value || localConfig || {};
   }
 
-  return readLocalQuoteEngineConfig();
+  return localConfig || {};
 }
 
 function getPaytypeCatalogPath() {
