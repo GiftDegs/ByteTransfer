@@ -1101,7 +1101,7 @@
           </div>
         </section>
 
-          <!-- HISTORIAL -->
+                    <!-- HISTORIAL -->
           <section id="vista-historial" class="hidden">
             <div class="space-y-5">
               <div class="premium-card rounded-3xl p-6">
@@ -1128,9 +1128,9 @@
                 </div>
 
                 <div id="historial-resumen" class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-5"></div>
-             </div>
+              </div>
 
-                           <div class="premium-card rounded-3xl p-5 mt-5">
+              <div class="premium-card rounded-3xl p-5">
                 <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
                   <div>
                     <h3 class="text-lg font-semibold">Evolución por moneda</h3>
@@ -1154,12 +1154,19 @@
 
                 <div id="historial-moneda-stats" class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5"></div>
 
+                <div
+                  id="historial-moneda-lectura"
+                  class="mt-4 rounded-2xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-500/10 p-4 text-sm text-slate-700 dark:text-slate-200"
+                >
+                  Sin lectura operativa todavía.
+                </div>
+
                 <div class="mt-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white/50 dark:bg-white/5 p-4">
                   <div id="historial-moneda-chart" class="min-h-[220px]"></div>
                 </div>
               </div>
 
-                            <div class="premium-card rounded-3xl p-5">
+              <div class="premium-card rounded-3xl p-5">
                 <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
                   <div>
                     <h3 class="text-lg font-semibold">Evolución por cruce</h3>
@@ -1185,6 +1192,13 @@
                 </div>
 
                 <div id="historial-cruce-stats" class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5"></div>
+
+                <div
+                  id="historial-cruce-lectura"
+                  class="mt-4 rounded-2xl border border-violet-500/20 bg-violet-500/5 dark:bg-violet-500/10 p-4 text-sm text-slate-700 dark:text-slate-200"
+                >
+                  Sin lectura operativa todavía.
+                </div>
 
                 <div class="mt-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white/50 dark:bg-white/5 p-4">
                   <div id="historial-cruce-chart" class="min-h-[220px]"></div>

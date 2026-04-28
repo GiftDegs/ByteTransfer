@@ -479,6 +479,28 @@ function calcularStatsSerieHistorial(serie = []) {
   };
 }
 
+function describirIntensidadMovimientoHistorial(pct) {
+  const n = Math.abs(Number(pct));
+
+  if (!Number.isFinite(n)) return "sin lectura suficiente";
+  if (n === 0) return "sin movimiento relevante";
+  if (n < 0.25) return "movimiento leve";
+  if (n < 1) return "movimiento moderado";
+  return "movimiento fuerte";
+}
+
+function describirDireccionMovimientoHistorial(pct) {
+  const n = Number(pct);
+
+  if (!Number.isFinite(n) || n === 0) return "se mantuvo prácticamente estable";
+  return n > 0 ? "subió" : "bajó";
+}
+
+function obtenerTextoPeriodoHistorial() {
+  const limite = obtenerLimitePeriodoHistorial();
+  return `últimos ${limite} snapshot${limite === 1 ? "" : "s"}`;
+}
+
 function renderStatsMonedaHistorial(code, serie) {
   const box = document.getElementById("historial-moneda-stats");
   if (!box) return;
@@ -614,6 +636,53 @@ function renderGraficoMonedaHistorial(code, serie) {
   `;
 }
 
+function renderLecturaMonedaHistorial(code, serie) {
+  const box = document.getElementById("historial-moneda-lectura");
+  if (!box) return;
+
+  if (!serie || serie.length < 2) {
+    box.innerHTML = `
+      <div class="font-medium text-slate-900 dark:text-white">Lectura operativa</div>
+      <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Se necesitan al menos dos snapshots para leer evolución de ${code}.
+      </div>
+    `;
+    return;
+  }
+
+  const stats = calcularStatsSerieHistorial(serie);
+  const direccion = describirDireccionMovimientoHistorial(stats.cambioPct);
+  const intensidad = describirIntensidadMovimientoHistorial(stats.cambioPct);
+  const periodo = obtenerTextoPeriodoHistorial();
+
+  const tono =
+    Number(stats.cambioPct) > 0
+      ? "text-green-600 dark:text-green-400"
+      : Number(stats.cambioPct) < 0
+        ? "text-red-600 dark:text-red-400"
+        : "text-slate-700 dark:text-slate-300";
+
+  box.innerHTML = `
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div>
+        <div class="font-medium text-slate-900 dark:text-white">Lectura operativa</div>
+        <div class="mt-1">
+          <span class="font-semibold">${code}</span>
+          ${direccion}
+          <span class="font-semibold ${tono}">${formatearPctHistorial(stats.cambioPct)}</span>
+          en los ${periodo}.
+          Lectura: <span class="font-semibold">${intensidad}</span>.
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-500 dark:text-slate-400">
+        Máx: ${formatearNumeroHistorial(stats.max, 4)} ·
+        Mín: ${formatearNumeroHistorial(stats.min, 4)}
+      </div>
+    </div>
+  `;
+}
+
 function renderEvolucionMonedaHistorial() {
   const select = document.getElementById("historial-moneda-select");
   const code = select?.value || "VES";
@@ -621,6 +690,7 @@ function renderEvolucionMonedaHistorial() {
 
   renderStatsMonedaHistorial(code, serie);
   renderGraficoMonedaHistorial(code, serie);
+  renderLecturaMonedaHistorial(code, serie);
 }
 
 function formatearNombreCruceHistorial(clave = "") {
@@ -802,6 +872,55 @@ function renderGraficoCruceHistorial(clave, serie) {
   `;
 }
 
+function renderLecturaCruceHistorial(clave, serie) {
+  const box = document.getElementById("historial-cruce-lectura");
+  if (!box) return;
+
+  const nombre = formatearNombreCruceHistorial(clave);
+
+  if (!serie || serie.length < 2) {
+    box.innerHTML = `
+      <div class="font-medium text-slate-900 dark:text-white">Lectura operativa</div>
+      <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Se necesitan al menos dos snapshots para leer evolución de ${nombre}.
+      </div>
+    `;
+    return;
+  }
+
+  const stats = calcularStatsCruceHistorial(serie);
+  const direccion = describirDireccionMovimientoHistorial(stats.cambioPct);
+  const intensidad = describirIntensidadMovimientoHistorial(stats.cambioPct);
+  const periodo = obtenerTextoPeriodoHistorial();
+
+  const tono =
+    Number(stats.cambioPct) > 0
+      ? "text-green-600 dark:text-green-400"
+      : Number(stats.cambioPct) < 0
+        ? "text-red-600 dark:text-red-400"
+        : "text-slate-700 dark:text-slate-300";
+
+  box.innerHTML = `
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div>
+        <div class="font-medium text-slate-900 dark:text-white">Lectura operativa</div>
+        <div class="mt-1">
+          <span class="font-semibold">${nombre}</span>
+          ${direccion}
+          <span class="font-semibold ${tono}">${formatearPctHistorial(stats.cambioPct)}</span>
+          en los ${periodo}.
+          Lectura: <span class="font-semibold">${intensidad}</span>.
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-500 dark:text-slate-400">
+        Máx: ${formatearNumeroHistorial(stats.max, 6)} ·
+        Mín: ${formatearNumeroHistorial(stats.min, 6)}
+      </div>
+    </div>
+  `;
+}
+
 function renderEvolucionCruceHistorial() {
   const select = document.getElementById("historial-cruce-select");
   const clave = select?.value || "COP-VES";
@@ -809,6 +928,7 @@ function renderEvolucionCruceHistorial() {
 
   renderStatsCruceHistorial(clave, serie);
   renderGraficoCruceHistorial(clave, serie);
+  renderLecturaCruceHistorial(clave, serie);
 }
 
 function registrarEventosHistorial() {
