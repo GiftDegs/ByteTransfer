@@ -184,7 +184,9 @@ function bindUI() {
     escribirCruces();
     renderResumenBorrador();
     actualizarEstadoGuardadoUI();
-    actualizarBotonCancelarBorrador();
+    if (typeof actualizarBotonCancelarBorrador === "function") {
+      actualizarBotonCancelarBorrador();
+    }
 
     mostrarToast("✅ Cambios cargados para previsualización. Guarda cuando quieras para convertirlos en base oficial.");
   });
@@ -435,11 +437,22 @@ function bindUI() {
   const btnVerDetalles = document.getElementById("btn-aplicar-cambios");
   if (btnVerDetalles) btnVerDetalles.textContent = "Ver detalles";
 
-  ensureBotonUltimosCambios?.();
-  bindOperacionPublicaDraftListeners?.();
-  iniciarRefrescoTopbarHumana?.();
+  if (typeof ensureBotonUltimosCambios === "function") {
+    ensureBotonUltimosCambios();
+  }
+
+  if (typeof bindOperacionPublicaDraftListeners === "function") {
+    bindOperacionPublicaDraftListeners();
+  }
+
+  if (typeof iniciarRefrescoTopbarHumana === "function") {
+    iniciarRefrescoTopbarHumana();
+  }
 
   mostrarAdvertenciaPendiente(false);
   actualizarEstadoGuardadoUI();
-  actualizarBotonCancelarBorrador?.();
+
+  if (typeof actualizarBotonCancelarBorrador === "function") {
+    actualizarBotonCancelarBorrador();
+  }
 }
