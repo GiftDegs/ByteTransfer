@@ -26,8 +26,6 @@ const { quoteStrategies } = require("./config/quoteStrategies");
 
 const {
   callBinanceP2P,
-  binanceAvgPriceTop20,
-  fetchPrecio,
 } = require("./services/binanceService");
 
 const { getDynamicBrlPrice } = require("./services/brlService");

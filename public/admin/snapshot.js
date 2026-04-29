@@ -25,13 +25,11 @@ function renderReferencias() {
 
   const usdEl = document.getElementById("ref-bcv-usd");
   const eurEl = document.getElementById("ref-bcv-eur");
-  const usdtEl = document.getElementById("ref-usdt-ves");
-  const fechaEl = document.getElementById("ref-fecha");
+    const fechaEl = document.getElementById("ref-fecha");
 
   setRefValue(usdEl, referenciasExternas.bcv?.usd ?? "—");
   setRefValue(eurEl, referenciasExternas.bcv?.eur ?? "—");
-  if (usdtEl) usdtEl.textContent = referenciasExternas.usdt_ves?.mid ?? "—";
-
+  
   if (fechaEl) {
     const base = referenciasExternas.actualizado_en
       ? `Actualizado: ${new Date(referenciasExternas.actualizado_en).toLocaleString()}`

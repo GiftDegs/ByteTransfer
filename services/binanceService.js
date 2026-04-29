@@ -41,29 +41,6 @@ async function callBinanceP2P({ fiat, tradeType, page = 1, payTypes = [], transA
   }
 }
 
-async function binanceAvgPriceTop20(fiat, tradeType) {
-  const data = await callBinanceP2P({
-    fiat,
-    tradeType,
-    page: 1,
-    payTypes: [],
-  });
-
-  const items = data?.data || [];
-  const prices = [];
-
-  for (const it of items) {
-    const price = Number(it?.adv?.price);
-    if (!Number.isFinite(price)) continue;
-    prices.push(price);
-  }
-
-  if (!prices.length) return null;
-
-  const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-  return Number(avg.toFixed(6));
-}
-
 async function fetchPrecio(fiat, tipo, opts = {}) {
   try {
     const { resolveQuote } = require("./quoteResolverService");
@@ -83,6 +60,5 @@ async function fetchPrecio(fiat, tipo, opts = {}) {
 
 module.exports = {
   callBinanceP2P,
-  binanceAvgPriceTop20,
   fetchPrecio,
 };

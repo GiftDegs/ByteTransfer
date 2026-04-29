@@ -1,5 +1,5 @@
 const { getBcvRates } = require("./bcvService");
-const { binanceAvgPriceTop20 } = require("./binanceService");
+const { resolveCurrencyQuotes } = require("./quoteResolverService");
 
 function formatearTasa(v) {
   const n = Number(v);
@@ -8,18 +8,34 @@ function formatearTasa(v) {
 }
 
 async function getUsdtVesRefs() {
-  const buy = await binanceAvgPriceTop20("VES", "BUY");
-  const sell = buy ? Number((buy * 0.9975).toFixed(6)) : null;
-  const mid = buy && sell ? Number(((buy + sell) / 2).toFixed(6)) : (buy ?? sell ?? null);
+  const quotes = await resolveCurrencyQuotes("VES");
+
+  const buy = Number(quotes?.buy?.price);
+  const sell = Number(quotes?.sell?.price);
+
+  if (!Number.isFinite(buy) || buy <= 0) {
+    throw new Error("VES compra inválida desde motor configurable");
+  }
+
+  if (!Number.isFinite(sell) || sell <= 0) {
+    throw new Error("VES venta inválida desde motor configurable");
+  }
+
+  const mid = (buy + sell) / 2;
 
   return {
-    buy: buy ? formatearTasa(buy) : null,
-    sell: sell ? formatearTasa(sell) : null,
-    mid: mid ? formatearTasa(mid) : null,
-    source: "binance_p2p",
+    buy: formatearTasa(buy),
+    sell: formatearTasa(sell),
+    mid: formatearTasa(mid),
+    source: "quote_engine",
+    provider: "motor",
     captured_at: new Date().toISOString(),
-    fallback: false,
-    stale: false,
+    fallback: !!quotes?.buy?.fallback || !!quotes?.sell?.fallback,
+    stale: !!quotes?.buy?.stale || !!quotes?.sell?.stale,
+    buy_source: quotes?.buy?.source || null,
+    sell_source: quotes?.sell?.source || null,
+    buy_provider: quotes?.buy?.provider || null,
+    sell_provider: quotes?.sell?.provider || null,
   };
 }
 
@@ -52,7 +68,8 @@ async function getReferencias() {
       buy: null,
       sell: null,
       mid: null,
-      source: "binance_p2p",
+      source: "quote_engine",
+      provider: "motor",
       captured_at: new Date().toISOString(),
       stale: true,
       fallback: true,

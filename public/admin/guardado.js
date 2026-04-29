@@ -624,7 +624,6 @@ function validarDatosAntesDeGuardar() {
   if (referenciasExternas?.bcv?.manual) {
     if (usd == null) bloqueos.push("BCV USD manual inválido.");
     if (eur == null) bloqueos.push("BCV EUR manual inválido.");
-    advertencias.push("BCV manual activo.");
   }
 
   return { bloqueos, advertencias };

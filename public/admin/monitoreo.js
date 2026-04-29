@@ -778,13 +778,6 @@ if (estadoGlobal === "perdidas") {
     pintarDelta(eurEl, marketEur, snapEur, "Snapshot BCV EUR");
   }
 
-  {
-    const usdtEl = document.getElementById("mon-usdt-ves");
-    const marketUsdtVes = referenciasMercado?.usdt_ves?.mid ?? null;
-    const snapUsdtVes = snapRefs?.usdt_ves?.mid ?? null;
-    pintarDelta(usdtEl, marketUsdtVes, snapUsdtVes, "Snapshot USDT→VES");
-  }
-
   const refFecha = document.getElementById("mon-ref-fecha");
   if (refFecha) {
     refFecha.textContent = referenciasMercado?.actualizado_en
