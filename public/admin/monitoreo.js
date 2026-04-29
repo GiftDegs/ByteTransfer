@@ -5,48 +5,76 @@
 // =====================================================
 async function obtenerMercadoLive(onProgress = null) {
   const total = paises.length;
-  let completados = 0;
 
-  const actualizarProgreso = () => {
+  const reportar = (porcentaje, texto, detalle, completados = 0) => {
     if (typeof onProgress !== "function") return;
-
-    const progresoBase = 40;
-    const progresoMax = 95;
-    const tramo = progresoMax - progresoBase;
-    const porcentaje = progresoBase + (completados / total) * tramo;
 
     onProgress({
       completados,
       total,
-      porcentaje: Math.round(porcentaje),
-      texto: `Consultando mercado live (${completados}/${total})`,
-      detalle:
-        completados < total
-          ? "Obteniendo compra y venta por moneda..."
-          : "Mercado live completado.",
+      porcentaje,
+      texto,
+      detalle,
     });
   };
 
-  actualizarProgreso();
+  reportar(
+    40,
+    "Consultando motor configurable",
+    "Solicitando compra y venta consolidada por moneda...",
+    0
+  );
 
-  const tareas = paises.map(async (p) => {
-    const fiat = p.fiat;
-
-    const [compra, venta] = await Promise.all([
-      fetchPrecio(fiat, "BUY"),
-      fetchPrecio(fiat, "SELL"),
-    ]);
-
-    completados++;
-    actualizarProgreso();
-
-    return [fiat, { compra, venta }];
+  const res = await fetch("/api/debug/quotes", {
+    cache: "no-store",
+    headers: {
+      "x-admin-key": getAdminKey(),
+    },
   });
 
-  const entries = await Promise.all(tareas);
-  const resultado = Object.fromEntries(entries);
+  if (!res.ok) {
+    throw new Error(`No se pudo consultar motor configurable: HTTP ${res.status}`);
+  }
+
+  reportar(
+    70,
+    "Procesando cotizaciones",
+    "Normalizando respuesta del motor configurable...",
+    Math.round(total / 2)
+  );
+
+  const data = await res.json();
+  const results = data?.results || {};
+  const resultado = {};
+
+  metadataCotizacionesMotor = {};
+
+  for (const p of paises) {
+    const fiat = p.fiat;
+    const item = results?.[fiat] || {};
+
+    const compra = Number(item?.buy?.price);
+    const venta = Number(item?.sell?.price);
+
+    resultado[fiat] = {
+      compra: Number.isFinite(compra) && compra > 0 ? Number(compra.toFixed(2)) : null,
+      venta: Number.isFinite(venta) && venta > 0 ? Number(venta.toFixed(2)) : null,
+    };
+
+    metadataCotizacionesMotor[fiat] = {
+      compra: item?.buy || null,
+      venta: item?.sell || null,
+    };
+  }
 
   mercadoPaises = resultado;
+
+  reportar(
+    85,
+    "Actualizando referencias",
+    "Consultando referencias externas relacionadas...",
+    total
+  );
 
   try {
     referenciasMercado = await obtenerReferencias();
@@ -57,6 +85,13 @@ async function obtenerMercadoLive(onProgress = null) {
   ultimoTick = new Date();
   const monMarket = document.getElementById("mon-market-time");
   if (monMarket) monMarket.textContent = `Market: ${ultimoTick.toLocaleString()}`;
+
+  reportar(
+    95,
+    "Mercado live completado",
+    "Datos operativos cargados desde el motor configurable.",
+    total
+  );
 
   return resultado;
 }
