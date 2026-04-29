@@ -838,256 +838,33 @@ if (estadoGlobal === "perdidas") {
 
       const audit = await obtenerAuditoriaCotizaciones();
       renderAuditoriaCotizaciones(audit);
+
       try {
-const refs = await obtenerReferenciasExternas();
-renderReferenciasExternas(refs);
-} catch (e) {
-  console.warn("refs:", e.message);
-}
+        const refs = await obtenerReferenciasExternas();
+        renderReferenciasExternas(refs);
+      } catch (e) {
+        console.warn("refs:", e.message);
+      }
     } catch (e) {
       console.error("❌ tickMonitoreo", e);
     }
   }
 
-async function obtenerReferenciasExternas() {
-  const r = await fetch("/api/debug/references", {
-    headers: {
-      "x-admin-key": getAdminKey(),
-    },
-    cache: "no-store",
-  });
-
-  if (!r.ok) throw new Error("No se pudieron cargar referencias");
-  return r.json();
-}
-  
  function iniciarPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   pollingInterval = setInterval(() => {
     tickMonitoreo();
   }, pollingMs);
 
-}
+ }
 
-function detenerPolling() {
+ function detenerPolling() {
   if (pollingInterval) clearInterval(pollingInterval);
   pollingInterval = null;
-}
+ }
 
-async function obtenerAuditoriaCotizaciones() {
-  try {
-    const res = await fetch("/api/debug/quotes", {
-      headers: {
-        "x-admin-key": getAdminKey(),
-      },
-      cache: "no-store",
-    });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    return await res.json();
-  } catch (err) {
-    console.error("❌ Auditoría:", err);
-    return null;
-  }
-}
-
-function renderAuditoriaCotizaciones(data) {
-  const title = document.getElementById("quote-audit-title");
-  const subtitle = document.getElementById("quote-audit-subtitle");
-  const badge = document.getElementById("quote-audit-badge");
-  const grid = document.getElementById("quote-audit-grid");
-  const warnings = document.getElementById("quote-audit-warnings");
-
-  if (!title || !subtitle || !badge || !grid || !warnings) return;
-
-  if (!data || !data.ok) {
-    title.textContent = "Sin datos";
-    subtitle.textContent = "No se pudo consultar la auditoría del motor.";
-    badge.textContent = "Error";
-    badge.className =
-      "inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/15";
-    grid.innerHTML = "";
-    warnings.textContent = "";
-    return;
-  }
-
-  const summary = data.audit_summary || {};
-  const results = data.results || {};
-  const currencies = Array.isArray(data.currencies)
-    ? data.currencies
-    : Object.keys(results);
-
-  const total = currencies.length;
-  const low = Array.isArray(summary.low_confidence_currencies)
-    ? summary.low_confidence_currencies.length
-    : 0;
-  const medium = Array.isArray(summary.medium_confidence_currencies)
-    ? summary.medium_confidence_currencies.length
-    : 0;
-  const high = Math.max(0, total - low - medium);
-  const warningsList = Array.isArray(summary.warnings) ? summary.warnings : [];
-
-  const confidence = summary.confidence || "unknown";
-
-  if (confidence === "low") {
-    title.textContent = "Cotizaciones con riesgo";
-    subtitle.textContent = "Hay fuentes en fallback, stale o con baja confianza.";
-    badge.textContent = "Revisar";
-    badge.className =
-      "inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/15";
-  } else if (confidence === "medium") {
-    title.textContent = "Cotizaciones bajo observación";
-    subtitle.textContent = "El motor opera, pero hay al menos una fuente con confianza media.";
-    badge.textContent = "Atención";
-    badge.className =
-      "inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-yellow-500/10 text-yellow-700 dark:text-yellow-200 border border-yellow-500/15";
-  } else {
-    title.textContent = "Cotizaciones saludables";
-    subtitle.textContent = "El motor de precios opera con datos confiables.";
-    badge.textContent = "OK";
-    badge.className =
-      "inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/15";
-  }
-
-  grid.innerHTML = currencies
-    .map((code) => {
-      const item = results[code] || {};
-      const audit = item.audit || {};
-      const buy = item.buy || {};
-      const sell = item.sell || {};
-
-      const conf = audit.confidence || "unknown";
-      const confTexto = traducirConfianza(conf);
-
-      let borderClass = "border-emerald-500/15";
-      let badgeClass = "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
-
-      if (conf === "medium") {
-        borderClass = "border-yellow-500/20";
-        badgeClass = "bg-yellow-500/10 text-yellow-700 dark:text-yellow-200";
-      }
-
-      if (conf === "low") {
-        borderClass = "border-red-500/20";
-        badgeClass = "bg-red-500/10 text-red-700 dark:text-red-300";
-      }
-
-      const providerBuy = traducirProvider(buy.provider);
-      const providerSell = traducirProvider(sell.provider);
-      const sourceBuy = traducirSource(buy.source);
-      const sourceSell = traducirSource(sell.source);
-      const spread = Number.isFinite(Number(audit.spread_pct))
-        ? `${Number(audit.spread_pct).toFixed(2)}%`
-        : "—";
-
-      return `
-        <div class="premium-card rounded-2xl p-4 border ${borderClass}">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <div class="text-sm font-semibold">${code}</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Diferencia compra/venta ${spread}
-              </div>
-            </div>
-           <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
-            ${confTexto}
-          </span>
-          </div>
-
-          <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div class="text-slate-500 dark:text-slate-400">Compra</div>
-              <div class="font-semibold mt-1">${providerBuy}</div>
-              <div class="text-slate-500 dark:text-slate-400 truncate">${sourceBuy}</div>
-            </div>
-
-            <div>
-              <div class="text-slate-500 dark:text-slate-400">Venta</div>
-              <div class="font-semibold mt-1">${providerSell}</div>
-              <div class="text-slate-500 dark:text-slate-400 truncate">${sourceSell}</div>
-            </div>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-
-  warnings.innerHTML = warningsList.length
-    ? `
-      <div class="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-        <div class="font-semibold text-amber-700 dark:text-amber-200 mb-2">
-          Observaciones detectadas
-        </div>
-        <ul class="space-y-1 text-sm">
-          ${warningsList.map((w) => `<li>• ${traducirWarningCotizacion(w)}</li>`).join("")}
-        </ul>
-      </div>
-    `
-    : `
-      <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-300">
-        Sin observaciones críticas.
-      </div>
-    `;
-}
-
-function renderReferenciasExternas(refs) {
-  const grid = document.getElementById("quote-reference-grid");
-  if (!grid) return;
-
-  const results = refs?.results || {};
-  const items = Object.entries(results);
-
-  if (!items.length) {
-    grid.innerHTML = `
-      <div class="premium-card rounded-2xl p-4 text-sm text-slate-500 dark:text-slate-400">
-        Sin referencias externas disponibles.
-      </div>
-    `;
-    return;
-  }
-
-  grid.innerHTML = items
-    .map(([code, ref]) => {
-      const price = Number.isFinite(Number(ref.price))
-        ? Number(ref.price).toFixed(6)
-        : "—";
-
-      const badgeClass = ref.fallback || ref.stale
-        ? "bg-yellow-500/10 text-yellow-700 dark:text-yellow-200 border border-yellow-500/15"
-        : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/15";
-
-      const badgeText = ref.fallback || ref.stale ? "Respaldo temporal" : "Actualizada";
-
-      return `
-        <div class="premium-card rounded-2xl p-4">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <div class="text-sm font-semibold">${code}</div>
-              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                ${traducirProvider(ref.provider)} · ${traducirSource(ref.source)}
-              </div>
-            </div>
-
-            <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
-              ${badgeText}
-            </span>
-          </div>
-
-          <div class="mt-4 text-2xl font-semibold tracking-tight">
-            ${price}
-          </div>
-
-          <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            ${ref.captured_at ? new Date(ref.captured_at).toLocaleString() : "Sin fecha"}
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-async function obtenerEstrategiasCotizacion() {
+ async function obtenerEstrategiasCotizacion() {
   const r = await fetch("/api/debug/quote-strategies", {
     headers: {
       "x-admin-key": getAdminKey(),
