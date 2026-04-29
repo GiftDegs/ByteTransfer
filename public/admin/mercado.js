@@ -52,7 +52,7 @@ async function fetchPrecio(fiat, tipo) {
   try {
     const { tradeType } = normalizarTipoCotizacion(tipo);
 
-    const res = await fetch("/api/binance", {
+    const res = await fetch("/api/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
@@ -72,7 +72,7 @@ async function fetchPrecio(fiat, tipo) {
       Number(j?.data?.[0]?.adv?.price);
 
     if (!Number.isFinite(precio) || precio <= 0) {
-      console.warn("⚠️ Precio inválido desde /api/binance:", fiat, tipo, j);
+      console.warn("⚠️ Precio inválido desde /api/quote:", fiat, tipo, j);
       return null;
     }
 

@@ -41,24 +41,7 @@ async function callBinanceP2P({ fiat, tradeType, page = 1, payTypes = [], transA
   }
 }
 
-async function fetchPrecio(fiat, tipo, opts = {}) {
-  try {
-    const { resolveQuote } = require("./quoteResolverService");
-
-    const side = String(tipo || "").toUpperCase() === "BUY" ? "buy" : "sell";
-    const result = await resolveQuote(fiat, side);
-
-    const price = Number(result?.price);
-    if (!Number.isFinite(price) || price <= 0) return null;
-
-    return Number(price.toFixed(6));
-  } catch (e) {
-    console.error("❌ fetchPrecio resolver:", fiat, tipo, e.message || e);
-    return null;
-  }
-}
-
 module.exports = {
   callBinanceP2P,
-  fetchPrecio,
+  
 };

@@ -2520,15 +2520,20 @@ app.post("/api/admin/quote-strategies/advanced", async (req, res) => {
   }
 });
 
-app.post("/api/binance", async (req, res) => {
-  const { fiat, tradeType } = req.body || {};
+async function handleQuoteRequest(req, res) {
+  const { fiat, tradeType, side: rawSide } = req.body || {};
 
-  if (!fiat || !tradeType) {
+  if (!fiat || (!tradeType && !rawSide)) {
     return res.status(400).json({ error: "Parámetros inválidos" });
   }
 
   const currency = String(fiat).toUpperCase();
-  const side = String(tradeType).toUpperCase() === "BUY" ? "buy" : "sell";
+
+  const sideRaw = rawSide || tradeType;
+  const side =
+    String(sideRaw).toUpperCase() === "BUY" || String(sideRaw).toLowerCase() === "buy"
+      ? "buy"
+      : "sell";
 
   if (!isSupportedCurrency(currency)) {
     return res.status(400).json({ error: `Moneda no soportada: ${currency}` });
@@ -2547,6 +2552,11 @@ app.post("/api/binance", async (req, res) => {
     }
 
     return res.json({
+      ok: true,
+      currency,
+      side,
+      price,
+      quote,
       data: [
         {
           adv: {
@@ -2569,16 +2579,28 @@ app.post("/api/binance", async (req, res) => {
         trimHighest: quote.trimHighest ?? null,
         transAmount: quote.transAmount ?? null,
         payTypes: quote.payTypes ?? [],
+        amountMode: quote.amountMode ?? null,
+        amountUsdt: quote.amountUsdt ?? null,
+        probePrice: quote.probePrice ?? null,
+        pagesFetched: quote.pagesFetched ?? null,
+        returnedRows: quote.returnedRows ?? null,
       },
     });
   } catch (e) {
-    console.error("❌ /api/binance resolver:", currency, tradeType, e.message);
+    console.error("[quote] Error resolviendo cotización:", currency, side, e.message);
+
     return res.status(500).json({
-      error: "Fallo resolviendo cotización",
+      error: "No se pudo obtener precio desde el motor configurable",
       detail: e.message,
     });
   }
-});
+}
+
+app.post("/api/quote", handleQuoteRequest);
+
+// Alias temporal por compatibilidad con frontend viejo.
+// Internamente ya usa el motor configurable.
+app.post("/api/binance", handleQuoteRequest);
 
 // ---------- Arranque ----------
 app.listen(PORT, async () => {
