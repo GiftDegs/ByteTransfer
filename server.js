@@ -34,8 +34,6 @@ const { getBcvRates } = require("./services/bcvService");
 
 const { getReferencias } = require("./services/referenceService");
 
-const { resolveQuote } = require("./services/quoteResolverService");
-
 const { resolveReference } = require("./services/referenceResolverService");
 
 const {
@@ -2519,88 +2517,6 @@ app.post("/api/admin/quote-strategies/advanced", async (req, res) => {
     });
   }
 });
-
-async function handleQuoteRequest(req, res) {
-  const { fiat, tradeType, side: rawSide } = req.body || {};
-
-  if (!fiat || (!tradeType && !rawSide)) {
-    return res.status(400).json({ error: "Parámetros inválidos" });
-  }
-
-  const currency = String(fiat).toUpperCase();
-
-  const sideRaw = rawSide || tradeType;
-  const side =
-    String(sideRaw).toUpperCase() === "BUY" || String(sideRaw).toLowerCase() === "buy"
-      ? "buy"
-      : "sell";
-
-  if (!isSupportedCurrency(currency)) {
-    return res.status(400).json({ error: `Moneda no soportada: ${currency}` });
-  }
-
-  try {
-    const quote = await resolveQuote(currency, side);
-    const price = Number(quote?.price);
-
-    if (!Number.isFinite(price) || price <= 0) {
-      return res.status(500).json({
-        error: "No se pudo obtener precio",
-        detail: quote?.error || "Precio inválido",
-        quote,
-      });
-    }
-
-    return res.json({
-      ok: true,
-      currency,
-      side,
-      price,
-      quote,
-      data: [
-        {
-          adv: {
-            price: String(price),
-            minSingleTransAmount: "0",
-            isAdvBanned: false,
-          },
-        },
-      ],
-      source: quote.source,
-      provider: quote.provider,
-      stale: !!quote.stale,
-      fallback: !!quote.fallback,
-      fallback_reason: quote.fallback_reason || null,
-      audit: {
-        raw_count: quote.raw_count ?? null,
-        used_count: quote.used_count ?? null,
-        aggregation: quote.aggregation ?? null,
-        trimLowest: quote.trimLowest ?? null,
-        trimHighest: quote.trimHighest ?? null,
-        transAmount: quote.transAmount ?? null,
-        payTypes: quote.payTypes ?? [],
-        amountMode: quote.amountMode ?? null,
-        amountUsdt: quote.amountUsdt ?? null,
-        probePrice: quote.probePrice ?? null,
-        pagesFetched: quote.pagesFetched ?? null,
-        returnedRows: quote.returnedRows ?? null,
-      },
-    });
-  } catch (e) {
-    console.error("[quote] Error resolviendo cotización:", currency, side, e.message);
-
-    return res.status(500).json({
-      error: "No se pudo obtener precio desde el motor configurable",
-      detail: e.message,
-    });
-  }
-}
-
-app.post("/api/quote", handleQuoteRequest);
-
-// Alias temporal por compatibilidad con frontend viejo.
-// Internamente ya usa el motor configurable.
-app.post("/api/binance", handleQuoteRequest);
 
 // ---------- Arranque ----------
 app.listen(PORT, async () => {

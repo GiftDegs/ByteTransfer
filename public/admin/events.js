@@ -150,18 +150,19 @@ function bindUI() {
 
     renderTarjetasPaises(modoEdicionActivo);
 
-    llamadasPendientes = paises.length * 2;
+    llamadasPendientes = 1;
+
+    const cotizaciones = await obtenerCotizacionesMotorConsolidadas();
 
     for (const p of paises) {
       const fiat = p.fiat;
-      const compra = await fetchPrecio(fiat, "BUY");
-      llamadasPendientes--;
-      const venta = await fetchPrecio(fiat, "SELL");
-      llamadasPendientes--;
+      const datos = cotizaciones?.datos?.[fiat] || {};
 
-      datosPaises[fiat].compra = compra;
-      datosPaises[fiat].venta = venta;
+      datosPaises[fiat].compra = datos.compra;
+      datosPaises[fiat].venta = datos.venta;
     }
+
+    llamadasPendientes = 0;
 
     if (timerAdvertencia) clearTimeout(timerAdvertencia);
     timerAdvertencia = setTimeout(() => {

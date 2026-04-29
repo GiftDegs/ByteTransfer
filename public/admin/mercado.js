@@ -6,7 +6,7 @@
 function normalizarTipoCotizacion(tipo) {
   const t = String(tipo || "").toUpperCase();
 
-  if (t === "BUY") {
+  if (t === "BUY" || t === "COMPRA") {
     return {
       tradeType: "BUY",
       campo: "compra",
@@ -16,6 +16,31 @@ function normalizarTipoCotizacion(tipo) {
   return {
     tradeType: "SELL",
     campo: "venta",
+  };
+}
+
+function obtenerPrecioQuoteMotor(quote) {
+  const precio = Number(quote?.price);
+
+  if (!Number.isFinite(precio) || precio <= 0) return null;
+
+  return Number(precio.toFixed(2));
+}
+
+function construirAuditDesdeQuoteMotor(payload = {}) {
+  return {
+    raw_count: payload?.raw_count ?? null,
+    used_count: payload?.used_count ?? null,
+    aggregation: payload?.aggregation ?? null,
+    trimLowest: payload?.trimLowest ?? null,
+    trimHighest: payload?.trimHighest ?? null,
+    transAmount: payload?.transAmount ?? null,
+    payTypes: payload?.payTypes ?? [],
+    amountMode: payload?.amountMode ?? null,
+    amountUsdt: payload?.amountUsdt ?? null,
+    probePrice: payload?.probePrice ?? null,
+    pagesFetched: payload?.pagesFetched ?? null,
+    returnedRows: payload?.returnedRows ?? null,
   };
 }
 
@@ -38,55 +63,70 @@ function guardarMetadataCotizacionMotor(fiat, tipo, payload, precio) {
     campo,
     tradeType,
     precio,
+    price: precio,
     provider: payload?.provider || null,
     source: payload?.source || null,
     stale: !!payload?.stale,
     fallback: !!payload?.fallback,
     fallback_reason: payload?.fallback_reason || null,
-    audit: payload?.audit || null,
-    captured_at: new Date().toISOString(),
+    raw_count: payload?.raw_count ?? null,
+    used_count: payload?.used_count ?? null,
+    aggregation: payload?.aggregation ?? null,
+    trimLowest: payload?.trimLowest ?? null,
+    trimHighest: payload?.trimHighest ?? null,
+    transAmount: payload?.transAmount ?? null,
+    payTypes: payload?.payTypes ?? [],
+    amountMode: payload?.amountMode ?? null,
+    amountUsdt: payload?.amountUsdt ?? null,
+    probePrice: payload?.probePrice ?? null,
+    pagesFetched: payload?.pagesFetched ?? null,
+    returnedRows: payload?.returnedRows ?? null,
+    audit: payload?.audit || construirAuditDesdeQuoteMotor(payload),
+    captured_at: payload?.captured_at || new Date().toISOString(),
   };
 }
 
-async function fetchPrecio(fiat, tipo) {
-  try {
-    const { tradeType } = normalizarTipoCotizacion(tipo);
+async function obtenerCotizacionesMotorConsolidadas() {
+  const res = await fetch("/api/debug/quotes", {
+    cache: "no-store",
+    headers: {
+      "x-admin-key": getAdminKey(),
+    },
+  });
 
-    const res = await fetch("/api/quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      body: JSON.stringify({
-        fiat,
-        tradeType,
-      }),
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const j = await res.json();
-
-    const precio =
-      Number(j?.price) ||
-      Number(j?.quote?.price) ||
-      Number(j?.data?.[0]?.adv?.price);
-
-    if (!Number.isFinite(precio) || precio <= 0) {
-      console.warn("⚠️ Precio inválido desde /api/quote:", fiat, tipo, j);
-      return null;
-    }
-
-    guardarMetadataCotizacionMotor(fiat, tradeType, j, precio);
-
-    if (window.BT_DEBUG_MOTOR === true) {
-      console.log(
-        `✅ Motor único | ${String(fiat).toUpperCase()} ${tradeType} | ${precio} | ${j?.audit?.aggregation || "?"} | ${j?.audit?.used_count || "?"}/${j?.audit?.raw_count || "?"} anuncios | métodos: ${(j?.audit?.payTypes || []).join(", ") || "sin filtro"}`
-      );
-    }
-
-    return Number(precio.toFixed(2));
-  } catch (e) {
-    console.error("❌ fetchPrecio:", fiat, tipo, e.message || e);
-    return null;
+  if (!res.ok) {
+    throw new Error(`No se pudo consultar motor configurable: HTTP ${res.status}`);
   }
+
+  const data = await res.json();
+  const results = data?.results || {};
+  const resultado = {};
+
+  metadataCotizacionesMotor = {};
+
+  for (const p of paises) {
+    const fiat = p.fiat;
+    const item = results?.[fiat] || {};
+
+    const compra = obtenerPrecioQuoteMotor(item?.buy);
+    const venta = obtenerPrecioQuoteMotor(item?.sell);
+
+    resultado[fiat] = {
+      compra,
+      venta,
+    };
+
+    if (compra != null) {
+      guardarMetadataCotizacionMotor(fiat, "BUY", item.buy, compra);
+    }
+
+    if (venta != null) {
+      guardarMetadataCotizacionMotor(fiat, "SELL", item.sell, venta);
+    }
+  }
+
+  return {
+    datos: resultado,
+    raw: data,
+  };
 }
