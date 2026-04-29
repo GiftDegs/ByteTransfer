@@ -96,10 +96,6 @@ async function obtenerMercadoLive(onProgress = null) {
   return resultado;
 }
 
-function sincronizarMercadoDesdeDatos() {
-  console.warn("⚠️ sincronizarMercadoDesdeDatos deshabilitada: el monitoreo no debe tomar datos editables.");
-}
-
 function renderMonedas() {
   const cont = document.getElementById("mon-grid-monedas");
   if (!cont) return;
