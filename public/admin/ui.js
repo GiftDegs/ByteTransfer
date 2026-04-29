@@ -149,3 +149,46 @@ function limpiarTodosLosPendientes() {
     limpiarInputPendiente(el);
   });
 }
+
+async function cargarBadgeEntorno() {
+  const badge = document.getElementById("badge-entorno");
+  if (!badge) return;
+
+  try {
+    const res = await fetch("/api/runtime-info", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    const label = data?.label || "LOCAL";
+    const env = data?.environment || "local";
+    const storage = data?.storage || "local";
+
+    const dotClass =
+      env === "production"
+        ? "bg-emerald-500"
+        : env === "staging"
+          ? "bg-blue-500"
+          : "bg-amber-500";
+
+    const badgeClass =
+      env === "production"
+        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
+        : env === "staging"
+          ? "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20"
+          : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20";
+
+    badge.className = `inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium border ${badgeClass}`;
+    badge.innerHTML = `
+      <span class="status-dot ${dotClass}"></span>
+      ${label} · ${storage}
+    `;
+  } catch (err) {
+    console.warn("[ui] No se pudo cargar runtime-info:", err.message);
+
+    badge.className = "inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium bg-slate-900/5 dark:bg-white/5 border border-black/5 dark:border-white/10";
+    badge.innerHTML = `
+      <span class="status-dot bg-slate-400"></span>
+      ENTORNO ?
+    `;
+  }
+}

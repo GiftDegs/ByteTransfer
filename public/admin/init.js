@@ -5,13 +5,15 @@
 // =====================================================
 (async () => {
   const loader = document.getElementById("loader");
-
+  
   try {
     if (loader) loader.style.display = "flex";
 
     setLoaderStep("Verificando acceso", 10, "Comprobando Admin Key...");
     ensureToast();
     await requireAdminAccess();
+
+    await cargarBadgeEntorno();
 
     setLoaderStep("Preparando interfaz", 25, "Conectando navegación y controles...");
     bindUI();

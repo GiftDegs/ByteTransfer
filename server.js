@@ -212,6 +212,38 @@ app.get("/api/currencies", (_req, res) => {
   });
 });
 
+app.get("/api/runtime-info", (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const host = String(req.headers.host || "");
+  const serviceName = String(process.env.RENDER_SERVICE_NAME || "");
+  const isRenderEnv = !!process.env.RENDER;
+
+  let environment = "local";
+
+  if (isRenderEnv) {
+    const text = `${host} ${serviceName}`.toLowerCase();
+
+    if (text.includes("staging")) {
+      environment = "staging";
+    } else {
+      environment = "production";
+    }
+  }
+
+  return res.json({
+    ok: true,
+    environment,
+    label:
+      environment === "local"
+        ? "LOCAL"
+        : environment === "staging"
+          ? "STAGING"
+          : "PROD",
+    storage: isDbAvailable() ? "postgres" : "local",
+  });
+});
+
 app.get("/api/snapshot", async (req, res) => {
   res.set("Cache-Control", "no-store");
 
