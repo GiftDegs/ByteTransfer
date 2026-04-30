@@ -314,22 +314,54 @@ function renderReferenciasExternas(refs) {
   if (!grid) return;
 
   const results = refs?.results || {};
-  const entries = Object.entries(results);
+  const bcvManual = !!referenciasExternas?.bcv?.manual;
 
-  if (!entries.length) {
+  const referencias = [
+    {
+      key: "BCV_USD",
+      label: "BCV USD",
+      price: referenciasExternas?.bcv?.usd ?? results.BCV_USD?.price,
+      ref: results.BCV_USD || null,
+    },
+    {
+      key: "BCV_EUR",
+      label: "BCV EUR",
+      price: referenciasExternas?.bcv?.eur ?? results.BCV_EUR?.price,
+      ref: results.BCV_EUR || null,
+    },
+  ];
+
+  const visibles = referencias.filter((item) => {
+    const n = Number(item.price);
+    return Number.isFinite(n) || item.ref;
+  });
+
+  if (!visibles.length) {
     grid.innerHTML = `
-      <div class="md:col-span-3 rounded-3xl border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 p-5 text-sm text-slate-500 dark:text-slate-400">
-        No hay referencias externas disponibles.
+      <div class="md:col-span-2 rounded-3xl border border-slate-200/70 dark:border-white/10 bg-white/70 dark:bg-white/5 p-5 text-sm text-slate-500 dark:text-slate-400">
+        No hay referencias BCV disponibles.
       </div>
     `;
     return;
   }
 
-  grid.innerHTML = entries
-    .map(([key, ref]) => {
-      const price = formatearNumeroAudit(ref?.price, 6);
-      const revisar = !!ref?.stale || !!ref?.fallback;
+  grid.innerHTML = visibles
+    .map((item) => {
+      const ref = item.ref || {};
+      const price = formatearNumeroAudit(item.price, 6);
+      const invalida = !Number.isFinite(Number(item.price));
+      const revisar = invalida || !!ref?.stale || !!ref?.fallback;
       const tema = revisar ? obtenerTemaSemaforoAudit("medium") : obtenerTemaSemaforoAudit("high");
+
+      const estado = bcvManual
+        ? "Manual"
+        : revisar
+          ? "Revisar"
+          : "OK";
+
+      const fuente = bcvManual
+        ? "Referencia editada manualmente desde Referencias y precios"
+        : normalizarProveedorAudit(ref?.provider, ref?.source);
 
       return `
         <div class="rounded-3xl border ${tema.wrapper} p-5">
@@ -338,7 +370,7 @@ function renderReferenciasExternas(refs) {
               <div class="flex items-center gap-2">
                 <span class="h-2.5 w-2.5 rounded-full ${tema.dot}"></span>
                 <div class="text-[11px] uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  ${key}
+                  ${item.label}
                 </div>
               </div>
 
@@ -348,12 +380,12 @@ function renderReferenciasExternas(refs) {
             </div>
 
             <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${tema.pill}">
-              ${revisar ? "Revisar" : "OK"}
+              ${estado}
             </span>
           </div>
 
           <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">
-            ${normalizarProveedorAudit(ref?.provider, ref?.source)}
+            ${fuente}
             ${ref?.fallback_reason ? ` · ${ref.fallback_reason}` : ""}
           </div>
         </div>

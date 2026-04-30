@@ -61,22 +61,45 @@ function normalizarMargenComparable(valor) {
   return Number.isFinite(n) ? +n.toFixed(4) : null;
 }
 
+function inputReferenciaFueEditado(input) {
+  if (!input) return false;
+
+  return (
+    input.classList.contains("ring-2") ||
+    input.classList.contains("border-brandBlue")
+  );
+}
+
 function sincronizarReferenciasDesdeInputs() {
-  const inputBcvUsd = parseFloat(document.getElementById("ref-bcv-usd")?.value);
-  const inputBcvEur = parseFloat(document.getElementById("ref-bcv-eur")?.value);
+  const inputUsd = document.getElementById("ref-bcv-usd");
+  const inputEur = document.getElementById("ref-bcv-eur");
+
+  const usdEditado = inputReferenciaFueEditado(inputUsd);
+  const eurEditado = inputReferenciaFueEditado(inputEur);
+
+  if (!usdEditado && !eurEditado) {
+    return;
+  }
+
+  const inputBcvUsd = parseFloat(inputUsd?.value);
+  const inputBcvEur = parseFloat(inputEur?.value);
 
   if (!referenciasExternas) referenciasExternas = {};
   if (!referenciasExternas.bcv) referenciasExternas.bcv = {};
 
-  if (Number.isFinite(inputBcvUsd)) {
+  let huboEdicionManual = false;
+
+  if (usdEditado && Number.isFinite(inputBcvUsd)) {
     referenciasExternas.bcv.usd = inputBcvUsd;
+    huboEdicionManual = true;
   }
 
-  if (Number.isFinite(inputBcvEur)) {
+  if (eurEditado && Number.isFinite(inputBcvEur)) {
     referenciasExternas.bcv.eur = inputBcvEur;
+    huboEdicionManual = true;
   }
 
-  if (Number.isFinite(inputBcvUsd) || Number.isFinite(inputBcvEur)) {
+  if (huboEdicionManual) {
     referenciasExternas.bcv.manual = true;
   }
 }

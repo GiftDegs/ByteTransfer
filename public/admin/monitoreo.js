@@ -149,20 +149,6 @@ function renderMonedas() {
   function renderMonitoreo() {
   const snapRefs = snapshotPrevio?.referencias || null;
 
-  {
-    const usdEl = document.getElementById("mon-bcv-usd");
-    const eurEl = document.getElementById("mon-bcv-eur");
-
-    const marketUsd = referenciasMercado?.bcv?.usd ?? null;
-    const marketEur = referenciasMercado?.bcv?.eur ?? null;
-
-    const snapUsd = snapRefs?.bcv?.usd ?? null;
-    const snapEur = snapRefs?.bcv?.eur ?? null;
-
-    pintarDelta(usdEl, marketUsd, snapUsd, "Snapshot BCV USD");
-    pintarDelta(eurEl, marketEur, snapEur, "Snapshot BCV EUR");
-  }
-
   const refFecha = document.getElementById("mon-ref-fecha");
   if (refFecha) {
     refFecha.textContent = referenciasMercado?.actualizado_en

@@ -176,6 +176,13 @@ function bindUI() {
       renderReferencias();
       limpiarInputPendiente(document.getElementById("ref-bcv-usd"));
       limpiarInputPendiente(document.getElementById("ref-bcv-eur"));
+
+      try {
+        const refs = await obtenerReferenciasExternas();
+        renderReferenciasExternas(refs);
+      } catch (e) {
+        console.warn("refs externas:", e.message);
+      }
     } catch {
       mostrarToast("⚠️ No se pudieron actualizar referencias");
     }
@@ -275,6 +282,11 @@ function bindUI() {
         renderTarjetasPaises(modoEdicionActivo);
         escribirCruces();
         renderMonitoreo();
+
+        if (typeof renderReferenciasExternas === "function") {
+          renderReferenciasExternas(null);
+        }
+
         renderPerfilesMargenes();
 
       mostrarAdvertenciaPendiente(false);

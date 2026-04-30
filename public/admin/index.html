@@ -391,19 +391,25 @@
         <!-- MONITOREO -->
         <section id="vista-monitoreo" class="space-y-6">
           <div class="premium-card rounded-3xl p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="premium-card rounded-2xl p-5">
-                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">BCV USD</div>
-                <div id="mon-bcv-usd" class="text-3xl font-semibold tracking-tight mt-2">—</div>
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                  Referencias externas
+                </div>
+                <h2 class="text-2xl font-semibold tracking-tight mt-2">
+                  BCV operativo
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                  Lectura actual de referencias usadas por el sistema.
+                </p>
               </div>
 
-              <div class="premium-card rounded-2xl p-5">
-                <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">BCV EUR</div>
-                <div id="mon-bcv-eur" class="text-3xl font-semibold tracking-tight mt-2">—</div>
+              <div id="mon-ref-fecha" class="text-xs text-slate-500 dark:text-slate-400">
+                —
               </div>
             </div>
 
-            <div id="mon-ref-fecha" class="text-xs text-slate-500 dark:text-slate-400 mt-4">—</div>
+            <div id="quote-reference-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5"></div>
           </div>
 
           <div class="premium-card rounded-3xl p-6">
@@ -471,15 +477,7 @@
           <div id="quote-audit-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-5"></div>
 
           <div id="quote-audit-warnings" class="mt-5 text-sm text-slate-600 dark:text-slate-300"></div>
-
-          <div class="mt-6">
-  <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400 mb-3">
-    Referencias externas
-  </div>
-
-  <div id="quote-reference-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-</div>
-</div>
+          </div>
 
           <div class="premium-card rounded-3xl p-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
