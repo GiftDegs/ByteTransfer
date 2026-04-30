@@ -341,16 +341,14 @@ body.modal-activo *:not(#modalMontoGrande):not(#modalMontoGrande *) {
 
 
       <section id="step2" class="transition-colors duration-500 hidden flex flex-col items-center gap-4">
-        <p id="preguntaMonto" class="text-lg font-semibold text-gray-800 dark:text-white opacity-0 translate-y-4 transition-all duration-300"></p>
-        <p id="errorMonto" class="text-[#FF0000] font-semibold hidden transition-all duration-300"></p>
-        <p id="ayudaMonto" 
-   class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center leading-snug space-y-0.5">
-  <p id="ayudaMonto" 
-   class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center leading-snug space-y-0.5">
-</p>
-  <span class="block">⚠ Modo referencia — tasa no vigente</span>
-  <span class="block">🕒 Hoy: 11:00–23:00</span>
-</p>
+      <p id="preguntaMonto" class="text-lg font-semibold text-gray-800 dark:text-white opacity-0 translate-y-4 transition-all duration-300"></p>
+
+      <p id="errorMonto" class="text-[#FF0000] font-semibold hidden transition-all duration-300"></p>
+
+      <div
+        id="ayudaMonto"
+        class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center leading-snug space-y-0.5"
+      ></div>
 
 <!-- === BCV MODE (solo cuando destino = VES y se activa el modo) === -->
 <div id="bcvBox" class="hidden mt-4 space-y-3">
