@@ -31,18 +31,37 @@ function mostrarToast(msg) {
   }, 2600);
 }
 
-function setLoaderStep(etapa, porcentaje = 0, detalle = "") {
+function renderLoaderDetalle(detalle = "", activo = true) {
+  const texto = detalle || "Procesando...";
+  const puntos = activo
+    ? `
+      <span class="inline-flex items-center gap-0.5 ml-1 align-middle" aria-hidden="true">
+        <span class="inline-block w-1 h-1 rounded-full bg-current animate-bounce" style="animation-delay: 0ms"></span>
+        <span class="inline-block w-1 h-1 rounded-full bg-current animate-bounce" style="animation-delay: 120ms"></span>
+        <span class="inline-block w-1 h-1 rounded-full bg-current animate-bounce" style="animation-delay: 240ms"></span>
+      </span>
+    `
+    : "";
+
+  return `
+    <span>${texto}</span>
+    ${puntos}
+  `;
+}
+
+function setLoaderStep(etapa, porcentaje = 0, detalle = "", opciones = {}) {
   const etapaEl = document.getElementById("loader-etapa");
   const porcentajeEl = document.getElementById("loader-porcentaje");
   const barraEl = document.getElementById("loader-barra");
   const detalleEl = document.getElementById("loader-detalle");
 
-  const pct = Math.max(0, Math.min(100, Number(porcentaje) || 0));
+  const pct = Math.max(0, Math.min(100, Math.round(Number(porcentaje) || 0)));
+  const activo = opciones.activo !== false && pct < 100;
 
   if (etapaEl) etapaEl.textContent = etapa || "Cargando...";
   if (porcentajeEl) porcentajeEl.textContent = `${pct}%`;
   if (barraEl) barraEl.style.width = `${pct}%`;
-  if (detalleEl) detalleEl.textContent = detalle || "";
+  if (detalleEl) detalleEl.innerHTML = renderLoaderDetalle(detalle, activo);
 }
 
 function setLoaderError(etapa, detalle = "") {
@@ -58,7 +77,7 @@ function setLoaderError(etapa, detalle = "") {
     barraEl.classList.remove("bg-brandBlue");
     barraEl.classList.add("bg-red-600");
   }
-  if (detalleEl) detalleEl.textContent = detalle || "Revisa consola o recarga la página.";
+  if (detalleEl) detalleEl.innerHTML = renderLoaderDetalle(detalle || "No se pudo completar la carga.", false);
 }
 
 function formatearTasa(v) {
