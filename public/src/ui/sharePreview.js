@@ -5,7 +5,9 @@ import {
   buildRateSharePayload,
   buildRemittanceSharePayload,
 } from "../core/sharePayload.js";
+
 import { mountShareCard } from "./shareCard.js";
+import { sharePremiumPayload } from "./sharing.js";
 
 export function enableSharePreviewTools() {
   window.previewShareCard = (type = "rate") => {
@@ -15,6 +17,11 @@ export function enableSharePreviewTools() {
     showPreviewOverlay(card);
 
     return payload;
+  };
+
+    window.testSharePremiumImage = async (type = "rate") => {
+    const payload = getDemoPayload(type);
+    return sharePremiumPayload(payload);
   };
 }
 

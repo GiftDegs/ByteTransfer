@@ -1,3 +1,6 @@
+import { mountShareCard } from "./shareCard.js";
+import { getShareFilename } from "../core/sharePayload.js";
+
 // sharing.js (flujo directo)
 // - Móvil: comparte IMAGEN (share nativo)
 // - PC: descarga IMAGEN
@@ -171,6 +174,49 @@ async function captureResultBlobFromDOM(DOM) {
   return blob;
 }
 
+async function capturePremiumShareBlob(payload) {
+  if (!payload) {
+    throw new Error("No hay datos para generar la imagen premium.");
+  }
+
+  const card = mountShareCard(payload);
+
+  if (!card) {
+    throw new Error("No se pudo montar la tarjeta premium.");
+  }
+
+  const html2canvas = await ensureHtml2Canvas();
+
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+  } catch (_) {}
+
+  await waitNextFrame();
+  await waitNextFrame();
+
+  const canvas = await html2canvas(card, {
+    backgroundColor: null,
+    scale: 1,
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    width: 1080,
+    height: 1080,
+    windowWidth: 1080,
+    windowHeight: 1080,
+  });
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
+
+  if (!blob) {
+    throw new Error("No se pudo generar el PNG premium.");
+  }
+
+  return blob;
+}
+
 async function downloadBlob(blob, filename = "bytetransfer.png") {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -223,4 +269,31 @@ export function initSharing(DOM, getLastCalc /*, getOpsState */) {
       toastLite(DOM, "No se pudo generar la imagen.");
     }
   });
+}
+
+export async function sharePremiumPayload(payload, DOM = null) {
+  try {
+    const blob = await capturePremiumShareBlob(payload);
+    const filename = getShareFilename(payload);
+    const file = new File([blob], filename, { type: "image/png" });
+
+    if (
+      navigator.canShare &&
+      navigator.canShare({ files: [file] }) &&
+      navigator.share
+    ) {
+      await navigator.share({
+        files: [file],
+        title: "ByteTransfer",
+      });
+      return { ok: true, method: "native_share" };
+    }
+
+    toastLite(DOM, "Este dispositivo no permite compartir imágenes directamente.");
+    return { ok: false, reason: "native_share_unavailable" };
+  } catch (err) {
+    console.error("[sharing] sharePremiumPayload:", err);
+    toastLite(DOM, "No se pudo generar la imagen premium.");
+    return { ok: false, reason: err?.message || "unknown_error" };
+  }
 }
