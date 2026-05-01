@@ -1,6 +1,11 @@
 // public/src/ui/quoteScreens.js
 
-import { QUOTE_MODULES, getReferenceOptions } from "../core/quoteModes.js";
+import {
+  QUOTE_MODULES,
+  getReferenceOptions,
+  getRemittanceModeOptions,
+} from "../core/quoteModes.js";
+
 import { paisesDisponibles } from "../core/config.js";
 import { formatearTasa } from "../core/utils.js";
 import { obtenerTasa } from "../services/rates.js";
@@ -30,6 +35,140 @@ if (session.module === QUOTE_MODULES.RATE) {
   renderRateScreen(container, session);
   return;
 }
+
+if (session.module === QUOTE_MODULES.REMITTANCE) {
+  renderRemittanceScreen(container, session);
+  return;
+}
+
+function renderRemittanceScreen(container, session) {
+  if (session.step === "origin") {
+    renderCountrySelectionScreen(container, {
+      eyebrow: "Cotizar remesa",
+      title: "¿Desde dónde envía el cliente?",
+      description: "Selecciona el país de origen de la operación.",
+      countries: paisesDisponibles,
+      onSelect: (code) => {
+        setQuoteSession({
+          origen: code,
+          destino: null,
+          remittanceMode: null,
+          step: "destination",
+        });
+        renderQuoteScreen(container);
+      },
+    });
+    return;
+  }
+
+  if (session.step === "destination") {
+    const origenLabel = getCountryLabel(session.origen);
+
+    renderCountrySelectionScreen(container, {
+      eyebrow: "Cotizar remesa",
+      title: "¿Dónde recibe el cliente?",
+      description: `Origen seleccionado: ${origenLabel}.`,
+      countries: paisesDisponibles.filter((p) => p.codigo !== session.origen),
+      onSelect: (code) => {
+        setQuoteSession({
+          destino: code,
+          remittanceMode: null,
+          step: "remittance_mode",
+        });
+        renderQuoteScreen(container);
+      },
+    });
+    return;
+  }
+
+  if (session.step === "remittance_mode") {
+    renderRemittanceModeScreen(container, session);
+    return;
+  }
+
+  renderComingSoon(container, session);
+}
+
+function renderRemittanceModeScreen(container, session) {
+  const origenLabel = getCountryLabel(session.origen);
+  const destinoLabel = getCountryLabel(session.destino);
+  const origenCurrency = getCurrencyShortLabel(session.origen);
+  const destinoCurrency = getCurrencyShortLabel(session.destino);
+  const routeLabel = getRouteLabel(session.origen, session.destino);
+
+  const options = getRemittanceModeOptions({
+    origenLabel,
+    destinoLabel,
+    origenCurrency,
+    destinoCurrency,
+    destino: session.destino,
+  });
+
+  container.innerHTML = renderScreenShell({
+    eyebrow: "Cotizar remesa",
+    title: routeLabel,
+    description: "¿Qué quieres cotizar para esta operación?",
+    body: `
+      <div class="mb-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4 text-sm text-slate-300">
+        <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
+          Ruta seleccionada
+        </div>
+        <div class="mt-2 text-lg font-black text-white">
+          ${routeLabel}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3">
+        ${options.map(renderRemittanceModeOption).join("")}
+      </div>
+    `,
+  });
+
+  bindCommonNavigation(container);
+
+  container.querySelectorAll("[data-remittance-mode]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setQuoteSession({
+        remittanceMode: btn.dataset.remittanceMode,
+        step: "amount",
+      });
+
+      renderQuoteScreen(container);
+    });
+  });
+}
+
+function renderRemittanceModeOption(option) {
+  return `
+    <button
+      type="button"
+      data-remittance-mode="${option.id}"
+      class="group relative w-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-brandTeal/50 hover:bg-white/[0.10]"
+    >
+      <div class="relative flex items-center justify-between gap-4">
+        <div>
+          <span class="rounded-full bg-brandTeal/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brandTeal">
+            Cotización
+          </span>
+
+          <h3 class="mt-3 text-lg font-black tracking-tight text-white">
+            ${option.title}
+          </h3>
+
+          <p class="mt-1 text-sm leading-relaxed text-slate-300">
+            ${option.description}
+          </p>
+        </div>
+
+        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/10 text-lg text-white transition group-hover:bg-brandTeal group-hover:text-slate-950">
+          →
+        </div>
+      </div>
+    </button>
+  `;
+}
+
+renderComingSoon(container, session);
 
 function renderRateScreen(container, session) {
   if (session.step === "origin") {
@@ -74,7 +213,6 @@ function renderRateScreen(container, session) {
     return;
   }
 
-  renderComingSoon(container, session);
 }
 
 function renderCountrySelectionScreen(container, { eyebrow, title, description, countries, onSelect }) {
@@ -229,7 +367,7 @@ renderComingSoon(container, session);
 
 function renderScreenShell({ eyebrow, title, description, body }) {
   return `
-    <section class="relative w-full overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950 px-4 py-5 text-white shadow-2xl sm:px-6 sm:py-7">
+    <section class="relative w-full max-h-[calc(100svh-2rem)] overflow-y-auto overflow-x-hidden rounded-[2rem] border border-slate-800 bg-slate-950 px-4 py-5 text-white shadow-2xl sm:px-6 sm:py-7">
       <div class="pointer-events-none absolute inset-0">
         <div class="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-brandBlue/25 blur-3xl"></div>
         <div class="absolute -bottom-28 right-0 h-72 w-72 rounded-full bg-brandTeal/10 blur-3xl"></div>
@@ -237,7 +375,7 @@ function renderScreenShell({ eyebrow, title, description, body }) {
       </div>
 
       <div class="relative">
-        <div class="mb-5 flex items-center justify-between gap-3">
+        <div class="sticky top-0 z-20 -mx-1 mb-5 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/85 p-1 backdrop-blur-xl">
           <button
             type="button"
             data-quote-back="1"
@@ -469,12 +607,56 @@ function bindCommonNavigation(container) {
     }
 
     if (session.module === QUOTE_MODULES.REFERENCES) {
-      startQuoteModule(QUOTE_MODULES.REFERENCES);
-      renderQuoteScreen(container);
-      return;
-    }
+  startQuoteModule(QUOTE_MODULES.REFERENCES);
+  renderQuoteScreen(container);
+  return;
+}
 
-    resetQuoteSession();
+if (session.module === QUOTE_MODULES.RATE) {
+  if (session.step === "destination") {
+    startQuoteModule(QUOTE_MODULES.RATE);
     renderQuoteScreen(container);
+    return;
+  }
+
+  if (session.step === "rate_result") {
+    setQuoteSession({
+      destino: null,
+      step: "destination",
+    });
+    renderQuoteScreen(container);
+    return;
+  }
+}
+
+if (session.module === QUOTE_MODULES.REMITTANCE) {
+  if (session.step === "destination") {
+    startQuoteModule(QUOTE_MODULES.REMITTANCE);
+    renderQuoteScreen(container);
+    return;
+  }
+
+  if (session.step === "remittance_mode") {
+    setQuoteSession({
+      destino: null,
+      remittanceMode: null,
+      step: "destination",
+    });
+    renderQuoteScreen(container);
+    return;
+  }
+
+  if (session.step === "amount") {
+    setQuoteSession({
+      remittanceMode: null,
+      step: "remittance_mode",
+    });
+    renderQuoteScreen(container);
+    return;
+  }
+}
+
+resetQuoteSession();
+renderQuoteScreen(container);
   });
 }

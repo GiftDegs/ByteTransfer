@@ -10,6 +10,10 @@ function iniciarCalculadoraClasica() {
   // Mostrar header desde el inicio para que el estado abierto/cerrado se vea apenas carga
   DOM.mainHeader.classList.remove("hidden");
 
+  const app = document.getElementById("app");
+  app?.classList.remove("justify-start");
+  app?.classList.add("justify-center");
+
   // La tasa todavía no hace falta mostrarla en el arranque
   DOM.tasaWrap.classList.add("hidden");
 
@@ -26,6 +30,10 @@ function iniciarCalculadoraClasica() {
 
 function iniciarCotizadorV2() {
   DOM.mainHeader.classList.remove("hidden");
+
+  const app = document.getElementById("app");
+  app?.classList.remove("justify-center");
+  app?.classList.add("justify-start");
 
   DOM.step1Origen?.classList.add("hidden");
   DOM.step2Destino?.classList.add("hidden");
