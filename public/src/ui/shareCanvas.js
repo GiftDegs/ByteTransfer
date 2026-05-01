@@ -10,33 +10,33 @@ const CANVAS_SIZE = 1080;
 
 const THEMES = {
   dark: {
-    bgTop: "#0B1E49",
-    bgBottom: "#030B1E",
-    card: "#121C31",
-    card2: "#0C1526",
-    panel: "#111A2E",
-    line: "rgba(255,255,255,0.105)",
+    bgTop: "#081B46",
+    bgBottom: "#020817",
+    card: "#13223B",
+    card2: "#071326",
+    panel: "#0B172C",
+    line: "rgba(255,255,255,0.115)",
     lineSoft: "rgba(255,255,255,0.075)",
 
     text: "#F8FAFC",
-    muted: "#AAB4C8",
-    muted2: "#7F8AA3",
+    muted: "#B3BED3",
+    muted2: "#8996B1",
 
-    accent: "#13E6C6",
-    accentSoft: "rgba(19,230,198,0.13)",
-    accentLine: "rgba(19,230,198,0.32)",
-    blueGlow: "rgba(31,107,255,0.20)",
-    cyanGlow: "rgba(19,230,198,0.13)",
+    accent: "#12E1D2",
+    accentSoft: "rgba(18,225,210,0.105)",
+    accentLine: "rgba(18,225,210,0.28)",
+    blueGlow: "rgba(31,107,255,0.16)",
+    cyanGlow: "rgba(18,225,210,0.095)",
 
-    row: "rgba(255,255,255,0.055)",
-    rowBorder: "rgba(255,255,255,0.085)",
+    row: "rgba(72,88,126,0.30)",
+    rowBorder: "rgba(170,190,235,0.105)",
 
-    warningBgA: "rgba(255,193,7,0.12)",
-    warningBgB: "rgba(19,230,198,0.12)",
-    warningText: "#F8E7B0",
+    warningBgA: "rgba(255,193,7,0.105)",
+    warningBgB: "rgba(18,225,210,0.105)",
+    warningText: "#F7EFD2",
 
-    shadow: "rgba(0,0,0,0.34)",
-  },
+    shadow: "rgba(0,0,0,0.38)",
+    },
 
   light: {
     bgTop: "#F8FBFF",
