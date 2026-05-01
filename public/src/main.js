@@ -1,4 +1,5 @@
-﻿import { DOM } from "./ui/dom.js";
+﻿import { enableSharePreviewTools } from "./ui/sharePreview.js";
+import { DOM } from "./ui/dom.js";
 import { initRipple } from "./ui/ripple.js";
 import { initSharing } from "./ui/sharing.js";
 import { renderQuoteScreen } from "./ui/quoteScreens.js";
@@ -49,6 +50,7 @@ function iniciarCotizadorV2() {
 window.onload = () => {
   initRipple();
   initSharing(DOM, getLastCalc, getOpsState);
+  enableSharePreviewTools();
 
   if (ENABLE_QUOTE_HUB_V2) {
     iniciarCotizadorV2();

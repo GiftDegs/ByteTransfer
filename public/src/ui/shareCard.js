@@ -10,6 +10,7 @@ export function renderShareCard(payload) {
   if (!payload) return "";
 
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
+  const dense = rows.length >= 4;
 
   return `
     <div
@@ -25,16 +26,16 @@ export function renderShareCard(payload) {
         </div>
       </div>
 
-      <div class="relative z-10 flex h-full flex-col px-20 py-18">
+      <div class="relative z-10 flex h-full flex-col px-20 py-14">
         ${renderShareHeader(payload)}
 
-        <main class="mt-16 flex flex-1 flex-col justify-center">
-          ${renderShareMain(payload)}
-          ${rows.length ? renderRows(rows) : ""}
-          ${payload.disclaimer ? renderDisclaimer(payload.disclaimer) : ""}
+        <main class="mt-10 flex flex-1 flex-col justify-center">
+          ${renderShareMain(payload, dense)}
+          ${rows.length ? renderRows(rows, dense) : ""}
+          ${payload.disclaimer ? renderDisclaimer(payload.disclaimer, dense) : ""}
         </main>
 
-        ${renderShareFooter(payload)}
+        ${renderShareFooter(payload, dense)}
       </div>
     </div>
   `;
@@ -84,31 +85,31 @@ function renderShareHeader(payload) {
   `;
 }
 
-function renderShareMain(payload) {
+function renderShareMain(payload, dense = false) {
   return `
-    <section class="rounded-[48px] border border-white/10 bg-white/[0.075] p-14 shadow-2xl backdrop-blur-xl">
+    <section class="rounded-[44px] border border-white/10 bg-white/[0.075] ${dense ? "p-8" : "p-10"} shadow-2xl backdrop-blur-xl">
       <div class="text-center">
-        <div class="text-2xl font-bold uppercase tracking-[0.24em] text-[#13E6C6]">
+        <div class="${dense ? "text-xl" : "text-2xl"} font-bold uppercase tracking-[0.24em] text-[#13E6C6]">
           ${escapeHtml(payload.title || "Cotización")}
         </div>
 
         ${payload.subtitle ? `
-          <div class="mt-6 text-5xl font-black leading-tight tracking-tight">
+          <div class="${dense ? "mt-5 text-[48px]" : "mt-6 text-5xl"} font-black leading-tight tracking-tight">
             ${escapeHtml(payload.subtitle)}
           </div>
         ` : ""}
 
-        <div class="mt-12 rounded-[40px] border border-[#13E6C6]/25 bg-[#13E6C6]/10 px-10 py-12">
-          <div class="text-xl font-bold uppercase tracking-[0.22em] text-[#13E6C6]">
+        <div class="${dense ? "mt-6 rounded-[32px] px-8 py-7" : "mt-8 rounded-[36px] px-10 py-9"} border border-[#13E6C6]/25 bg-[#13E6C6]/10">
+          <div class="${dense ? "text-lg" : "text-xl"} font-bold uppercase tracking-[0.22em] text-[#13E6C6]">
             ${escapeHtml(payload.primaryLabel || "Resultado")}
           </div>
 
-          <div class="mt-6 text-8xl font-black leading-none tracking-tight">
+          <div class="${dense ? "mt-4 text-6xl" : "mt-5 text-7xl"} font-black leading-none tracking-tight">
             ${formatShareNumber(payload.primaryValue)}
           </div>
 
           ${payload.primaryUnit ? `
-            <div class="mt-5 text-3xl font-bold text-slate-200">
+            <div class="${dense ? "mt-4 text-[28px]" : "mt-5 text-3xl"} font-bold text-slate-200">
               ${escapeHtml(payload.primaryUnit)}
             </div>
           ` : ""}
@@ -118,53 +119,53 @@ function renderShareMain(payload) {
   `;
 }
 
-function renderRows(rows) {
+function renderRows(rows, dense = false) {
   return `
-    <section class="mt-8 grid grid-cols-1 gap-4">
-      ${rows.map(renderRow).join("")}
+    <section class="${dense ? "mt-4" : "mt-6"} grid grid-cols-1 ${dense ? "gap-2" : "gap-3"}">
+      ${rows.map((row) => renderRow(row, dense)).join("")}
     </section>
   `;
 }
 
-function renderRow(row) {
+function renderRow(row, dense = false) {
   return `
-    <div class="flex items-center justify-between gap-8 rounded-[32px] border border-white/10 bg-black/20 px-8 py-6">
-      <div class="text-xl font-bold text-slate-400">
+    <div class="flex items-center justify-between gap-6 rounded-[28px] border border-white/10 bg-black/20 ${dense ? "px-6 py-4" : "px-7 py-5"}">
+      <div class="${dense ? "text-lg" : "text-xl"} font-bold text-slate-400">
         ${escapeHtml(row.label || "")}
       </div>
 
-      <div class="text-right text-2xl font-black text-white">
+      <div class="text-right ${dense ? "text-xl" : "text-2xl"} font-black text-white">
         ${escapeHtml(formatShareValue(row))}
       </div>
     </div>
   `;
 }
 
-function renderDisclaimer(disclaimer) {
+function renderDisclaimer(disclaimer, dense = false) {
   return `
-    <div class="mt-8 rounded-[28px] border border-amber-300/20 bg-amber-300/10 px-8 py-5 text-center text-xl font-bold text-amber-100">
+    <div class="${dense ? "mt-5 px-6 py-4 text-lg" : "mt-8 px-8 py-5 text-xl"} rounded-[28px] border border-amber-300/20 bg-amber-300/10 text-center font-bold text-amber-100">
       ${escapeHtml(disclaimer)}
     </div>
   `;
 }
 
-function renderShareFooter(payload) {
+function renderShareFooter(payload, dense = false) {
   return `
-    <footer class="mt-12 flex items-end justify-between gap-8 border-t border-white/10 pt-8">
+    <footer class="${dense ? "mt-5 pt-4" : "mt-8 pt-6"} flex items-end justify-between gap-8 border-t border-white/10">
       <div>
-        <div class="text-base font-semibold uppercase tracking-[0.24em] text-slate-500">
+        <div class="${dense ? "text-sm" : "text-base"} font-semibold uppercase tracking-[0.24em] text-slate-500">
           Actualizado
         </div>
-        <div class="mt-2 text-2xl font-black text-white">
+        <div class="${dense ? "mt-1 text-xl" : "mt-2 text-2xl"} font-black text-white">
           ${escapeHtml(payload.updatedAt || "Fecha no disponible")}
         </div>
       </div>
 
       <div class="text-right">
-        <div class="text-base font-semibold text-slate-500">
+        <div class="${dense ? "text-sm" : "text-base"} font-semibold text-slate-500">
           Tasa sujeta a disponibilidad operativa
         </div>
-        <div class="mt-2 text-2xl font-black text-[#13E6C6]">
+        <div class="${dense ? "mt-1 text-xl" : "mt-2 text-2xl"} font-black text-[#13E6C6]">
           ByteTransfer
         </div>
       </div>

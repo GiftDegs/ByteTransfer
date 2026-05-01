@@ -138,7 +138,7 @@ function buildVenezuelaEquivalentRows(amountObj) {
   return [
     {
       label: "Equivalente referencial",
-      value: null,
+      value: amountObj.usdEquivalent ?? null,
       unit: "dólares según BCV",
       computed: "ves_to_usd",
       sourceAmount: amountObj.amount,
@@ -147,6 +147,8 @@ function buildVenezuelaEquivalentRows(amountObj) {
 }
 
 export function formatShareNumber(value, options = {}) {
+  if (value === null || value === undefined || value === "") return "—";
+
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
 
