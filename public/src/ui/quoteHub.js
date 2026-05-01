@@ -24,7 +24,7 @@ const MODULE_META = {
   },
 };
 
-export function renderQuoteHub(container) {
+export function renderQuoteHub(container, onModuleSelected = null) {
   if (!container) return;
 
   const modules = getMainModules();
@@ -57,12 +57,16 @@ export function renderQuoteHub(container) {
     </section>
   `;
 
-  container.querySelectorAll("[data-quote-module]").forEach((btn) => {
+    container.querySelectorAll("[data-quote-module]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const moduleId = btn.dataset.quoteModule;
-      startQuoteModule(moduleId);
+        const moduleId = btn.dataset.quoteModule;
+        startQuoteModule(moduleId);
+
+        if (typeof onModuleSelected === "function") {
+        onModuleSelected(moduleId);
+        }
     });
-  });
+    });
 }
 
 function renderModuleCard(module) {

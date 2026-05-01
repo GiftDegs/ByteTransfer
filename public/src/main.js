@@ -1,7 +1,7 @@
 ﻿import { DOM } from "./ui/dom.js";
 import { initRipple } from "./ui/ripple.js";
 import { initSharing } from "./ui/sharing.js";
-import { renderQuoteHub } from "./ui/quoteHub.js";
+import { renderQuoteScreen } from "./ui/quoteScreens.js";
 import { wireEvents, mostrarPaso1, getLastCalc, getOpsState } from "./ui/steps.js";
 
 const ENABLE_QUOTE_HUB_V2 = false;
@@ -35,7 +35,7 @@ function iniciarCotizadorV2() {
   DOM.resultado?.classList.add("hidden");
 
   DOM.quoteApp?.classList.remove("hidden");
-  renderQuoteHub(DOM.quoteApp);
+  renderQuoteScreen(DOM.quoteApp);
 }
 
 window.onload = () => {
