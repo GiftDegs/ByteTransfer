@@ -10,6 +10,7 @@ export const DOM = {
   get tasaFechaEl() { return this.tasaFecha; },    // alias por compatibilidad
 
   // Step containers
+  quoteApp: document.getElementById("quoteApp"),
   step1Origen: document.getElementById('step1Origen'),
   step2Destino: document.getElementById('step2Destino'),
   step1: document.getElementById('step1'),
