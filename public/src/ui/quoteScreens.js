@@ -2,6 +2,7 @@
 
 import { QUOTE_MODULES, getReferenceOptions } from "../core/quoteModes.js";
 import { getQuoteSession, setQuoteSession, startQuoteModule, resetQuoteSession } from "../state/quoteSession.js";
+import { obtenerBCV } from "../services/rates.js";
 import { renderQuoteHub } from "./quoteHub.js";
 
 export function renderQuoteScreen(container) {
@@ -71,6 +72,11 @@ function renderScreenShell({ eyebrow, title, description, body }) {
 }
 
 function renderReferencesScreen(container, session) {
+  if (session.step === "reference_result") {
+    renderReferenceResultScreen(container, session);
+    return;
+  }
+
   if (session.step !== "reference_type") {
     renderComingSoon(container, session);
     return;
@@ -131,6 +137,103 @@ function renderReferenceOption(option) {
       </div>
     </button>
   `;
+}
+
+async function renderReferenceResultScreen(container, session) {
+  const isUsd = session.referenceType === "bcv_usd";
+  const title = isUsd ? "Dólar BCV" : "Euro BCV";
+  const field = isUsd ? "usd" : "eur";
+
+  container.innerHTML = renderScreenShell({
+    eyebrow: "Referencia BCV",
+    title: "Consultando referencia",
+    description: "Leyendo la referencia guardada desde el sistema.",
+    body: `
+      <div class="rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-xl">
+        <div class="mx-auto h-10 w-10 rounded-full border border-brandTeal/30 border-t-brandTeal animate-spin"></div>
+        <p class="mt-4 text-sm text-slate-300">Cargando ${title}...</p>
+      </div>
+    `,
+  });
+
+  bindCommonNavigation(container);
+
+  try {
+    const bcv = await obtenerBCV();
+    const value = Number(bcv?.[field]);
+    const fecha = bcv?.fecha ? new Date(bcv.fecha) : null;
+
+    if (!Number.isFinite(value) || value <= 0) {
+      renderReferenceError(container, title);
+      return;
+    }
+
+    const formattedValue = new Intl.NumberFormat("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    }).format(value);
+
+    const formattedDate = fecha && !Number.isNaN(fecha.getTime())
+      ? fecha.toLocaleString("es-AR")
+      : "Fecha no disponible";
+
+    container.innerHTML = renderScreenShell({
+      eyebrow: "Referencia BCV",
+      title,
+      description: "Referencia actual disponible para responder al cliente.",
+      body: `
+        <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl">
+          <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+            Valor actual
+          </p>
+
+          <div class="mt-4 text-5xl font-black tracking-tight text-white">
+            ${formattedValue}
+          </div>
+
+          <p class="mt-2 text-base text-slate-300">
+            bolívares
+          </p>
+
+          <div class="mt-6 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-300">
+            Actualizado: ${formattedDate}
+          </div>
+
+          <button
+            type="button"
+            data-reference-whatsapp="1"
+            class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110"
+          >
+            Enviar por WhatsApp
+          </button>
+
+          <p class="mt-3 text-xs text-slate-500">
+            La imagen premium se conectará en el siguiente bloque.
+          </p>
+        </div>
+      `,
+    });
+
+    bindCommonNavigation(container);
+  } catch (err) {
+    console.error("[quoteScreens] renderReferenceResultScreen:", err);
+    renderReferenceError(container, title);
+  }
+}
+
+function renderReferenceError(container, title) {
+  container.innerHTML = renderScreenShell({
+    eyebrow: "Referencia BCV",
+    title,
+    description: "No se pudo cargar esta referencia.",
+    body: `
+      <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
+        No hay una referencia válida disponible en este momento.
+      </div>
+    `,
+  });
+
+  bindCommonNavigation(container);
 }
 
 function renderComingSoon(container, session) {
