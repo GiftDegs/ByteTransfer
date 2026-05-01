@@ -10,17 +10,25 @@ import { mountShareCard } from "./shareCard.js";
 import { sharePremiumPayload } from "./sharing.js";
 
 export function enableSharePreviewTools() {
+  window.setSharePreviewTheme = (theme = "dark") => {
+    window.__sharePreviewTheme = theme === "light" ? "light" : "dark";
+    return window.__sharePreviewTheme;
+  };
+
   window.previewShareCard = (type = "rate") => {
     const payload = getDemoPayload(type);
-    const card = mountShareCard(payload);
+    payload.theme = window.__sharePreviewTheme || "dark";
 
+    const card = mountShareCard(payload);
     showPreviewOverlay(card);
 
     return payload;
   };
 
-    window.testSharePremiumImage = async (type = "rate") => {
+  window.testSharePremiumImage = async (type = "rate") => {
     const payload = getDemoPayload(type);
+    payload.theme = window.__sharePreviewTheme || "dark";
+
     return sharePremiumPayload(payload);
   };
 }

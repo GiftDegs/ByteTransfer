@@ -1,4 +1,4 @@
-import { mountShareCard } from "./shareCard.js";
+import { generatePremiumShareBlob } from "./shareCanvas.js";
 import { getShareFilename } from "../core/sharePayload.js";
 
 // sharing.js (flujo directo)
@@ -175,46 +175,7 @@ async function captureResultBlobFromDOM(DOM) {
 }
 
 async function capturePremiumShareBlob(payload) {
-  if (!payload) {
-    throw new Error("No hay datos para generar la imagen premium.");
-  }
-
-  const card = mountShareCard(payload);
-
-  if (!card) {
-    throw new Error("No se pudo montar la tarjeta premium.");
-  }
-
-  const html2canvas = await ensureHtml2Canvas();
-
-  try {
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
-  } catch (_) {}
-
-  await waitNextFrame();
-  await waitNextFrame();
-
-  const canvas = await html2canvas(card, {
-    backgroundColor: null,
-    scale: 1,
-    useCORS: true,
-    allowTaint: true,
-    logging: false,
-    width: 1080,
-    height: 1080,
-    windowWidth: 1080,
-    windowHeight: 1080,
-  });
-
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
-
-  if (!blob) {
-    throw new Error("No se pudo generar el PNG premium.");
-  }
-
-  return blob;
+  return generatePremiumShareBlob(payload);
 }
 
 async function downloadBlob(blob, filename = "bytetransfer.png") {
