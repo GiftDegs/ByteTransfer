@@ -2,8 +2,10 @@
 
 import {
   QUOTE_MODULES,
+  REMITTANCE_MODES,
   getReferenceOptions,
   getRemittanceModeOptions,
+  getBcvReferenceOptions,
 } from "../core/quoteModes.js";
 
 import { paisesDisponibles } from "../core/config.js";
@@ -84,10 +86,25 @@ function renderRemittanceScreen(container, session) {
   if (session.step === "remittance_mode") {
     renderRemittanceModeScreen(container, session);
     return;
-  }
+    }
 
-  renderComingSoon(container, session);
-}
+    if (session.step === "amount") {
+    renderRemittanceAmountScreen(container, session);
+    return;
+    }
+
+    if (session.step === "bcv_reference") {
+    renderBcvReferenceSelectionScreen(container, session);
+    return;
+    }
+
+    if (session.step === "result") {
+    renderRemittanceResultPlaceholder(container, session);
+    return;
+    }
+
+    renderComingSoon(container, session);
+    }
 
 function renderRemittanceModeScreen(container, session) {
   const origenLabel = getCountryLabel(session.origen);
@@ -128,14 +145,23 @@ function renderRemittanceModeScreen(container, session) {
 
   container.querySelectorAll("[data-remittance-mode]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      setQuoteSession({
-        remittanceMode: btn.dataset.remittanceMode,
-        step: "amount",
-      });
+        const remittanceMode = btn.dataset.remittanceMode;
+        const nextStep =
+        remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD
+            ? "bcv_reference"
+            : "amount";
 
-      renderQuoteScreen(container);
+        setQuoteSession({
+        remittanceMode,
+        bcvReferenceType: null,
+        customBcvRate: null,
+        amount: null,
+        step: nextStep,
+        });
+
+        renderQuoteScreen(container);
     });
-  });
+    });
 }
 
 function renderRemittanceModeOption(option) {
@@ -166,6 +192,252 @@ function renderRemittanceModeOption(option) {
       </div>
     </button>
   `;
+}
+
+function renderRemittanceAmountScreen(container, session) {
+  const origenCurrency = getCurrencyShortLabel(session.origen);
+  const destinoCurrency = getCurrencyShortLabel(session.destino);
+  const routeLabel = getRouteLabel(session.origen, session.destino);
+
+  const amountConfig = getAmountScreenConfig(session, {
+    origenCurrency,
+    destinoCurrency,
+  });
+
+  container.innerHTML = renderScreenShell({
+    eyebrow: "Cotizar remesa",
+    title: amountConfig.title,
+    description: amountConfig.description,
+    body: `
+      <div class="mb-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4 text-sm text-slate-300">
+        <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
+          Ruta seleccionada
+        </div>
+        <div class="mt-2 text-lg font-black text-white">
+          ${routeLabel}
+        </div>
+      </div>
+
+      ${amountConfig.extraHtml || ""}
+
+      <div class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-xl">
+        <label for="quoteAmountInput" class="block text-sm font-bold text-slate-200">
+          ${amountConfig.label}
+        </label>
+
+        <div class="mt-3 flex items-center gap-3 rounded-3xl border border-white/10 bg-black/25 px-4 py-3">
+          <input
+            id="quoteAmountInput"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="Ingresa el monto"
+            class="min-w-0 flex-1 bg-transparent text-2xl font-black text-white outline-none placeholder:text-slate-600"
+          />
+          <span class="shrink-0 rounded-2xl bg-white/10 px-3 py-2 text-xs font-bold text-slate-300">
+            ${amountConfig.unit}
+          </span>
+        </div>
+
+        <p id="quoteAmountHelp" class="mt-3 text-xs leading-relaxed text-slate-400">
+          ${amountConfig.help}
+        </p>
+
+        <button
+          type="button"
+          data-remittance-next="1"
+          class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled
+        >
+          Continuar
+        </button>
+      </div>
+    `,
+  });
+
+  bindCommonNavigation(container);
+
+  const input = container.querySelector("#quoteAmountInput");
+  const btn = container.querySelector("[data-remittance-next]");
+  const help = container.querySelector("#quoteAmountHelp");
+
+  input?.addEventListener("input", () => {
+    const clean = normalizeAmountInput(input.value);
+    if (input.value !== clean) input.value = clean;
+
+    const amount = parseAmountInput(clean);
+    const valid = Number.isFinite(amount) && amount > 0;
+
+    if (btn) btn.disabled = !valid;
+
+    if (help) {
+      help.textContent = valid
+        ? amountConfig.validHelp
+        : amountConfig.help;
+    }
+  });
+
+  btn?.addEventListener("click", () => {
+    const amount = parseAmountInput(input?.value || "");
+
+    if (!Number.isFinite(amount) || amount <= 0) return;
+
+    setQuoteSession({
+      amount,
+      step: "result",
+    });
+
+    renderQuoteScreen(container);
+  });
+
+  setTimeout(() => input?.focus(), 80);
+}
+
+function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
+  if (session.remittanceMode === REMITTANCE_MODES.SEND_AMOUNT) {
+    return {
+      title: `¿Cuántos ${origenCurrency} quiere enviar?`,
+      description: "Ingresa el monto que el cliente tiene disponible para enviar.",
+      label: `Monto a enviar en ${origenCurrency}`,
+      unit: origenCurrency,
+      help: `Este monto se usará para calcular cuántos ${destinoCurrency} recibe el cliente.`,
+      validHelp: `Listo. Continuaremos para calcular cuántos ${destinoCurrency} recibe el cliente.`,
+    };
+  }
+
+  if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_AMOUNT) {
+    return {
+      title: `¿Cuántos ${destinoCurrency} quiere recibir?`,
+      description: "Ingresa el monto que el cliente quiere que llegue en destino.",
+      label: `Monto a recibir en ${destinoCurrency}`,
+      unit: destinoCurrency,
+      help: `Este monto se usará para calcular cuántos ${origenCurrency} debe enviar el cliente.`,
+      validHelp: `Listo. Continuaremos para calcular cuántos ${origenCurrency} debe enviar el cliente.`,
+    };
+  }
+
+  if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
+    const refLabel = getBcvReferenceLabel(session.bcvReferenceType);
+
+    return {
+      title: "¿Cuántos dólares quiere recibir?",
+      description: "Ingresa los dólares que el cliente quiere recibir en Venezuela.",
+      label: "Monto en dólares",
+      unit: "dólares",
+      help: `Referencia seleccionada: ${refLabel}.`,
+      validHelp: `Listo. Continuaremos para calcular el equivalente en bolívares y cuánto debe enviar.`,
+      extraHtml: `
+        <div class="mb-4 rounded-3xl border border-brandTeal/20 bg-brandTeal/10 p-4 text-sm text-slate-200">
+          <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
+            Referencia BCV
+          </div>
+          <div class="mt-2 text-lg font-black text-white">
+            ${refLabel}
+          </div>
+        </div>
+      `,
+    };
+  }
+
+  return {
+    title: "Ingresa el monto",
+    description: "Completa el monto para continuar.",
+    label: "Monto",
+    unit: "",
+    help: "Ingresa un monto válido.",
+    validHelp: "Monto válido.",
+  };
+}
+
+function renderBcvReferenceSelectionScreen(container, session) {
+  const routeLabel = getRouteLabel(session.origen, session.destino);
+  const options = getBcvReferenceOptions();
+
+  container.innerHTML = renderScreenShell({
+    eyebrow: "Cotización al BCV",
+    title: "¿Qué referencia BCV vas a usar?",
+    description: "Selecciona la referencia para convertir dólares a bolívares.",
+    body: `
+      <div class="mb-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4 text-sm text-slate-300">
+        <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
+          Ruta seleccionada
+        </div>
+        <div class="mt-2 text-lg font-black text-white">
+          ${routeLabel}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3">
+        ${options.map(renderBcvReferenceOption).join("")}
+      </div>
+    `,
+  });
+
+  bindCommonNavigation(container);
+
+  container.querySelectorAll("[data-bcv-reference]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setQuoteSession({
+        bcvReferenceType: btn.dataset.bcvReference,
+        customBcvRate: null,
+        amount: null,
+        step: "amount",
+      });
+
+      renderQuoteScreen(container);
+    });
+  });
+}
+
+function renderBcvReferenceOption(option) {
+  return `
+    <button
+      type="button"
+      data-bcv-reference="${option.id}"
+      class="group relative w-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-brandTeal/50 hover:bg-white/[0.10]"
+    >
+      <div class="relative flex items-center justify-between gap-4">
+        <div>
+          <span class="rounded-full bg-brandTeal/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brandTeal">
+            BCV
+          </span>
+
+          <h3 class="mt-3 text-lg font-black tracking-tight text-white">
+            ${option.title}
+          </h3>
+
+          <p class="mt-1 text-sm leading-relaxed text-slate-300">
+            ${option.description}
+          </p>
+        </div>
+
+        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/10 text-lg text-white transition group-hover:bg-brandTeal group-hover:text-slate-950">
+          →
+        </div>
+      </div>
+    </button>
+  `;
+}
+
+function getBcvReferenceLabel(type) {
+  if (type === "usd") return "Dólar BCV";
+  if (type === "eur") return "Euro BCV";
+  if (type === "custom") return "Precio personalizado";
+  return "Referencia no seleccionada";
+}
+
+function normalizeAmountInput(value) {
+  const raw = String(value || "").replace(/,/g, ".").replace(/[^0-9.]/g, "");
+  const parts = raw.split(".");
+
+  if (parts.length <= 1) return raw;
+
+  return `${parts[0]}.${parts.slice(1).join("")}`;
+}
+
+function parseAmountInput(value) {
+  const n = Number.parseFloat(String(value || "").replace(",", "."));
+  return Number.isFinite(n) ? n : null;
 }
 
 renderComingSoon(container, session);
@@ -576,6 +848,75 @@ function renderReferenceError(container, title) {
   bindCommonNavigation(container);
 }
 
+function renderRemittanceResultPlaceholder(container, session) {
+  const routeLabel = getRouteLabel(session.origen, session.destino);
+  const origenCurrency = getCurrencyShortLabel(session.origen);
+  const destinoCurrency = getCurrencyShortLabel(session.destino);
+
+  let resumen = "Monto registrado.";
+
+  if (session.remittanceMode === REMITTANCE_MODES.SEND_AMOUNT) {
+    resumen = `El cliente quiere enviar ${session.amount} ${origenCurrency}.`;
+  }
+
+  if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_AMOUNT) {
+    resumen = `El cliente quiere recibir ${session.amount} ${destinoCurrency}.`;
+  }
+
+  if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
+    resumen = `El cliente quiere recibir ${session.amount} dólares usando ${getBcvReferenceLabel(session.bcvReferenceType)}.`;
+  }
+
+  container.innerHTML = renderScreenShell({
+    eyebrow: "Resultado pendiente",
+    title: "Monto recibido",
+    description: "El próximo bloque conectará el cálculo real de la cotización.",
+    body: `
+      <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl">
+        <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
+          Ruta seleccionada
+        </div>
+
+        <div class="mt-2 text-xl font-black text-white">
+          ${routeLabel}
+        </div>
+
+        <div class="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5 text-sm leading-relaxed text-slate-200">
+          ${resumen}
+        </div>
+
+        <button
+          type="button"
+          data-result-back-to-amount="1"
+          class="mt-5 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-sm font-black text-white shadow-xl transition hover:bg-white/15"
+        >
+          Editar monto
+        </button>
+      </div>
+    `,
+  });
+
+  bindCommonNavigation(container);
+
+  container.querySelector("[data-result-back-to-amount]")?.addEventListener("click", () => {
+    setQuoteSession({
+      amount: null,
+      step: "amount",
+    });
+
+    renderQuoteScreen(container);
+  });
+
+  if (session.step === "result") {
+  setQuoteSession({
+    amount: null,
+    step: "amount",
+  });
+  renderQuoteScreen(container);
+  return;
+  }
+}
+
 function renderComingSoon(container, session) {
   container.innerHTML = renderScreenShell({
     eyebrow: "En construcción",
@@ -646,13 +987,33 @@ if (session.module === QUOTE_MODULES.REMITTANCE) {
     return;
   }
 
-  if (session.step === "amount") {
+  if (session.step === "bcv_reference") {
     setQuoteSession({
-      remittanceMode: null,
-      step: "remittance_mode",
+        remittanceMode: null,
+        bcvReferenceType: null,
+        step: "remittance_mode",
     });
     renderQuoteScreen(container);
     return;
+  }
+
+  if (session.step === "amount") {
+  if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
+    setQuoteSession({
+      amount: null,
+      step: "bcv_reference",
+    });
+    renderQuoteScreen(container);
+    return;
+  }
+
+  setQuoteSession({
+    remittanceMode: null,
+    amount: null,
+    step: "remittance_mode",
+  });
+  renderQuoteScreen(container);
+  return;
   }
 }
 
