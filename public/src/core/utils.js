@@ -26,6 +26,32 @@ export function formatearTasa(v) {
   return n.toFixed(6);
 }
 
+
+export function normalizarTasaOperativa(value) {
+  const text = formatearTasa(value);
+  const number = Number(text);
+
+  return {
+    text,
+    value: Number.isFinite(number) && number > 0 ? number : null,
+  };
+}
+
+export function limpiarResultadoRaw(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+
+  const clean = Number(n.toPrecision(12));
+  return Object.is(clean, -0) ? 0 : clean;
+}
+
+export function formatearResultadoRaw(value) {
+  const clean = limpiarResultadoRaw(value);
+  if (!Number.isFinite(clean)) return "—";
+
+  return String(clean);
+}
+
 export function formatearMontoConMoneda(valor, moneda, {
   maximumFractionDigits = 0,
   minimumFractionDigits = 0,

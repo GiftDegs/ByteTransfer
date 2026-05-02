@@ -13,7 +13,13 @@ import { toggleQuoteTheme, withQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
 
 import { paisesDisponibles } from "../core/config.js";
-import { formatearTasa, redondearPorMoneda } from "../core/utils.js";
+import {
+  formatearResultadoRaw,
+  formatearTasa,
+  limpiarResultadoRaw,
+  normalizarTasaOperativa,
+  redondearPorMoneda,
+} from "../core/utils.js";
 import { calcularCruce, obtenerTasaVisible } from "../core/fx.js";
 import { obtenerBCV, obtenerTasa } from "../services/rates.js";
 import {
@@ -1240,6 +1246,17 @@ async function renderRemittanceResultScreen(container, session) {
       return;
     }
 
+    const tasaOperativa = normalizarTasaOperativa(tasaVisible);
+
+    if (!Number.isFinite(tasaOperativa.value) || tasaOperativa.value <= 0) {
+      renderRemittanceResultError(
+        container,
+        routeLabel,
+        "No hay una tasa operativa válida para este cruce.",
+      );
+      return;
+    }
+
     const fecha = data?.fecha ? new Date(data.fecha) : null;
     const formattedDate =
       fecha && !Number.isNaN(fecha.getTime())
@@ -1264,14 +1281,14 @@ async function renderRemittanceResultScreen(container, session) {
         session.destino,
         "enviar",
         amount,
-        tasaVisible,
+        tasaOperativa.value,
       );
-      const recibe = roundDisplayAmount(recibeRaw, session.destino);
+      const recibe = limpiarResultadoRaw(recibeRaw);
 
       result = {
         type: "send_amount",
         routeLabel,
-        tasaVisible,
+        tasaVisible: tasaOperativa.value,
         fecha: formattedDate,
         envia: {
           amount,
@@ -1292,14 +1309,14 @@ async function renderRemittanceResultScreen(container, session) {
         session.destino,
         "llegar",
         amount,
-        tasaVisible,
+        tasaOperativa.value,
       );
-      const debeEnviar = roundSendAmount(debeEnviarRaw, session.origen);
+      const debeEnviar = limpiarResultadoRaw(debeEnviarRaw);
 
       result = {
         type: "receive_amount",
         routeLabel,
-        tasaVisible,
+        tasaVisible: tasaOperativa.value,
         fecha: formattedDate,
         recibe: {
           amount,
@@ -1333,14 +1350,14 @@ async function renderRemittanceResultScreen(container, session) {
         "VES",
         "llegar",
         vesObjetivo,
-        tasaVisible,
+        tasaOperativa.value,
       );
-      const debeEnviar = roundSendAmount(debeEnviarRaw, session.origen);
+      const debeEnviar = limpiarResultadoRaw(debeEnviarRaw);
 
       result = {
         type: "receive_bcv_usd",
         routeLabel,
-        tasaVisible,
+        tasaVisible: tasaOperativa.value,
         fecha: formattedDate,
         bcvReference: getBcvReferenceLabel(session.bcvReferenceType),
         bcvRate,
@@ -1504,7 +1521,7 @@ function renderResultLine(label, amount, currencyLabel, highlight = false) {
       </div>
 
       <div class="mt-2 text-2xl font-black ${themeClasses.valueNumber}">
-        ${formatNumber(amount)}
+        ${formatearResultadoRaw(amount)}
       </div>
 
       <div class="mt-1 text-sm ${themeClasses.valueUnit}">

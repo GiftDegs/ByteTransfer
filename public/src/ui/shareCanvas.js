@@ -295,7 +295,7 @@ function drawRemittanceLayout(ctx, theme, payload) {
   ctx.textBaseline = "middle";
   fitText(
     ctx,
-    formatShareNumber(payload.primaryValue),
+    payload.primaryRaw ? String(payload.primaryValue || "—") : formatShareNumber(payload.primaryValue),
     x + w / 2,
     heroY + 144,
     w - 150,

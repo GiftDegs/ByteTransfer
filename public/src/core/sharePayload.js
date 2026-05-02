@@ -1,7 +1,7 @@
 // public/src/core/sharePayload.js
 
 import { getCountryLabel, getCurrencyShortLabel, getRouteLabel } from "./labels.js";
-import { formatearTasa } from "./utils.js";
+import { formatearResultadoRaw, formatearTasa } from "./utils.js";
 
 export const SHARE_PAYLOAD_TYPES = {
   REFERENCE: "reference",
@@ -58,13 +58,15 @@ export function buildRemittanceSharePayload(result) {
     return {
       ...base,
       primaryLabel: "Recibe",
-      primaryValue: result.recibe?.amount,
+      primaryValue: formatearResultadoRaw(result.recibe?.amount),
       primaryUnit: result.recibe?.currencyLabel,
+      primaryRaw: true,
       rows: [
         {
           label: "Envías",
-          value: result.envia?.amount,
+          value: formatearResultadoRaw(result.envia?.amount),
           unit: result.envia?.currencyLabel,
+          raw: true,
         },
         {
           label: "Tasa aplicada",
@@ -81,13 +83,15 @@ export function buildRemittanceSharePayload(result) {
     return {
       ...base,
       primaryLabel: "Debes enviar",
-      primaryValue: result.debeEnviar?.amount,
+      primaryValue: formatearResultadoRaw(result.debeEnviar?.amount),
       primaryUnit: result.debeEnviar?.currencyLabel,
+      primaryRaw: true,
       rows: [
         {
           label: "Deseas recibir",
-          value: result.recibe?.amount,
+          value: formatearResultadoRaw(result.recibe?.amount),
           unit: result.recibe?.currencyLabel,
+          raw: true,
         },
         {
           label: "Tasa aplicada",
@@ -104,18 +108,21 @@ export function buildRemittanceSharePayload(result) {
     return {
       ...base,
       primaryLabel: "Debes enviar",
-      primaryValue: result.debeEnviar?.amount,
+      primaryValue: formatearResultadoRaw(result.debeEnviar?.amount),
       primaryUnit: result.debeEnviar?.currencyLabel,
+      primaryRaw: true,
       rows: [
         {
           label: "Deseas recibir",
-          value: result.usdDeseados,
+          value: formatearResultadoRaw(result.usdDeseados),
           unit: "dólares",
+          raw: true,
         },
         {
           label: "Equivalente en Venezuela",
-          value: result.vesObjetivo,
+          value: formatearResultadoRaw(result.vesObjetivo),
           unit: "bolívares",
+          raw: true,
         },
         {
           label: "Referencia",
@@ -169,7 +176,10 @@ export function formatShareNumber(value, options = {}) {
 
 export function formatShareValue(rowOrValue, unit = null) {
   if (rowOrValue && typeof rowOrValue === "object") {
-    if (rowOrValue.raw) return String(rowOrValue.value || "—");
+    if (rowOrValue.raw) {
+      const value = String(rowOrValue.value || "—");
+      return rowOrValue.unit ? `${value} ${rowOrValue.unit}` : value;
+    }
 
     const value = formatShareNumber(rowOrValue.value);
     return rowOrValue.unit ? `${value} ${rowOrValue.unit}` : value;
