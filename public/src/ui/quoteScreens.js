@@ -113,121 +113,128 @@ function renderScreenShell({ eyebrow, title, description, body }) {
 }
 
 function bindCommonNavigation(container) {
-  container.querySelector("[data-quote-home]")?.addEventListener("click", () => {
-    resetQuoteSession();
-    renderQuoteScreen(container);
-  });
-
-  container.querySelector("[data-quote-back]")?.addEventListener("click", () => {
-    const session = getQuoteSession();
-
-    if (session.step === "reference_type") {
+  container
+    .querySelector("[data-quote-home]")
+    ?.addEventListener("click", () => {
       resetQuoteSession();
       renderQuoteScreen(container);
-      return;
-    }
+    });
 
-    if (session.module === QUOTE_MODULES.REFERENCES) {
-      startQuoteModule(QUOTE_MODULES.REFERENCES);
-      renderQuoteScreen(container);
-      return;
-    }
+  container
+    .querySelector("[data-quote-back]")
+    ?.addEventListener("click", () => {
+      const session = getQuoteSession();
 
-    if (session.module === QUOTE_MODULES.RATE) {
-      if (session.step === "destination") {
-        startQuoteModule(QUOTE_MODULES.RATE);
+      if (session.step === "reference_type") {
+        resetQuoteSession();
         renderQuoteScreen(container);
         return;
       }
 
-      if (session.step === "rate_result") {
-        setQuoteSession({
-          destino: null,
-          step: "destination",
-        });
-        renderQuoteScreen(container);
-        return;
-      }
-    }
-
-    if (session.module === QUOTE_MODULES.REMITTANCE) {
-      if (session.step === "destination") {
-        startQuoteModule(QUOTE_MODULES.REMITTANCE);
+      if (session.module === QUOTE_MODULES.REFERENCES) {
+        startQuoteModule(QUOTE_MODULES.REFERENCES);
         renderQuoteScreen(container);
         return;
       }
 
-      if (session.step === "remittance_mode") {
-        setQuoteSession({
-          destino: null,
-          remittanceMode: null,
-          step: "destination",
-        });
-        renderQuoteScreen(container);
-        return;
-      }
+      if (session.module === QUOTE_MODULES.RATE) {
+        if (session.step === "destination") {
+          startQuoteModule(QUOTE_MODULES.RATE);
+          renderQuoteScreen(container);
+          return;
+        }
 
-      if (session.step === "bcv_reference") {
-        setQuoteSession({
-          remittanceMode: null,
-          bcvReferenceType: null,
-          customBcvRate: null,
-          step: "remittance_mode",
-        });
-        renderQuoteScreen(container);
-        return;
-      }
-
-      if (session.step === "custom_bcv_rate") {
-        setQuoteSession({
-          bcvReferenceType: null,
-          customBcvRate: null,
-          step: "bcv_reference",
-        });
-        renderQuoteScreen(container);
-        return;
-      }
-
-      if (session.step === "amount") {
-        if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
+        if (session.step === "rate_result") {
           setQuoteSession({
-            amount: null,
+            destino: null,
+            step: "destination",
+          });
+          renderQuoteScreen(container);
+          return;
+        }
+      }
+
+      if (session.module === QUOTE_MODULES.REMITTANCE) {
+        if (session.step === "destination") {
+          startQuoteModule(QUOTE_MODULES.REMITTANCE);
+          renderQuoteScreen(container);
+          return;
+        }
+
+        if (session.step === "remittance_mode") {
+          setQuoteSession({
+            destino: null,
+            remittanceMode: null,
+            step: "destination",
+          });
+          renderQuoteScreen(container);
+          return;
+        }
+
+        if (session.step === "bcv_reference") {
+          setQuoteSession({
+            remittanceMode: null,
+            bcvReferenceType: null,
+            customBcvRate: null,
+            step: "remittance_mode",
+          });
+          renderQuoteScreen(container);
+          return;
+        }
+
+        if (session.step === "custom_bcv_rate") {
+          setQuoteSession({
+            bcvReferenceType: null,
+            customBcvRate: null,
             step: "bcv_reference",
           });
           renderQuoteScreen(container);
           return;
         }
 
-        setQuoteSession({
-          remittanceMode: null,
-          amount: null,
-          step: "remittance_mode",
-        });
-        renderQuoteScreen(container);
-        return;
+        if (session.step === "amount") {
+          if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
+            setQuoteSession({
+              amount: null,
+              step: "bcv_reference",
+            });
+            renderQuoteScreen(container);
+            return;
+          }
+
+          setQuoteSession({
+            remittanceMode: null,
+            amount: null,
+            step: "remittance_mode",
+          });
+          renderQuoteScreen(container);
+          return;
+        }
+
+        if (session.step === "result") {
+          setQuoteSession({
+            amount: null,
+            result: null,
+            step: "amount",
+          });
+          renderQuoteScreen(container);
+          return;
+        }
       }
 
-      if (session.step === "result") {
-        setQuoteSession({
-          amount: null,
-          result: null,
-          step: "amount",
-        });
-        renderQuoteScreen(container);
-        return;
-      }
-    }
-
-    resetQuoteSession();
-    renderQuoteScreen(container);
-  });
+      resetQuoteSession();
+      renderQuoteScreen(container);
+    });
 }
 
 // =====================================================
 // COMMON COUNTRY SELECTION
 // =====================================================
 
-function renderCountrySelectionScreen(container, { eyebrow, title, description, countries, onSelect }) {
+function renderCountrySelectionScreen(
+  container,
+  { eyebrow, title, description, countries, onSelect },
+) {
   container.innerHTML = renderScreenShell({
     eyebrow,
     title,
@@ -303,7 +310,8 @@ function renderReferencesScreen(container, session) {
   container.innerHTML = renderScreenShell({
     eyebrow: "Referencias",
     title: "¿Qué referencia quieres consultar?",
-    description: "Selecciona la referencia que necesitas responderle al cliente.",
+    description:
+      "Selecciona la referencia que necesitas responderle al cliente.",
     body: `
       <div class="grid grid-cols-1 gap-3">
         ${options.map(renderReferenceOption).join("")}
@@ -389,9 +397,10 @@ async function renderReferenceResultScreen(container, session) {
       maximumFractionDigits: 6,
     }).format(value);
 
-    const formattedDate = fecha && !Number.isNaN(fecha.getTime())
-      ? fecha.toLocaleString("es-AR")
-      : "Fecha no disponible";
+    const formattedDate =
+      fecha && !Number.isNaN(fecha.getTime())
+        ? fecha.toLocaleString("es-AR")
+        : "Fecha no disponible";
 
     container.innerHTML = renderScreenShell({
       eyebrow: "Referencia BCV",
@@ -426,19 +435,20 @@ async function renderReferenceResultScreen(container, session) {
       `,
     });
 
-        bindCommonNavigation(container);
+    bindCommonNavigation(container);
 
-    container.querySelector("[data-reference-whatsapp]")?.addEventListener("click", async () => {
-      const payload = buildReferenceSharePayload({
-        referenceTitle: title,
-        value,
-        updatedAt: formattedDate,
+    container
+      .querySelector("[data-reference-whatsapp]")
+      ?.addEventListener("click", async () => {
+        const payload = buildReferenceSharePayload({
+          referenceTitle: title,
+          value,
+          updatedAt: formattedDate,
+        });
+
+        await sharePremiumPayload(payload);
       });
-
-      await sharePremiumPayload(payload);
-    });
   } catch (err) {
-
     console.error("[quoteScreens] renderReferenceResultScreen:", err);
     renderReferenceError(container, title);
   }
@@ -456,7 +466,7 @@ function renderReferenceError(container, title) {
     `,
   });
 
-    bindCommonNavigation(container);
+  bindCommonNavigation(container);
 
   bindCommonNavigation(container);
 }
@@ -531,7 +541,11 @@ async function renderRateResultScreen(container, session) {
   try {
     const data = await obtenerTasa(session.origen, session.destino);
     const tasaInterna = Number(data?.tasa);
-    const tasaVisible = obtenerTasaVisible(session.origen, session.destino, tasaInterna);
+    const tasaVisible = obtenerTasaVisible(
+      session.origen,
+      session.destino,
+      tasaInterna,
+    );
     const fecha = data?.fecha ? new Date(data.fecha) : null;
 
     if (!Number.isFinite(tasaVisible) || tasaVisible <= 0) {
@@ -540,9 +554,10 @@ async function renderRateResultScreen(container, session) {
     }
 
     const tasaFmt = formatearTasa(tasaVisible);
-    const formattedDate = fecha && !Number.isNaN(fecha.getTime())
-      ? fecha.toLocaleString("es-AR")
-      : "Fecha no disponible";
+    const formattedDate =
+      fecha && !Number.isNaN(fecha.getTime())
+        ? fecha.toLocaleString("es-AR")
+        : "Fecha no disponible";
 
     container.innerHTML = renderScreenShell({
       eyebrow: "Tasa de cambio",
@@ -580,17 +595,18 @@ async function renderRateResultScreen(container, session) {
 
     bindCommonNavigation(container);
 
-        container.querySelector("[data-rate-whatsapp]")?.addEventListener("click", async () => {
-      const payload = buildRateSharePayload({
-        origen: session.origen,
-        destino: session.destino,
-        tasa: tasaFmt,
-        updatedAt: formattedDate,
+    container
+      .querySelector("[data-rate-whatsapp]")
+      ?.addEventListener("click", async () => {
+        const payload = buildRateSharePayload({
+          origen: session.origen,
+          destino: session.destino,
+          tasa: tasaFmt,
+          updatedAt: formattedDate,
+        });
+
+        await sharePremiumPayload(payload);
       });
-
-      await sharePremiumPayload(payload);
-    });
-
   } catch (err) {
     console.error("[quoteScreens] renderRateResultScreen:", err);
     renderRateError(container, routeLabel);
@@ -932,7 +948,9 @@ function renderCustomBcvRateScreen(container, session) {
     }
   });
 
-  btn?.addEventListener("click", () => {
+  const continueWithCustomBcvRate = () => {
+    if (btn?.disabled) return;
+
     const value = parseAmountInput(input?.value || "");
     if (!Number.isFinite(value) || value <= 0) return;
 
@@ -944,7 +962,16 @@ function renderCustomBcvRateScreen(container, session) {
     });
 
     renderQuoteScreen(container);
+  };
+
+  input?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    continueWithCustomBcvRate();
   });
+
+  btn?.addEventListener("click", continueWithCustomBcvRate);
 
   setTimeout(() => input?.focus(), 80);
 }
@@ -1026,13 +1053,13 @@ function renderRemittanceAmountScreen(container, session) {
     if (btn) btn.disabled = !valid;
 
     if (help) {
-      help.textContent = valid
-        ? amountConfig.validHelp
-        : amountConfig.help;
+      help.textContent = valid ? amountConfig.validHelp : amountConfig.help;
     }
   });
 
-  btn?.addEventListener("click", () => {
+  const continueWithRemittanceAmount = () => {
+    if (btn?.disabled) return;
+
     const amount = parseAmountInput(input?.value || "");
     if (!Number.isFinite(amount) || amount <= 0) return;
 
@@ -1043,7 +1070,16 @@ function renderRemittanceAmountScreen(container, session) {
     });
 
     renderQuoteScreen(container);
+  };
+
+  input?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    continueWithRemittanceAmount();
   });
+
+  btn?.addEventListener("click", continueWithRemittanceAmount);
 
   setTimeout(() => input?.focus(), 80);
 }
@@ -1051,39 +1087,41 @@ function renderRemittanceAmountScreen(container, session) {
 function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
   if (session.remittanceMode === REMITTANCE_MODES.SEND_AMOUNT) {
     return {
-      title: `¿Cuántos ${origenCurrency} quiere enviar?`,
-      description: "Ingresa el monto que el cliente tiene disponible para enviar.",
-      label: `Monto a enviar en ${origenCurrency}`,
-      unit: origenCurrency,
-      help: `Este monto se usará para calcular cuántos ${destinoCurrency} recibe el cliente.`,
-      validHelp: `Listo. Continuaremos para calcular cuántos ${destinoCurrency} recibe el cliente.`,
-      extraHtml: "",
-    };
+        title: `¿Cuántos ${origenCurrency} quiere enviar el cliente?`,
+        description: `Calcularemos cuántos ${destinoCurrency} recibe.`,
+        label: `Monto a enviar en ${origenCurrency}`,
+        unit: origenCurrency,
+        help: `Ingresa el monto que el cliente tiene disponible para enviar.`,
+        validHelp: `Listo. Calcularemos cuántos ${destinoCurrency} recibe el cliente.`,
+        extraHtml: "",
+        };
   }
 
   if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_AMOUNT) {
     return {
-      title: `¿Cuántos ${destinoCurrency} quiere recibir?`,
-      description: "Ingresa el monto que el cliente quiere que llegue en destino.",
-      label: `Monto a recibir en ${destinoCurrency}`,
-      unit: destinoCurrency,
-      help: `Este monto se usará para calcular cuántos ${origenCurrency} debe enviar el cliente.`,
-      validHelp: `Listo. Continuaremos para calcular cuántos ${origenCurrency} debe enviar el cliente.`,
-      extraHtml: "",
-    };
+  title: `¿Cuántos ${destinoCurrency} quiere recibir el cliente?`,
+  description: `Calcularemos cuántos ${origenCurrency} debe enviar.`,
+  label: `Monto a recibir en ${destinoCurrency}`,
+  unit: destinoCurrency,
+  help: `Ingresa el monto que el cliente quiere que llegue en destino.`,
+  validHelp: `Listo. Calcularemos cuántos ${origenCurrency} debe enviar el cliente.`,
+  extraHtml: "",
+};
   }
 
   if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
     const refLabel = getBcvReferenceLabel(session.bcvReferenceType);
 
     return {
-      title: "¿Cuántos dólares quiere recibir?",
-      description: "Ingresa los dólares que el cliente quiere recibir en Venezuela.",
-      label: "Monto en dólares",
-      unit: "dólares",
-      help: `Referencia seleccionada: ${refLabel}.`,
-      validHelp: "Listo. Continuaremos para calcular el equivalente en bolívares y cuánto debe enviar.",
-      extraHtml: `
+  title: "¿Cuántos dólares quiere recibir el cliente?",
+  description:
+    "Calcularemos el equivalente en bolívares y cuánto debe enviar.",
+  label: "Monto en dólares",
+  unit: "dólares",
+  help: `Referencia seleccionada: ${refLabel}. Ingresa el monto en dólares que el cliente quiere recibir.`,
+  validHelp:
+    "Listo. Calcularemos el equivalente en bolívares y cuánto debe enviar.",
+  extraHtml: `
         <div class="mb-4 rounded-3xl border border-brandTeal/20 bg-brandTeal/10 p-4 text-sm text-slate-200">
           <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
             Referencia BCV
@@ -1133,28 +1171,47 @@ async function renderRemittanceResultScreen(container, session) {
   try {
     const data = await obtenerTasa(session.origen, session.destino);
     const tasaInterna = Number(data?.tasa);
-    const tasaVisible = obtenerTasaVisible(session.origen, session.destino, tasaInterna);
+    const tasaVisible = obtenerTasaVisible(
+      session.origen,
+      session.destino,
+      tasaInterna,
+    );
 
     if (!Number.isFinite(tasaVisible) || tasaVisible <= 0) {
-      renderRemittanceResultError(container, routeLabel, "No hay una tasa válida para este cruce.");
+      renderRemittanceResultError(
+        container,
+        routeLabel,
+        "No hay una tasa válida para este cruce.",
+      );
       return;
     }
 
     const fecha = data?.fecha ? new Date(data.fecha) : null;
-    const formattedDate = fecha && !Number.isNaN(fecha.getTime())
-      ? fecha.toLocaleString("es-AR")
-      : "Fecha no disponible";
+    const formattedDate =
+      fecha && !Number.isNaN(fecha.getTime())
+        ? fecha.toLocaleString("es-AR")
+        : "Fecha no disponible";
 
     const amount = Number(session.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      renderRemittanceResultError(container, routeLabel, "El monto ingresado no es válido.");
+      renderRemittanceResultError(
+        container,
+        routeLabel,
+        "El monto ingresado no es válido.",
+      );
       return;
     }
 
     let result = null;
 
     if (session.remittanceMode === REMITTANCE_MODES.SEND_AMOUNT) {
-      const recibeRaw = calcularCruce(session.origen, session.destino, "enviar", amount, tasaVisible);
+      const recibeRaw = calcularCruce(
+        session.origen,
+        session.destino,
+        "enviar",
+        amount,
+        tasaVisible,
+      );
       const recibe = roundDisplayAmount(recibeRaw, session.destino);
 
       result = {
@@ -1176,7 +1233,13 @@ async function renderRemittanceResultScreen(container, session) {
     }
 
     if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_AMOUNT) {
-      const debeEnviarRaw = calcularCruce(session.origen, session.destino, "llegar", amount, tasaVisible);
+      const debeEnviarRaw = calcularCruce(
+        session.origen,
+        session.destino,
+        "llegar",
+        amount,
+        tasaVisible,
+      );
       const debeEnviar = roundSendAmount(debeEnviarRaw, session.origen);
 
       result = {
@@ -1202,12 +1265,22 @@ async function renderRemittanceResultScreen(container, session) {
       const bcvRate = getSelectedBcvRate(session, bcv);
 
       if (!Number.isFinite(bcvRate) || bcvRate <= 0) {
-        renderRemittanceResultError(container, routeLabel, "No hay una referencia BCV válida para esta cotización.");
+        renderRemittanceResultError(
+          container,
+          routeLabel,
+          "No hay una referencia BCV válida para esta cotización.",
+        );
         return;
       }
 
       const vesObjetivo = amount * bcvRate;
-      const debeEnviarRaw = calcularCruce(session.origen, "VES", "llegar", vesObjetivo, tasaVisible);
+      const debeEnviarRaw = calcularCruce(
+        session.origen,
+        "VES",
+        "llegar",
+        vesObjetivo,
+        tasaVisible,
+      );
       const debeEnviar = roundSendAmount(debeEnviarRaw, session.origen);
 
       result = {
@@ -1228,7 +1301,11 @@ async function renderRemittanceResultScreen(container, session) {
     }
 
     if (!result) {
-      renderRemittanceResultError(container, routeLabel, "No se pudo determinar el tipo de cotización.");
+      renderRemittanceResultError(
+        container,
+        routeLabel,
+        "No se pudo determinar el tipo de cotización.",
+      );
       return;
     }
 
@@ -1239,7 +1316,7 @@ async function renderRemittanceResultScreen(container, session) {
     renderRemittanceResultError(
       container,
       routeLabel,
-      `Ocurrió un error calculando la cotización: ${err?.message || "error desconocido"}`
+      `Ocurrió un error calculando la cotización: ${err?.message || "error desconocido"}`,
     );
   }
 }
@@ -1255,20 +1332,24 @@ function renderRemittanceResultView(container, result) {
   bindCommonNavigation(container);
   hydrateVenezuelaUsdEquivalent(container);
 
-    container.querySelector("[data-remittance-whatsapp]")?.addEventListener("click", async () => {
-    const payload = buildRemittanceSharePayload(result);
-    await sharePremiumPayload(payload);
-  });
-
-  container.querySelector("[data-result-back-to-amount]")?.addEventListener("click", () => {
-    setQuoteSession({
-      amount: null,
-      result: null,
-      step: "amount",
+  container
+    .querySelector("[data-remittance-whatsapp]")
+    ?.addEventListener("click", async () => {
+      const payload = buildRemittanceSharePayload(result);
+      await sharePremiumPayload(payload);
     });
 
-    renderQuoteScreen(container);
-  });
+  container
+    .querySelector("[data-result-back-to-amount]")
+    ?.addEventListener("click", () => {
+      setQuoteSession({
+        amount: null,
+        result: null,
+        step: "amount",
+      });
+
+      renderQuoteScreen(container);
+    });
 }
 
 function renderRemittanceResultBody(result) {
@@ -1472,14 +1553,19 @@ function getBcvReferenceLabel(type) {
 }
 
 function getSelectedBcvRate(session, bcv) {
-  if (session.bcvReferenceType === BCV_REFERENCE_TYPES.USD) return Number(bcv?.usd);
-  if (session.bcvReferenceType === BCV_REFERENCE_TYPES.EUR) return Number(bcv?.eur);
-  if (session.bcvReferenceType === BCV_REFERENCE_TYPES.CUSTOM) return Number(session.customBcvRate);
+  if (session.bcvReferenceType === BCV_REFERENCE_TYPES.USD)
+    return Number(bcv?.usd);
+  if (session.bcvReferenceType === BCV_REFERENCE_TYPES.EUR)
+    return Number(bcv?.eur);
+  if (session.bcvReferenceType === BCV_REFERENCE_TYPES.CUSTOM)
+    return Number(session.customBcvRate);
   return null;
 }
 
 function normalizeAmountInput(value) {
-  const raw = String(value || "").replace(/,/g, ".").replace(/[^0-9.]/g, "");
+  const raw = String(value || "")
+    .replace(/,/g, ".")
+    .replace(/[^0-9.]/g, "");
   const parts = raw.split(".");
 
   if (parts.length <= 1) return raw;

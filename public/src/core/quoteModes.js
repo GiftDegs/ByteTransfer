@@ -64,24 +64,24 @@ export function getReferenceOptions() {
 export function getRemittanceModeOptions({ origenLabel, destinoLabel, origenCurrency, destinoCurrency, destino }) {
   const options = [
     {
-      id: REMITTANCE_MODES.SEND_AMOUNT,
-      title: `Calcular cuántos ${destinoCurrency} recibe`,
-      description: `El cliente sabe cuántos ${origenCurrency} quiere enviar.`,
+        id: REMITTANCE_MODES.SEND_AMOUNT,
+        title: "Calcular cuánto recibe",
+        description: `Ingresa el monto en ${origenCurrency} que envía el cliente.`,
     },
     {
-      id: REMITTANCE_MODES.RECEIVE_AMOUNT,
-      title: `Calcular cuántos ${origenCurrency} debe enviar`,
-      description: `El cliente sabe cuántos ${destinoCurrency} quiere recibir.`,
+        id: REMITTANCE_MODES.RECEIVE_AMOUNT,
+        title: "Calcular cuánto debe enviar",
+        description: `Ingresa el monto en ${destinoCurrency} que el cliente quiere recibir.`,
     },
-  ];
+    ];
 
   if (destino === "VES") {
     options.push({
-      id: REMITTANCE_MODES.RECEIVE_BCV_USD,
-      title: "Calcular dólares a BCV",
-      description: "El cliente quiere recibir un equivalente en dólares en Venezuela.",
+        id: REMITTANCE_MODES.RECEIVE_BCV_USD,
+        title: "Calcular dólares a BCV",
+        description: "Ingresa los dólares que el cliente quiere recibir.",
     });
-  }
+    }
 
   return options.map((option) => ({
     ...option,
