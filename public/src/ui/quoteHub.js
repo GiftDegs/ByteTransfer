@@ -4,6 +4,7 @@ import { getMainModules } from "../core/quoteModes.js";
 import { startQuoteModule } from "../state/quoteSession.js";
 import { getQuoteTheme, toggleQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
+import { getQuoteIconBoxClass, getQuoteSelectionCardClass } from "./quoteComponents.js";
 import { renderQuoteShell, renderQuoteShellFooter } from "./quoteShell.js";
 
 const MODULE_ICONS = {
@@ -93,12 +94,12 @@ function renderModuleCard(module, themeClasses) {
     <button
       type="button"
       data-quote-module="${module.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/16 to-transparent opacity-0 transition group-hover:opacity-100"></div>
 
       <div class="relative flex items-center gap-4">
-        <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border text-xl font-black ${themeClasses.iconBox}">
+        <div class="${getQuoteIconBoxClass(themeClasses, "h-12 w-12", "text-xl")}">
           ${icon}
         </div>
 

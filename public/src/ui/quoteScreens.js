@@ -11,6 +11,7 @@ import {
 
 import { toggleQuoteTheme, withQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
+import { getQuoteIconBoxClass, getQuoteSelectionCardClass } from "./quoteComponents.js";
 import { renderQuoteShell } from "./quoteShell.js";
 
 import { paisesDisponibles } from "../core/config.js";
@@ -279,10 +280,10 @@ function renderCountryOption(country) {
     <button
       type="button"
       data-country-code="${code}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-4 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-4")}"
     >
       <div class="flex items-center gap-3">
-        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border text-xl font-black ${themeClasses.iconBox}">
+        <div class="${getQuoteIconBoxClass(themeClasses, "h-11 w-11", "text-xl")}">
           ${flag}
         </div>
 
@@ -353,7 +354,7 @@ function renderReferenceOption(option) {
     <button
       type="button"
       data-reference-type="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/12 to-transparent opacity-0 transition group-hover:opacity-100"></div>
 
@@ -793,7 +794,7 @@ function renderRemittanceModeOption(option) {
     <button
       type="button"
       data-remittance-mode="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="relative flex items-center justify-between gap-4">
         <div class="min-w-0 flex-1">
@@ -872,7 +873,7 @@ function renderBcvReferenceOption(option) {
     <button
       type="button"
       data-bcv-reference="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/12 to-transparent opacity-0 transition group-hover:opacity-100"></div>
 
