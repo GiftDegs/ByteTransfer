@@ -48,3 +48,30 @@ export function getQuoteActionButtonClass(themeClasses, variant = "primary", ext
     extra,
   ].filter(Boolean).join(" ");
 }
+
+
+export function getQuoteArrowBoxClass(themeClasses, size = "h-10 w-10", weight = "") {
+  return [
+    "grid",
+    size,
+    "shrink-0 place-items-center rounded-2xl text-lg transition",
+    weight,
+    themeClasses.arrowBox,
+  ].filter(Boolean).join(" ");
+}
+
+export function getQuoteBadgeClass(themeClasses, extra = "") {
+  return [
+    "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em]",
+    themeClasses.badge,
+    extra,
+  ].filter(Boolean).join(" ");
+}
+
+export function getQuoteChipClass(themeClasses, extra = "") {
+  return [
+    "shrink-0 rounded-2xl px-3 py-2 text-xs font-bold",
+    themeClasses.chip,
+    extra,
+  ].filter(Boolean).join(" ");
+}

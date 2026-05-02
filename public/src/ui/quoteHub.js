@@ -4,7 +4,11 @@ import { getMainModules } from "../core/quoteModes.js";
 import { startQuoteModule } from "../state/quoteSession.js";
 import { getQuoteTheme, toggleQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
-import { getQuoteIconBoxClass, getQuoteSelectionCardClass } from "./quoteComponents.js";
+import {
+  getQuoteArrowBoxClass,
+  getQuoteIconBoxClass,
+  getQuoteSelectionCardClass,
+} from "./quoteComponents.js";
 import { renderQuoteShell, renderQuoteShellFooter } from "./quoteShell.js";
 
 const MODULE_ICONS = {
@@ -119,7 +123,7 @@ function renderModuleCard(module, themeClasses) {
           </p>
         </div>
 
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-10 w-10")}">
           →
         </div>
       </div>

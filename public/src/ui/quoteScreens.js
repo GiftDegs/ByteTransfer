@@ -13,6 +13,9 @@ import { toggleQuoteTheme, withQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
 import {
   getQuoteActionButtonClass,
+  getQuoteArrowBoxClass,
+  getQuoteBadgeClass,
+  getQuoteChipClass,
   getQuoteIconBoxClass,
   getQuoteSelectionCardClass,
 } from "./quoteComponents.js";
@@ -300,7 +303,7 @@ function renderCountryOption(country) {
           </div>
         </div>
 
-        <div class="grid h-9 w-9 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-9 w-9")}">
           →
         </div>
       </div>
@@ -364,7 +367,7 @@ function renderReferenceOption(option) {
 
       <div class="relative flex items-center justify-between gap-4">
         <div class="min-w-0 flex-1">
-          <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${themeClasses.badge}">
+          <span class="${getQuoteBadgeClass(themeClasses)}">
             BCV
           </span>
 
@@ -377,7 +380,7 @@ function renderReferenceOption(option) {
           </p>
         </div>
 
-        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-11 w-11", "font-black")}">
           →
         </div>
       </div>
@@ -815,7 +818,7 @@ function renderRemittanceModeOption(option) {
           </p>
         </div>
 
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-10 w-10")}">
           →
         </div>
       </div>
@@ -883,7 +886,7 @@ function renderBcvReferenceOption(option) {
 
       <div class="relative flex items-center justify-between gap-4">
         <div class="min-w-0 flex-1">
-          <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${themeClasses.badge}">
+          <span class="${getQuoteBadgeClass(themeClasses)}">
             BCV
           </span>
 
@@ -896,7 +899,7 @@ function renderBcvReferenceOption(option) {
           </p>
         </div>
 
-        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-11 w-11", "font-black")}">
           →
         </div>
       </div>
@@ -936,7 +939,7 @@ function renderCustomBcvRateScreen(container, session) {
             placeholder="Ej: 487.12"
             class="min-w-0 flex-1 bg-transparent text-2xl font-black ${themeClasses.primaryText} outline-none placeholder:text-slate-500"
           />
-          <span class="shrink-0 rounded-2xl px-3 py-2 text-xs font-bold ${themeClasses.chip}">
+          <span class="${getQuoteChipClass(themeClasses)}">
             bolívares
           </span>
         </div>
@@ -1048,7 +1051,7 @@ function renderRemittanceAmountScreen(container, session) {
             placeholder="Ingresa el monto"
             class="min-w-0 flex-1 bg-transparent text-2xl font-black ${themeClasses.primaryText} outline-none placeholder:text-slate-500"
           />
-          <span class="shrink-0 rounded-2xl px-3 py-2 text-xs font-bold ${themeClasses.chip}">
+          <span class="${getQuoteChipClass(themeClasses)}">
             ${amountConfig.unit}
           </span>
         </div>
