@@ -1387,11 +1387,12 @@ function renderRemittanceResultView(container, result) {
   hydrateVenezuelaUsdEquivalent(container);
 
   container
-    .querySelector("[data-remittance-whatsapp]")
-    ?.addEventListener("click", async () => {
-      const payload = buildRemittanceSharePayload(result);
-      await sharePremiumPayload(withQuoteTheme(payload));
-    });
+  .querySelector("[data-remittance-whatsapp]")
+  ?.addEventListener("click", async () => {
+    const shareResult = await enrichRemittanceResultForShare(result);
+    const payload = buildRemittanceSharePayload(shareResult);
+    await sharePremiumPayload(withQuoteTheme(payload));
+  });
 
   container
     .querySelector("[data-result-back-to-amount]")
@@ -1579,6 +1580,44 @@ function renderVenezuelaUsdEquivalent(amountObj) {
   `;
 }
 
+async function getUsdEquivalentFromVesAmount(vesAmount) {
+  if (!Number.isFinite(vesAmount) || vesAmount <= 0) return null;
+
+  const bcv = await obtenerBCV();
+  const usd = Number(bcv?.usd);
+
+  if (!Number.isFinite(usd) || usd <= 0) return null;
+
+  return vesAmount / usd;
+}
+
+async function enrichRemittanceResultForShare(result) {
+  if (!result?.recibe || result.recibe.currencyCode !== "VES") {
+    return result;
+  }
+
+  const vesAmount = Number(result.recibe.amount);
+
+  try {
+    const usdEquivalent = await getUsdEquivalentFromVesAmount(vesAmount);
+
+    if (!Number.isFinite(usdEquivalent) || usdEquivalent <= 0) {
+      return result;
+    }
+
+    return {
+      ...result,
+      recibe: {
+        ...result.recibe,
+        usdEquivalent,
+      },
+    };
+  } catch (err) {
+    console.error("[quoteScreens] enrichRemittanceResultForShare:", err);
+    return result;
+  }
+}
+
 async function hydrateVenezuelaUsdEquivalent(container) {
   const el = container.querySelector("[data-ves-usd-equivalent]");
   if (!el) return;
@@ -1590,15 +1629,14 @@ async function hydrateVenezuelaUsdEquivalent(container) {
   }
 
   try {
-    const bcv = await obtenerBCV();
-    const usd = Number(bcv?.usd);
+    const usdEquivalent = await getUsdEquivalentFromVesAmount(vesAmount);
 
-    if (!Number.isFinite(usd) || usd <= 0) {
+    if (!Number.isFinite(usdEquivalent) || usdEquivalent <= 0) {
       el.textContent = "—";
       return;
     }
 
-    el.textContent = formatNumber(vesAmount / usd, {
+    el.textContent = formatNumber(usdEquivalent, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
