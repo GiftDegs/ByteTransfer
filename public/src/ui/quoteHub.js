@@ -35,7 +35,7 @@ export function renderQuoteHub(container, onModuleSelected = null) {
   const isLight = theme === "light";
 
   container.innerHTML = `
-<section class="relative flex h-full w-full flex-col overflow-hidden border-0 px-4 py-4 shadow-none transition-colors sm:h-auto sm:max-h-[calc(100svh-2rem)] sm:overflow-y-auto sm:rounded-[2rem] sm:border sm:px-6 sm:py-7 sm:shadow-2xl ${themeClasses.shell}">      <div class="pointer-events-none absolute inset-0">
+<section class="relative flex h-full min-h-0 w-full flex-col overflow-y-auto overflow-x-hidden border-0 px-4 py-4 shadow-none transition-colors sm:h-auto sm:max-h-[calc(100svh-2rem)] sm:overflow-y-auto sm:rounded-[2rem] sm:border sm:px-6 sm:py-7 sm:shadow-2xl ${themeClasses.shell}">      <div class="pointer-events-none absolute inset-0">
         <div class="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full ${themeClasses.glowA} blur-3xl"></div>
         <div class="absolute -bottom-28 right-0 h-72 w-72 rounded-full ${themeClasses.glowB} blur-3xl"></div>
         <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,_transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,_transparent_1px)] bg-[size:38px_38px] ${themeClasses.gridOpacity}"></div>
