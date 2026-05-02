@@ -35,14 +35,13 @@ export function renderQuoteHub(container, onModuleSelected = null) {
   const isLight = theme === "light";
 
   container.innerHTML = `
-    <section class="relative w-full overflow-hidden rounded-[2rem] border px-4 py-5 shadow-2xl transition-colors sm:px-6 sm:py-7 ${themeClasses.shell}">
-      <div class="pointer-events-none absolute inset-0">
+<section class="relative flex h-full w-full flex-col overflow-hidden border-0 px-4 py-4 shadow-none transition-colors sm:h-auto sm:max-h-[calc(100svh-2rem)] sm:overflow-y-auto sm:rounded-[2rem] sm:border sm:px-6 sm:py-7 sm:shadow-2xl ${themeClasses.shell}">      <div class="pointer-events-none absolute inset-0">
         <div class="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full ${themeClasses.glowA} blur-3xl"></div>
         <div class="absolute -bottom-28 right-0 h-72 w-72 rounded-full ${themeClasses.glowB} blur-3xl"></div>
         <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,_transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,_transparent_1px)] bg-[size:38px_38px] ${themeClasses.gridOpacity}"></div>
       </div>
 
-      <div class="relative">
+      <div class="relative flex min-h-0 flex-1 flex-col">
         <div class="mb-5 flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 backdrop-blur-xl ${themeClasses.topbar}">
           <span class="rounded-md bg-[linear-gradient(135deg,#22d3c5,#2f8cff)] px-2 py-1 text-[10px] font-black uppercase tracking-[0.26em] text-white shadow-sm">
             Centro de cotización
@@ -74,6 +73,19 @@ export function renderQuoteHub(container, onModuleSelected = null) {
         <div class="grid grid-cols-1 gap-3">
           ${modules.map((module) => renderModuleCard(module, themeClasses)).join("")}
         </div>
+
+                <div class="mt-auto flex flex-col items-center justify-end pt-5">
+          <img
+            src="logo.png"
+            alt="Logo ByteTransfer"
+            class="h-12 w-12 select-none object-contain drop-shadow-[0_14px_24px_rgba(13,148,136,0.24)] sm:h-14 sm:w-14"
+          />
+
+          <p class="mt-2 text-[10px] font-black uppercase tracking-[0.28em] ${themeClasses.accentText}">
+            ByteTransfer
+          </p>
+        </div>
+
       </div>
     </section>
   `;

@@ -1,488 +1,128 @@
 <!DOCTYPE html>
-<html lang="es" class="transition duration-300">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculadora de Cambios</title>
-
-  <!-- Tema oscuro automático desde localStorage -->
-<script>
-  (function () {
-    try {
-      const saved = localStorage.getItem('bt_theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const shouldDark = saved ? saved === 'dark' : prefersDark;
-      document.documentElement.classList.toggle('dark', shouldDark);
-    } catch (_) {}
-  })();
-</script>
-
+  <title>ByteTransfer | Cotizador Público</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        colors: {
-          brandBlue: '#1F6BFF',
-          brandTeal: '#13E6C6',
-        }
-      }
-    }
-  }
-</script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandBlue: "#1F6BFF",
+            brandTeal: "#13E6C6",
+          },
+          fontFamily: {
+            sans: ["Poppins", "system-ui", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <script type="module" src="src/main.js" defer></script>
 
-
   <style>
-    .tasa-shine { position: relative; overflow: hidden; }
-
-    @keyframes pulseEpic { 0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.95} }
-    .pulse-epic { animation: pulseEpic 1.5s ease-in-out infinite; }
-    .tasa-shine::before {
-      content: ""; position: absolute; top: -50%; left: -50%;
-      width: 200%; height: 200%;
-      background: linear-gradient(120deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 60%);
-      transform: rotate(25deg); animation: shine 2.5s infinite; pointer-events: none;
+    body {
+      font-family: "Poppins", system-ui, sans-serif;
     }
-    @keyframes shine { from{transform:translateX(-100%) rotate(25deg)} to{transform:translateX(100%) rotate(25deg)} }
-    body { font-family: 'Poppins', sans-serif; }
 
-    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
-    .ripple-button { position: relative; overflow: hidden; }
+    @keyframes btloader {
+      0% { transform: translateX(-120%); }
+      50% { transform: translateX(20%); }
+      100% { transform: translateX(120%); }
+    }
+
+    .animate-btloader {
+      animation: btloader 1.2s ease-in-out infinite;
+    }
+
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    .ripple-button {
+      position: relative;
+      overflow: hidden;
+    }
+
     .ripple-button span {
-      position: absolute; border-radius: 50%;
-      transform: scale(0); background: rgba(255,255,255,0.4);
-      animation: ripple 0.6s linear; pointer-events: none;
+      position: absolute;
+      border-radius: 50%;
+      transform: scale(0);
+      background: rgba(255, 255, 255, 0.4);
+      animation: ripple 0.6s linear;
+      pointer-events: none;
     }
-
-    .fade-in { animation: fadeIn 0.5s ease-in-out forwards; }
-    .fade-scale-in { animation: fadeScale 0.5s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeScale { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-
-    @keyframes fadeSlide {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-.fade-slide-in {
-  animation: fadeSlide 0.4s ease-out forwards;
-}
-@keyframes resultPop {
-  0%   { opacity: 0; transform: scale(0.9); }
-  80%  { transform: scale(1.02); }
-  100% { opacity: 1; transform: scale(1); }
-}
-.result-pop {
-  animation: resultPop 0.6s ease-in-out forwards;
-}
-/* Entrada / salida suaves para la confirmación */
-@keyframes confirmIn {
-  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
-@keyframes confirmOut {
-  from { opacity: 1; transform: translateY(0)    scale(1); }
-  to   { opacity: 0; transform: translateY(-4px) scale(0.98); }
-}
-.confirm-in  { animation: confirmIn 0.28s ease-out both; }
-.confirm-out { animation: confirmOut 0.24s ease-in forwards; }
-
-/* Parpadeo MUY leve mientras está visible */
-@keyframes subtleBlink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.78; }
-}
-.confirm-blink { animation: subtleBlink 1.2s ease-in-out infinite; }
-@keyframes btloader {
-  0%   { transform: translateX(-120%); }
-  50%  { transform: translateX(20%); }
-  100% { transform: translateX(120%); }
-}
-.animate-btloader { animation: btloader 1.2s ease-in-out infinite; }
-
-#btnVolverGlobal.fixed-bottom {
-  position: fixed;
-  bottom: 1.25rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 40;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-#btnVolverGlobal.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-body.modal-activo {
-  overflow: hidden;
-}
-
-body.modal-activo *:not(#modalMontoGrande):not(#modalMontoGrande *) {
-  pointer-events: none !important;
-}
-
-
-#modalMontoGrande {
-  pointer-events: auto;
-}
-
-#modalMontoGrande *,
-#modalMontoGrande {
-  z-index: 9999 !important;
-}
-
-@media (max-width: 480px) {
-  #btnVolverGlobal {
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
-  }
-}
-
   </style>
 </head>
 
-<body class="transition-colors duration-500 bg-gradient-to-b from-[#EAF6FF] via-pink-50 to-pink-100 text-gray-800 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 dark:text-gray-100">
+<body class="min-h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(47,140,255,0.22),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(34,211,197,0.18),transparent_32%),linear-gradient(180deg,#eaf6ff_0%,#f7fbff_42%,#f5e7ef_100%)] text-slate-900 sm:overflow-y-auto">
+  <div
+    id="splash"
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-white transition-opacity duration-500 opacity-100"
+  >
+    <div class="flex flex-col items-center gap-4">
+      <img src="logo.png" alt="Logo ByteTransfer" class="h-16 select-none" />
 
-  <!-- SPLASH / PRELOADER -->
-<div id="splash"
-     class="fixed inset-0 z-[100] flex items-center justify-center
-            bg-white dark:bg-gray-900 transition-opacity duration-500 opacity-100">
-  <div class="flex flex-col items-center gap-4">
-    <!-- Logo light/dark -->
-    <img src="logo.png" alt="Logo" class="h-16 dark:hidden select-none" />
-    <img src="logo.png" alt="Logo" class="h-16 hidden dark:block select-none filter invert-[15%] brightness-110" />
-    <!-- Barra de carga animada -->
-    <div class="mt-2 h-1.5 w-40 rounded-full bg-gray-200/80 dark:bg-gray-700/70 overflow-hidden">
-      <div class="h-full w-2/5 rounded-full bg-[#0066FF] dark:bg-[#66AAFF] animate-btloader"></div>
+      <div class="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-slate-200/80">
+        <div class="h-full w-2/5 rounded-full bg-[linear-gradient(135deg,#22d3c5,#2f8cff)] animate-btloader"></div>
+      </div>
     </div>
   </div>
-</div>
-
-<script>
-(function(){
-  // =================== CONFIG ===================
-  var MIN_VISIBLE_MS  = 2000;      // visibilidad mínima del splash, aunque la app cargue rápido
-  var MAX_WAIT_MS     = 2500;     // fallback: ocultar aunque no llegue 'load' en este tiempo
-  var COOLDOWN_MIN    = 15;      // "memoria": si se mostró hace < 15 minutos, NO volver a mostrar
-  var FADE_MS         = 500;      // debe coincidir con transition-opacity duration-500 del #splash
-  var KEY_TS          = 'bt_splash_last_ts'; // localStorage key del último mostrado
-  // ==============================================
-
-  // Helper: leer y escribir timestamp
-  function now(){ return Date.now(); }
-  function getLastTs(){
-    try { return Number(localStorage.getItem(KEY_TS) || 0); } catch(_) { return 0; }
-  }
-  function setLastTs(t){
-    try { localStorage.setItem(KEY_TS, String(t)); } catch(_) {}
-  }
-
-  var s = document.getElementById('splash');
-  if (!s) return;
-
-  // 1) Si el splash se mostró hace poco, NO lo mostramos
-  var last = getLastTs();
-  var elapsedMin = (now() - last) / (60*1000);
-  if (elapsedMin < COOLDOWN_MIN) {
-    s.style.display = 'none';
-    return;
-  }
-
-  // 2) Mostrar splash (ya está visible por defecto en el HTML)
-  var shownAt = now();
-  var hidden = false;
-
-  function hideSplash(){
-    if (hidden) return;
-    hidden = true;
-    s.style.opacity = '0';
-    setTimeout(function(){
-      s.style.display = 'none';
-    }, FADE_MS);
-    setLastTs(now()); // guardamos "se mostró recientemente"
-  }
-
-  // 3) Garantiza una visibilidad mínima (MIN_VISIBLE_MS)
-  //    y un fallback si 'load' tarda más de MAX_WAIT_MS
-  var maxWait = setTimeout(function(){
-    // Si no llegó 'load' a tiempo, ocultamos igual
-    var spent = now() - shownAt;
-    var remain = Math.max(0, MIN_VISIBLE_MS - spent);
-    setTimeout(hideSplash, remain);
-  }, MAX_WAIT_MS);
-
-  window.addEventListener('load', function(){
-    clearTimeout(maxWait);
-    var spent = now() - shownAt;
-    var remain = Math.max(0, MIN_VISIBLE_MS - spent);
-    setTimeout(hideSplash, remain);
-  });
-})();
-
-
-</script>
-
-<!-- Contenedor raíz responsivo: ocupa el alto útil, limita el estiramiento y permite scroll si hace falta -->
-  <div id="app"
-       class="min-h-[100svh] max-h-[900px] lg:max-h-[840px] mx-auto px-4 py-6
-              flex flex-col items-center justify-center overflow-y-auto
-              transition-colors duration-500">
-
-    <!-- Contenido central con gap proporcional (no se separa de más en pantallas largas) -->
-    <div class="w-full max-w-[720px] flex flex-col items-center
-                gap-[clamp(0.5rem,2.2vh,1.25rem)]">
-
-                <div id="quoteApp" class="hidden w-full"></div>
-
-      <button id="modoToggle"
-    class="absolute top-2 right-2 z-50 px-3 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white rounded-full shadow hover:brightness-110 transition text-xs sm:text-sm">
-    🌞 Claro
-  </button>
 
   <script>
-    const btn = document.getElementById("modoToggle");
-    function actualizarToggle() {
-      const esOscuro = document.documentElement.classList.contains("dark");
-      btn.innerHTML = esOscuro ? "🌙 Oscuro" : "🌞 Claro";
-    }
-    btn.addEventListener("click", () => {
-      const html = document.documentElement;
-      const nuevoModo = html.classList.toggle("dark") ? 'dark' : 'light';
-      localStorage.setItem('bt_theme', nuevoModo);
-      actualizarToggle();
-    });
-    actualizarToggle();
+    (function () {
+      const splash = document.getElementById("splash");
+      if (!splash) return;
+
+      const minVisibleMs = 700;
+      const maxWaitMs = 1400;
+      const fadeMs = 500;
+      const shownAt = Date.now();
+      let hidden = false;
+
+      function hideSplash() {
+        if (hidden) return;
+        hidden = true;
+        splash.style.opacity = "0";
+
+        setTimeout(function () {
+          splash.style.display = "none";
+        }, fadeMs);
+      }
+
+      const fallback = setTimeout(function () {
+        const spent = Date.now() - shownAt;
+        const remain = Math.max(0, minVisibleMs - spent);
+        setTimeout(hideSplash, remain);
+      }, maxWaitMs);
+
+      window.addEventListener("load", function () {
+        clearTimeout(fallback);
+        const spent = Date.now() - shownAt;
+        const remain = Math.max(0, minVisibleMs - spent);
+        setTimeout(hideSplash, remain);
+      });
+    })();
   </script>
 
-      <header id="mainHeader" class="transition-colors duration-500 flex flex-col items-center">
-        <img src="logo.png" alt="Logo ByteTransfer" class="h-24 mb-2" />
-
-        <div id="statusHeader"
-             class="mt-1 text-base sm:text-lg text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <!-- lo llena JS -->
-        </div>
-
-        <!-- Título con tamaño fluido -->
-        <h1 class="transition-colors duration-500 font-bold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full
-                   text-[clamp(1.6rem,4.5vw,2.25rem)] text-brandBlue dark:text-brandTeal">
-          Calculadora de Cambios
-        </h1>
-
-        <p id="subtituloHeader" class="transition-colors duration-500 text-[clamp(0.95rem,2.6vw,1.125rem)] text-[#666666] dark:text-gray-300 text-center -mt-1">
-          <!-- Se llenará dinámicamente -->
-        </p>
-      </header>
-
-      <section id="step1Origen" class="flex flex-col items-center gap-4 text-center">
-        <p class="text-lg text-gray-700 dark:text-gray-300">¿Desde dónde quieres enviar?</p>
-
-        <div id="origenBtns" class="flex flex-col gap-3 mt-2">
-          <!-- Botones generados por JS -->
-        </div>
-      </section>
-
-      <section id="step2Destino" class="hidden flex flex-col items-center gap-4 text-center">
-        <p class="text-lg text-gray-700 dark:text-gray-300">¿A qué país quieres enviar?</p>
-
-        <div id="destinoBtns" class="flex flex-col gap-3 mt-2">
-          <!-- Botones generados por JS -->
-        </div>
-      </section>
-
-      <div id="tasaWrap" class="transition-colors duration-500 flex flex-col items-center transition-all duration-300">
-        <p id="tasaTitulo" class="text-base font-semibold text-gray-700 dark:text-gray-300">Tasa del día</p>
-        <p id="tasaFecha" class="text-sm italic text-[#666666] dark:text-gray-400">—</p>
-
-        <div id="tasaCard" class="tasa-shine mt-2 min-w-[10rem] px-6 py-6 flex items-center justify-center rounded-2xl bg-[#E1F0FF]/80 dark:bg-white/10 backdrop-blur-md ring-1 ring-black/5 shadow-[0_8px_20px_rgba(0,0,0,0.12)] transition-all duration-300 relative">
-          <span id="tasaValue" class="text-6xl font-extrabold text-blue-900 dark:text-blue-300 tracking-tight drop-shadow-lg select-none transition-all duration-300 pulse-epic">–</span>
-        </div>
-
-        <!-- Advertencia roja -->
-        <div id="tasaAdvertencia"
-            class="hidden mt-3 w-full max-w-md text-red-800 bg-red-50 border border-red-200 rounded-xl px-4 py-3 shadow-sm text-sm font-semibold flex items-start gap-2 justify-center ring-1 ring-red-300"
-            role="status" aria-live="polite">
-          <span id="tasaAdvertenciaTexto">🚨 Tasa desactualizada 🚨</span>
-        </div>
-
-        <!-- Confirmación verde -->
-        <div id="tasaConfirmacion"
-            class="hidden mt-3 w-full max-w-md text-green-800 bg-green-50 border border-green-200 rounded-xl px-4 py-3 shadow-sm text-sm font-semibold flex items-start gap-2 justify-center"
-            role="status" aria-live="polite">
-          <span id="tasaConfirmacionTexto">Tasa actualizada</span>
-        </div>
-      </div>
-
-      <section id="step1" class="transition-colors duration-500 flex flex-col items-center gap-2 text-center">
-        <p class="text-sm text-gray-600 dark:text-gray-300 italic">
-          Tasa sujeta a cambios sin previo aviso.
-        </p>
-        <h2 class="text-[clamp(1.15rem,3.5vw,1.35rem)] font-semibold">Elige una opción</h2>
-        <button id="btnEnviar" class="ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105
-       bg-white/80 text-[#0066FF] border-[#0066FF]/50
-       dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
-       backdrop-blur-sm dark:hover:bg-white/15">¿Cuántos pesos quieres enviar?</button>
-        <button id="btnLlegar"class="ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105
-       bg-white/80 text-[#0066FF] border-[#0066FF]/50
-       dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
-       backdrop-blur-sm dark:hover:bg-white/15">¿Cuánto bolívares quieres que lleguen?</button>
-<button id="btnLlegarBCV"
-  class="hidden ripple-button border rounded-xl px-6 py-3 font-semibold shadow transition hover:scale-105
-         bg-white/80 text-[#0066FF] border-[#0066FF]/50
-         dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
-         backdrop-blur-sm dark:hover:bg-white/15">
-  💵 ¿Cuántos dólares quieres que lleguen?
-</button>
-
-
-      </section>
-
-
-      <section id="step2" class="transition-colors duration-500 hidden flex flex-col items-center gap-4">
-      <p id="preguntaMonto" class="text-lg font-semibold text-gray-800 dark:text-white opacity-0 translate-y-4 transition-all duration-300"></p>
-
-      <p id="errorMonto" class="text-[#FF0000] font-semibold hidden transition-all duration-300"></p>
-
-      <div
-        id="ayudaMonto"
-        class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center leading-snug space-y-0.5"
-      ></div>
-
-<!-- === BCV MODE (solo cuando destino = VES y se activa el modo) === -->
-<div id="bcvBox" class="hidden mt-4 space-y-3">
-
-  <div id="bcvTitulo" class="text-center font-semibold text-gray-800 dark:text-gray-100">
-    ¿A qué tasa quieres calcular?
-  </div>
-
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-    <button id="btnBcvUsd"
-      class="ripple-button border rounded-xl px-4 py-3 font-semibold shadow transition hover:scale-105
-             bg-white/80 text-[#0066FF] border-[#0066FF]/50
-             dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
-             backdrop-blur-sm dark:hover:bg-white/15">
-      Dólar BCV
-    </button>
-
-    <button id="btnBcvEur"
-      class="ripple-button border rounded-xl px-4 py-3 font-semibold shadow transition hover:scale-105
-             bg-white/80 text-[#0066FF] border-[#0066FF]/50
-             dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
-             backdrop-blur-sm dark:hover:bg-white/15">
-      Euro BCV
-    </button>
-
-    <button id="btnBcvCustom"
-      class="ripple-button border rounded-xl px-4 py-3 font-semibold shadow transition hover:scale-105
-             bg-white/80 text-[#0066FF] border-[#0066FF]/50
-             dark:bg-white/10 dark:text-[#9cc2ff] dark:border-[#66a3ff]/40
-             backdrop-blur-sm dark:hover:bg-white/15">
-      Personalizada
-    </button>
-  </div>
-
-  <!-- Personalizada: input de tasa -->
-  <div id="bcvCustomRow" class="hidden rounded-xl border border-white/20 bg-white/40 dark:bg-white/10 backdrop-blur p-3 space-y-2">
-    <div class="text-sm text-gray-700 dark:text-gray-200 font-medium">
-      Ingresa la tasa personalizada (VES por USD)
+  <main
+    id="app"
+    class="h-[100dvh] w-full overflow-hidden px-0 py-0 sm:min-h-[100svh] sm:h-auto sm:overflow-y-auto sm:px-4 sm:py-6 lg:px-8"
+  >
+    <div class="h-full w-full sm:h-auto sm:max-w-[860px] sm:mx-auto">
+      <div id="quoteApp" class="h-full w-full sm:h-auto"></div>
     </div>
-
-    <input id="bcvTasaCustom"
-      type="number" inputmode="decimal" step="0.01"
-      class="w-full rounded-xl border border-blue-300 bg-white/80 dark:bg-white/10 px-4 py-3 text-center text-lg font-semibold
-             focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-white"
-      placeholder="Ej: 320.50"
-    />
-
-    <div id="bcvCustomHelp" class="text-xs text-gray-600 dark:text-gray-400 text-center"></div>
-  </div>
-
-</div>
-
-        <input id="inputMonto" type="text" inputmode="decimal" placeholder="Ingresa el monto"
-          class="w-72 text-center text-2xl font-semibold px-6 py-4 rounded-xl border
-       border-blue-300 shadow bg-white/70 text-gray-800 placeholder-gray-400
-       dark:bg-white/10 dark:text-white dark:placeholder-gray-400
-       dark:border-blue-300/40 backdrop-blur-md
-       focus:outline-none focus:ring-2 focus:ring-blue-300 transition">
-
-        <div class="flex gap-4">
-          <button id="btnCalcular" class="bg-gradient-to-r from-brandTeal to-brandBlue text-white px-6 py-2 rounded-xl shadow hover:scale-105 transition-all">Calcular</button>
-        </div>
-      </section>
-
-
-
-<div class="w-full -mt-1 mb-2 items-center">
-  <button id="btnVolverGlobal"
-          class="hidden fixed bottom-4 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-xl border
-                 border-gray-300/70 dark:border-gray-600/60
-                 bg-white/60 dark:bg-gray-700/50
-                 text-gray-800 dark:text-white
-                 backdrop-blur-sm shadow-sm"
-          type="button">← Volver</button>
-</div>
-
-
-      <section id="calculando"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-black/70 backdrop-blur-md animate-pulse text-2xl font-semibold text-gray-800 dark:text-gray-100">
-        ⏳ Calculando...
-      </section>
-
-      <section id="resultado" class="transition-colors duration-500 hidden flex flex-col items-center gap-6">
-        <div id="resTextContainer" class="transition-colors duration-500 relative bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100 
-          rounded-xl px-6 py-8 shadow-xl ring-1 ring-gray-300 dark:ring-gray-700 hover:shadow-2xl transition-all duration-500 ease-in-out flex flex-col items-center gap-4 w-full max-w-md">
-
-          <button id="btnCompartir" title="Compartir"
-            class="absolute top-2 right-2 w-10 h-10 transition transform hover:scale-110 z-10">
-            <img src="share.png" alt="Compartir" class="w-full h-full object-contain drop-shadow-md" />
-          </button>
-
-          <div id="menuCompartir" class="absolute top-12 right-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 hidden">
-            <button id="opcionImagen" class="block w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">📷 Compartir imagen</button>
-            <button id="opcionTexto"  class="block w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700">💬 Compartir texto</button>
-          </div>
-
-<img
-  src="/logo.png"
-  alt="Logo ByteTransfer"
-  class="h-12 mb-3"
-/>
-
-<div
-  id="resText"
-  class="text-center text-xl sm:text-2xl font-semibold leading-snug"
-></div>
-
-<p class="text-sm text-gray-400 italic mt-6">
-  Powered by ByteTransfer
-</p>
-
-
-        <div class="flex flex-col gap-3">
-          <button id="btnRecalcular" class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white px-5 py-2 rounded-lg shadow">🔁 Calcular otro</button>
-        </div>
-      </section>
-
-    <audio id="soundSuccess"
-           src="https://cdn.pixabay.com/download/audio/2022/10/03/audio_a69f47a883.mp3"
-           preload="auto"></audio>
-  </div>
-  <div id="toastMensaje" class="fixed top-[170px] right-[30px] bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-xl rounded-xl px-5 py-4 text-sm sm:text-base font-medium hidden transition-all duration-500 z-50 whitespace-pre-line text-left max-w-xs w-[250px] leading-relaxed pointer-events-none opacity-0 scale-95">
-</div>
-
-<!-- MODAL: Advertencia por montos grandes -->
-<div id="modalMontoGrande" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-  <div class="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-xl shadow-xl p-6 w-[90%] max-w-md text-center space-y-4">
-    <p class="text-lg font-semibold">ℹ️ Montos mayores a 300 USD se envían en varias partes.</p>
-    <button id="btnCerrarModalMonto" class="mt-4 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Aceptar</button>
-  </div>
-</div>
-</div>
-
+  </main>
 </body>
 </html>
