@@ -1,4 +1,4 @@
-// public/src/ui/quoteScreens.js
+﻿// public/src/ui/quoteScreens.js
 
 import {
   QUOTE_MODULES,
@@ -26,6 +26,13 @@ import {
   resetQuoteSession,
 } from "../state/quoteSession.js";
 import { renderQuoteHub } from "./quoteHub.js";
+
+import {
+  buildReferenceSharePayload,
+  buildRateSharePayload,
+  buildRemittanceSharePayload,
+} from "../core/sharePayload.js";
+import { sharePremiumPayload } from "./sharing.js";
 
 export function renderQuoteScreen(container) {
   if (!container) return;
@@ -415,16 +422,23 @@ async function renderReferenceResultScreen(container, session) {
           >
             Enviar por WhatsApp
           </button>
-
-          <p class="mt-3 text-xs text-slate-500">
-            La imagen premium se conectará en el siguiente bloque.
-          </p>
         </div>
       `,
     });
 
-    bindCommonNavigation(container);
+        bindCommonNavigation(container);
+
+    container.querySelector("[data-reference-whatsapp]")?.addEventListener("click", async () => {
+      const payload = buildReferenceSharePayload({
+        referenceTitle: title,
+        value,
+        updatedAt: formattedDate,
+      });
+
+      await sharePremiumPayload(payload);
+    });
   } catch (err) {
+
     console.error("[quoteScreens] renderReferenceResultScreen:", err);
     renderReferenceError(container, title);
   }
@@ -441,6 +455,8 @@ function renderReferenceError(container, title) {
       </div>
     `,
   });
+
+    bindCommonNavigation(container);
 
   bindCommonNavigation(container);
 }
@@ -558,14 +574,23 @@ async function renderRateResultScreen(container, session) {
             Enviar por WhatsApp
           </button>
 
-          <p class="mt-3 text-xs text-slate-500">
-            La imagen premium se conectará en el siguiente bloque.
-          </p>
         </div>
       `,
     });
 
     bindCommonNavigation(container);
+
+        container.querySelector("[data-rate-whatsapp]")?.addEventListener("click", async () => {
+      const payload = buildRateSharePayload({
+        origen: session.origen,
+        destino: session.destino,
+        tasa: tasaFmt,
+        updatedAt: formattedDate,
+      });
+
+      await sharePremiumPayload(payload);
+    });
+
   } catch (err) {
     console.error("[quoteScreens] renderRateResultScreen:", err);
     renderRateError(container, routeLabel);
@@ -1230,6 +1255,11 @@ function renderRemittanceResultView(container, result) {
   bindCommonNavigation(container);
   hydrateVenezuelaUsdEquivalent(container);
 
+    container.querySelector("[data-remittance-whatsapp]")?.addEventListener("click", async () => {
+    const payload = buildRemittanceSharePayload(result);
+    await sharePremiumPayload(payload);
+  });
+
   container.querySelector("[data-result-back-to-amount]")?.addEventListener("click", () => {
     setQuoteSession({
       amount: null,
@@ -1362,9 +1392,6 @@ function renderResultActions() {
       Editar monto
     </button>
 
-    <p class="mt-3 text-xs text-slate-500">
-      La imagen premium se conectará en el siguiente bloque.
-    </p>
   `;
 }
 
