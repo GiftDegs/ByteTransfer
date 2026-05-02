@@ -67,7 +67,7 @@ export function buildRemittanceSharePayload(result) {
         },
         {
           label: "Tasa aplicada",
-          value: result.tasaVisible,
+          value: result.tasaVisibleText || result.tasaVisible,
           unit: null,
           raw: true,
         },
@@ -90,7 +90,7 @@ export function buildRemittanceSharePayload(result) {
         },
         {
           label: "Tasa aplicada",
-          value: result.tasaVisible,
+          value: result.tasaVisibleText || result.tasaVisible,
           unit: null,
           raw: true,
         },
@@ -124,7 +124,7 @@ export function buildRemittanceSharePayload(result) {
         },
         {
           label: "Tasa aplicada",
-          value: result.tasaVisible,
+          value: result.tasaVisibleText || result.tasaVisible,
           unit: null,
           raw: true,
         },

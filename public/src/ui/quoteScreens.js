@@ -1272,6 +1272,7 @@ async function renderRemittanceResultScreen(container, session) {
         type: "send_amount",
         routeLabel,
         tasaVisible,
+        tasaVisibleText: tasaFmt,
         fecha: formattedDate,
         envia: {
           amount,
@@ -1300,6 +1301,7 @@ async function renderRemittanceResultScreen(container, session) {
         type: "receive_amount",
         routeLabel,
         tasaVisible,
+        tasaVisibleText: tasaFmt,
         fecha: formattedDate,
         recibe: {
           amount,
@@ -1341,6 +1343,7 @@ async function renderRemittanceResultScreen(container, session) {
         type: "receive_bcv_usd",
         routeLabel,
         tasaVisible,
+        tasaVisibleText: tasaFmt,
         fecha: formattedDate,
         bcvReference: getBcvReferenceLabel(session.bcvReferenceType),
         bcvRate,
