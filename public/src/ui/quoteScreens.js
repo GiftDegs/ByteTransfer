@@ -11,7 +11,11 @@ import {
 
 import { toggleQuoteTheme, withQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
-import { getQuoteIconBoxClass, getQuoteSelectionCardClass } from "./quoteComponents.js";
+import {
+  getQuoteActionButtonClass,
+  getQuoteIconBoxClass,
+  getQuoteSelectionCardClass,
+} from "./quoteComponents.js";
 import { renderQuoteShell } from "./quoteShell.js";
 
 import { paisesDisponibles } from "../core/config.js";
@@ -446,7 +450,7 @@ async function renderReferenceResultScreen(container, session) {
           <button
             type="button"
             data-reference-whatsapp="1"
-            class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
+            class="${getQuoteActionButtonClass(themeClasses, "primary", "mt-5")}"
           >
             Enviar por WhatsApp
           </button>
@@ -604,7 +608,7 @@ async function renderRateResultScreen(container, session) {
           <button
             type="button"
             data-rate-whatsapp="1"
-            class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
+            class="${getQuoteActionButtonClass(themeClasses, "primary", "mt-5")}"
           >
             Enviar por WhatsApp
           </button>
@@ -944,7 +948,7 @@ function renderCustomBcvRateScreen(container, session) {
         <button
           type="button"
           data-custom-bcv-next="1"
-          class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          class="${getQuoteActionButtonClass(themeClasses, "continue", "mt-5")}"
           disabled
         >
           Continuar
@@ -1056,7 +1060,7 @@ function renderRemittanceAmountScreen(container, session) {
         <button
           type="button"
           data-remittance-next="1"
-          class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          class="${getQuoteActionButtonClass(themeClasses, "continue", "mt-5")}"
           disabled
         >
           Continuar
@@ -1527,7 +1531,7 @@ function renderResultActions() {
     <button
       type="button"
       data-remittance-whatsapp="1"
-      class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
+      class="${getQuoteActionButtonClass(themeClasses, "primary", "mt-5")}"
     >
       Enviar por WhatsApp
     </button>
@@ -1535,7 +1539,7 @@ function renderResultActions() {
     <button
       type="button"
       data-result-back-to-amount="1"
-      class="mt-3 w-full rounded-2xl border px-5 py-4 text-sm font-black transition ${themeClasses.secondaryButton}"
+      class="${getQuoteActionButtonClass(themeClasses, "secondary", "mt-3")}"
     >
       Editar monto
     </button>
