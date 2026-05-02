@@ -3,6 +3,7 @@
 import {
   SHARE_PAYLOAD_TYPES,
   formatShareNumber,
+  formatShareRateForDisplay,
   formatShareValue,
 } from "../core/sharePayload.js";
 
@@ -221,7 +222,7 @@ function drawRateLayout(ctx, theme, payload) {
     title: payload.title || "Tasa de cambio",
     subtitle: payload.subtitle || "",
     label: "Tasa vigente",
-    value: formatShareNumber(payload.primaryValue),
+    value: formatShareRateForDisplay(payload.primaryValue),
     unit: payload.primaryUnit || "",
     compact: false,
   });

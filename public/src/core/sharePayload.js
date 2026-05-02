@@ -1,6 +1,7 @@
 // public/src/core/sharePayload.js
 
 import { getCountryLabel, getCurrencyShortLabel, getRouteLabel } from "./labels.js";
+import { formatearTasa } from "./utils.js";
 
 export const SHARE_PAYLOAD_TYPES = {
   REFERENCE: "reference",
@@ -67,7 +68,7 @@ export function buildRemittanceSharePayload(result) {
         },
         {
           label: "Tasa aplicada",
-          value: result.tasaVisible,
+          value: formatShareRateForDisplay(result.tasaVisible),
           unit: null,
           raw: true,
         },
@@ -90,7 +91,7 @@ export function buildRemittanceSharePayload(result) {
         },
         {
           label: "Tasa aplicada",
-          value: result.tasaVisible,
+          value: formatShareRateForDisplay(result.tasaVisible),
           unit: null,
           raw: true,
         },
@@ -124,7 +125,7 @@ export function buildRemittanceSharePayload(result) {
         },
         {
           label: "Tasa aplicada",
-          value: result.tasaVisible,
+          value: formatShareRateForDisplay(result.tasaVisible),
           unit: null,
           raw: true,
         },
@@ -147,6 +148,11 @@ function buildVenezuelaEquivalentRows(amountObj) {
       sourceAmount: amountObj.amount,
     },
   ];
+}
+
+export function formatShareRateForDisplay(value) {
+  const formatted = formatearTasa(value);
+  return formatted && formatted !== "—" ? formatted : String(value || "—");
 }
 
 export function formatShareNumber(value, options = {}) {
