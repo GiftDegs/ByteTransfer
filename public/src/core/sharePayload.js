@@ -69,6 +69,7 @@ export function buildRemittanceSharePayload(result) {
           label: "Tasa aplicada",
           value: result.tasaVisible,
           unit: null,
+          raw: true,
         },
         ...buildVenezuelaEquivalentRows(result.recibe),
       ],
@@ -91,6 +92,7 @@ export function buildRemittanceSharePayload(result) {
           label: "Tasa aplicada",
           value: result.tasaVisible,
           unit: null,
+          raw: true,
         },
         ...buildVenezuelaEquivalentRows(result.recibe),
       ],
@@ -124,6 +126,7 @@ export function buildRemittanceSharePayload(result) {
           label: "Tasa aplicada",
           value: result.tasaVisible,
           unit: null,
+          raw: true,
         },
       ],
     };
