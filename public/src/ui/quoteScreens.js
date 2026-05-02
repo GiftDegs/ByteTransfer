@@ -27,7 +27,6 @@ import {
   formatearTasa,
   limpiarResultadoRaw,
   normalizarTasaOperativa,
-  redondearPorMoneda,
 } from "../core/utils.js";
 import { calcularCruce, obtenerTasaVisible } from "../core/fx.js";
 import { obtenerBCV, obtenerTasa } from "../services/rates.js";
@@ -1692,21 +1691,7 @@ function parseAmountInput(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function roundDisplayAmount(value, currencyCode) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
 
-  if (currencyCode === "VES") return Math.round(n);
-
-  return Math.round(n);
-}
-
-function roundSendAmount(value, currencyCode) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-
-  return redondearPorMoneda(Math.round(n), currencyCode);
-}
 
 function formatNumber(value, options = {}) {
   const n = Number(value);
