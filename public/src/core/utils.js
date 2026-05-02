@@ -49,7 +49,10 @@ export function formatearResultadoRaw(value) {
   const clean = limpiarResultadoRaw(value);
   if (!Number.isFinite(clean)) return "—";
 
-  return String(clean);
+  return new Intl.NumberFormat(userLocale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(clean);
 }
 
 export function formatearMontoConMoneda(valor, moneda, {
