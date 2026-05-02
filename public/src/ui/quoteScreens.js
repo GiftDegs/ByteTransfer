@@ -9,6 +9,9 @@ import {
   getBcvReferenceOptions,
 } from "../core/quoteModes.js";
 
+import { toggleQuoteTheme, withQuoteTheme } from "../state/quoteTheme.js";
+import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
+
 import { paisesDisponibles } from "../core/config.js";
 import { formatearTasa, redondearPorMoneda } from "../core/utils.js";
 import { calcularCruce, obtenerTasaVisible } from "../core/fx.js";
@@ -67,41 +70,53 @@ export function renderQuoteScreen(container) {
 // =====================================================
 
 function renderScreenShell({ eyebrow, title, description, body }) {
+  const themeClasses = getQuoteThemeClasses();
+
   return `
-    <section class="relative w-full max-h-[calc(100svh-2rem)] overflow-y-auto overflow-x-hidden rounded-[2rem] border border-slate-800 bg-slate-950 px-4 py-5 text-white shadow-2xl sm:px-6 sm:py-7">
+    <section class="relative w-full max-h-[calc(100svh-2rem)] overflow-y-auto overflow-x-hidden rounded-[2rem] border px-4 py-5 shadow-2xl transition-colors sm:px-6 sm:py-7 ${themeClasses.shell}">
       <div class="pointer-events-none absolute inset-0">
-        <div class="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-brandBlue/25 blur-3xl"></div>
-        <div class="absolute -bottom-28 right-0 h-72 w-72 rounded-full bg-brandTeal/10 blur-3xl"></div>
-        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.045)_1px,_transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,_transparent_1px)] bg-[size:38px_38px] opacity-20"></div>
+        <div class="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full ${themeClasses.glowA} blur-3xl"></div>
+        <div class="absolute -bottom-28 right-0 h-72 w-72 rounded-full ${themeClasses.glowB} blur-3xl"></div>
+        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,_transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,_transparent_1px)] bg-[size:38px_38px] ${themeClasses.gridOpacity}"></div>
       </div>
 
       <div class="relative">
-        <div class="sticky top-0 z-20 -mx-1 mb-5 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/85 p-1 backdrop-blur-xl">
+        <div class="sticky top-0 z-20 -mx-1 mb-5 flex items-center justify-between gap-2 rounded-2xl border p-1 backdrop-blur-xl ${themeClasses.topbar}">
           <button
             type="button"
             data-quote-back="1"
-            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/15"
+            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
           >
             ← Volver
           </button>
 
-          <button
-            type="button"
-            data-quote-home="1"
-            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/15"
-          >
-            Inicio
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              data-quote-theme-toggle="1"
+              class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${themeClasses.themeButton}"
+            >
+              ${themeClasses.isLight ? "Modo oscuro" : "Modo claro"}
+            </button>
+
+            <button
+              type="button"
+              data-quote-home="1"
+              class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
+            >
+              Inicio
+            </button>
+          </div>
         </div>
 
         <div class="mb-6 text-center">
-          <p class="text-[11px] uppercase tracking-[0.34em] text-brandTeal">
+          <p class="text-[11px] uppercase tracking-[0.34em] ${themeClasses.accentText}">
             ${eyebrow}
           </p>
-          <h2 class="mt-3 text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">
+          <h2 class="mt-3 text-3xl font-black leading-tight tracking-tight ${themeClasses.primaryText} sm:text-4xl">
             ${title}
           </h2>
-          <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-300 sm:text-base">
+          <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed ${themeClasses.secondaryText} sm:text-base">
             ${description}
           </p>
         </div>
@@ -113,6 +128,14 @@ function renderScreenShell({ eyebrow, title, description, body }) {
 }
 
 function bindCommonNavigation(container) {
+
+  container
+    .querySelector("[data-quote-theme-toggle]")
+    ?.addEventListener("click", () => {
+      toggleQuoteTheme();
+      renderQuoteScreen(container);
+    });
+
   container
     .querySelector("[data-quote-home]")
     ?.addEventListener("click", () => {
@@ -257,6 +280,7 @@ function renderCountrySelectionScreen(
 }
 
 function renderCountryOption(country) {
+  const themeClasses = getQuoteThemeClasses();
   const code = country.codigo;
   const flag = getFlagLabel(code);
   const countryName = getCountryLabel(code);
@@ -266,23 +290,23 @@ function renderCountryOption(country) {
     <button
       type="button"
       data-country-code="${code}"
-      class="group w-full rounded-3xl border border-white/10 bg-white/[0.06] p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-brandTeal/50 hover:bg-white/[0.10]"
+      class="group relative w-full overflow-hidden rounded-3xl border p-4 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
     >
       <div class="flex items-center gap-3">
-        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-2xl">
+        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border text-xl font-black ${themeClasses.iconBox}">
           ${flag}
         </div>
 
         <div class="min-w-0 flex-1">
-          <div class="text-base font-black text-white">
+          <div class="text-base font-black ${themeClasses.primaryText}">
             ${countryName}
           </div>
-          <div class="mt-0.5 text-xs text-slate-400">
+          <div class="mt-0.5 text-xs ${themeClasses.secondaryText}">
             ${currency}
           </div>
         </div>
 
-        <div class="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-white/10 text-white transition group-hover:bg-brandTeal group-hover:text-slate-950">
+        <div class="grid h-9 w-9 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
           →
         </div>
       </div>
@@ -334,28 +358,32 @@ function renderReferencesScreen(container, session) {
 }
 
 function renderReferenceOption(option) {
+  const themeClasses = getQuoteThemeClasses();
+
   return `
     <button
       type="button"
       data-reference-type="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-brandTeal/50 hover:bg-white/[0.10]"
+      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
     >
+      <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/12 to-transparent opacity-0 transition group-hover:opacity-100"></div>
+
       <div class="relative flex items-center justify-between gap-4">
-        <div>
-          <span class="rounded-full bg-brandTeal/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brandTeal">
+        <div class="min-w-0 flex-1">
+          <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${themeClasses.badge}">
             BCV
           </span>
 
-          <h3 class="mt-3 text-xl font-black tracking-tight text-white">
+          <h3 class="mt-3 text-xl font-black tracking-tight ${themeClasses.cardTitle}">
             ${option.title}
           </h3>
 
-          <p class="mt-1 text-sm leading-relaxed text-slate-300">
+          <p class="mt-2 text-sm leading-relaxed ${themeClasses.cardDescription}">
             ${option.description}
           </p>
         </div>
 
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/10 text-lg text-white transition group-hover:bg-brandTeal group-hover:text-slate-950">
+        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black transition ${themeClasses.arrowBox}">
           →
         </div>
       </div>
@@ -367,15 +395,16 @@ async function renderReferenceResultScreen(container, session) {
   const isUsd = session.referenceType === "bcv_usd";
   const title = isUsd ? "Dólar BCV" : "Euro BCV";
   const field = isUsd ? "usd" : "eur";
+  const themeClasses = getQuoteThemeClasses();
 
   container.innerHTML = renderScreenShell({
     eyebrow: "Referencia BCV",
     title: "Consultando referencia",
     description: "Leyendo la referencia guardada desde el sistema.",
     body: `
-      <div class="rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-xl">
-        <div class="mx-auto h-10 w-10 rounded-full border border-brandTeal/30 border-t-brandTeal animate-spin"></div>
-        <p class="mt-4 text-sm text-slate-300">Cargando ${title}...</p>
+      <div class="rounded-3xl border ${themeClasses.panel} p-6 text-center">
+        <div class="mx-auto h-10 w-10 rounded-full border border-[#22d8cb]/30 border-t-[#22d8cb] animate-spin"></div>
+        <p class="mt-4 text-sm ${themeClasses.secondaryText}">Cargando ${title}...</p>
       </div>
     `,
   });
@@ -407,27 +436,27 @@ async function renderReferenceResultScreen(container, session) {
       title,
       description: "Referencia actual disponible para responder al cliente.",
       body: `
-        <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl">
-          <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+        <div class="rounded-[2rem] border ${themeClasses.resultPanel} p-6 text-center">
+          <p class="text-sm font-semibold uppercase tracking-[0.24em] ${themeClasses.valueLabel}">
             Valor actual
           </p>
 
-          <div class="mt-4 text-5xl font-black tracking-tight text-white">
+          <div class="mt-4 text-5xl font-black tracking-tight ${themeClasses.valueNumber}">
             ${formattedValue}
           </div>
 
-          <p class="mt-2 text-base text-slate-300">
+          <p class="mt-2 text-base ${themeClasses.valueUnit}">
             bolívares
           </p>
 
-          <div class="mt-6 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-300">
+          <div class="mt-6 rounded-2xl border ${themeClasses.metaBox} px-4 py-3 text-sm">
             Actualizado: ${formattedDate}
           </div>
 
           <button
             type="button"
             data-reference-whatsapp="1"
-            class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110"
+            class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
           >
             Enviar por WhatsApp
           </button>
@@ -446,7 +475,7 @@ async function renderReferenceResultScreen(container, session) {
           updatedAt: formattedDate,
         });
 
-        await sharePremiumPayload(payload);
+        await sharePremiumPayload(withQuoteTheme(payload));
       });
   } catch (err) {
     console.error("[quoteScreens] renderReferenceResultScreen:", err);
@@ -523,15 +552,16 @@ function renderRateScreen(container, session) {
 
 async function renderRateResultScreen(container, session) {
   const routeLabel = getRouteLabel(session.origen, session.destino);
+  const themeClasses = getQuoteThemeClasses();
 
   container.innerHTML = renderScreenShell({
     eyebrow: "Tasa de cambio",
     title: routeLabel,
     description: "Consultando la tasa guardada para este cruce.",
     body: `
-      <div class="rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-xl">
-        <div class="mx-auto h-10 w-10 rounded-full border border-brandTeal/30 border-t-brandTeal animate-spin"></div>
-        <p class="mt-4 text-sm text-slate-300">Cargando tasa...</p>
+      <div class="rounded-3xl border ${themeClasses.panel} p-6 text-center">
+        <div class="mx-auto h-10 w-10 rounded-full border border-[#22d8cb]/30 border-t-[#22d8cb] animate-spin"></div>
+        <p class="mt-4 text-sm ${themeClasses.secondaryText}">Cargando tasa...</p>
       </div>
     `,
   });
@@ -564,31 +594,30 @@ async function renderRateResultScreen(container, session) {
       title: routeLabel,
       description: "Tasa comercial lista para responder al cliente.",
       body: `
-        <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl">
-          <p class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+        <div class="rounded-[2rem] border ${themeClasses.resultPanel} p-6 text-center">
+          <p class="text-sm font-semibold uppercase tracking-[0.24em] ${themeClasses.valueLabel}">
             Tasa actual
           </p>
 
-          <div class="mt-4 text-6xl font-black tracking-tight text-white">
+          <div class="mt-4 text-6xl font-black tracking-tight ${themeClasses.valueNumber}">
             ${tasaFmt}
           </div>
 
-          <p class="mx-auto mt-5 max-w-sm text-sm leading-relaxed text-slate-300">
+          <p class="mx-auto mt-5 max-w-sm text-sm leading-relaxed ${themeClasses.secondaryText}">
             Tasa sujeta a cambio sin previo aviso.
           </p>
 
-          <div class="mt-6 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-300">
+          <div class="mt-6 rounded-2xl border ${themeClasses.metaBox} px-4 py-3 text-sm">
             Actualizado: ${formattedDate}
           </div>
 
           <button
             type="button"
             data-rate-whatsapp="1"
-            class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110"
+            class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
           >
             Enviar por WhatsApp
           </button>
-
         </div>
       `,
     });
@@ -605,7 +634,7 @@ async function renderRateResultScreen(container, session) {
           updatedAt: formattedDate,
         });
 
-        await sharePremiumPayload(payload);
+        await sharePremiumPayload(withQuoteTheme(payload));
       });
   } catch (err) {
     console.error("[quoteScreens] renderRateResultScreen:", err);
@@ -714,6 +743,7 @@ function renderRemittanceModeScreen(container, session) {
   const origenCurrency = getCurrencyShortLabel(session.origen);
   const destinoCurrency = getCurrencyShortLabel(session.destino);
   const routeLabel = getRouteLabel(session.origen, session.destino);
+  const themeClasses = getQuoteThemeClasses();
 
   const options = getRemittanceModeOptions({
     origenLabel,
@@ -728,11 +758,11 @@ function renderRemittanceModeScreen(container, session) {
     title: routeLabel,
     description: "¿Qué quieres cotizar para esta operación?",
     body: `
-      <div class="mb-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4 text-sm text-slate-300">
+      <div class="mb-4 rounded-3xl border ${themeClasses.softPanel} p-4 text-sm">
         <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
           Ruta seleccionada
         </div>
-        <div class="mt-2 text-lg font-black text-white">
+        <div class="mt-2 text-lg font-black ${themeClasses.primaryText}">
           ${routeLabel}
         </div>
       </div>
@@ -768,28 +798,30 @@ function renderRemittanceModeScreen(container, session) {
 }
 
 function renderRemittanceModeOption(option) {
+  const themeClasses = getQuoteThemeClasses();
+
   return `
     <button
       type="button"
       data-remittance-mode="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-brandTeal/50 hover:bg-white/[0.10]"
+      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
     >
       <div class="relative flex items-center justify-between gap-4">
-        <div>
-          <span class="rounded-full bg-brandTeal/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brandTeal">
+        <div class="min-w-0 flex-1">
+          <span class="rounded-full bg-[#21d9c6]/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#12cfc0]">
             Cotización
           </span>
 
-          <h3 class="mt-3 text-lg font-black tracking-tight text-white">
+          <h3 class="mt-3 text-lg font-black tracking-tight ${themeClasses.primaryText}">
             ${option.title}
           </h3>
 
-          <p class="mt-1 text-sm leading-relaxed text-slate-300">
+          <p class="mt-1 text-sm leading-relaxed ${themeClasses.secondaryText}">
             ${option.description}
           </p>
         </div>
 
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/10 text-lg text-white transition group-hover:bg-brandTeal group-hover:text-slate-950">
+        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
           →
         </div>
       </div>
@@ -845,28 +877,32 @@ function renderBcvReferenceSelectionScreen(container, session) {
 }
 
 function renderBcvReferenceOption(option) {
+  const themeClasses = getQuoteThemeClasses();
+
   return `
     <button
       type="button"
       data-bcv-reference="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-brandTeal/50 hover:bg-white/[0.10]"
+      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
     >
+      <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/12 to-transparent opacity-0 transition group-hover:opacity-100"></div>
+
       <div class="relative flex items-center justify-between gap-4">
-        <div>
-          <span class="rounded-full bg-brandTeal/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-brandTeal">
+        <div class="min-w-0 flex-1">
+          <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${themeClasses.badge}">
             BCV
           </span>
 
-          <h3 class="mt-3 text-lg font-black tracking-tight text-white">
+          <h3 class="mt-3 text-xl font-black tracking-tight ${themeClasses.cardTitle}">
             ${option.title}
           </h3>
 
-          <p class="mt-1 text-sm leading-relaxed text-slate-300">
+          <p class="mt-2 text-sm leading-relaxed ${themeClasses.cardDescription}">
             ${option.description}
           </p>
         </div>
 
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/10 text-lg text-white transition group-hover:bg-brandTeal group-hover:text-slate-950">
+        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black transition ${themeClasses.arrowBox}">
           →
         </div>
       </div>
@@ -876,41 +912,42 @@ function renderBcvReferenceOption(option) {
 
 function renderCustomBcvRateScreen(container, session) {
   const routeLabel = getRouteLabel(session.origen, session.destino);
+  const themeClasses = getQuoteThemeClasses();
 
   container.innerHTML = renderScreenShell({
     eyebrow: "Precio personalizado",
     title: "Ingresa la referencia BCV",
     description: "Usa una referencia manual para esta cotización.",
     body: `
-      <div class="mb-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4 text-sm text-slate-300">
+      <div class="mb-4 rounded-3xl border ${themeClasses.softPanel} p-4 text-sm">
         <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
           Ruta seleccionada
         </div>
-        <div class="mt-2 text-lg font-black text-white">
+        <div class="mt-2 text-lg font-black ${themeClasses.primaryText}">
           ${routeLabel}
         </div>
       </div>
 
-      <div class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-xl">
-        <label for="customBcvRateInput" class="block text-sm font-bold text-slate-200">
+      <div class="rounded-[2rem] border ${themeClasses.cardPanel} p-5 shadow-xl">
+        <label for="customBcvRateInput" class="block text-sm font-bold ${themeClasses.labelText}">
           Precio BCV personalizado
         </label>
 
-        <div class="mt-3 flex items-center gap-3 rounded-3xl border border-white/10 bg-black/25 px-4 py-3">
+        <div class="mt-3 flex items-center gap-3 rounded-3xl border ${themeClasses.inputShell} px-4 py-3">
           <input
             id="customBcvRateInput"
             type="text"
             inputmode="decimal"
             autocomplete="off"
             placeholder="Ej: 487.12"
-            class="min-w-0 flex-1 bg-transparent text-2xl font-black text-white outline-none placeholder:text-slate-600"
+            class="min-w-0 flex-1 bg-transparent text-2xl font-black ${themeClasses.primaryText} outline-none placeholder:text-slate-500"
           />
-          <span class="shrink-0 rounded-2xl bg-white/10 px-3 py-2 text-xs font-bold text-slate-300">
+          <span class="shrink-0 rounded-2xl px-3 py-2 text-xs font-bold ${themeClasses.chip}">
             bolívares
           </span>
         </div>
 
-        <p id="customBcvRateHelp" class="mt-3 text-xs leading-relaxed text-slate-400">
+        <p id="customBcvRateHelp" class="mt-3 text-xs leading-relaxed ${themeClasses.mutedText}">
           Ingresa cuántos bolívares equivale 1 dólar para esta cotización.
         </p>
 
@@ -980,6 +1017,7 @@ function renderRemittanceAmountScreen(container, session) {
   const origenCurrency = getCurrencyShortLabel(session.origen);
   const destinoCurrency = getCurrencyShortLabel(session.destino);
   const routeLabel = getRouteLabel(session.origen, session.destino);
+  const themeClasses = getQuoteThemeClasses();
 
   const amountConfig = getAmountScreenConfig(session, {
     origenCurrency,
@@ -991,37 +1029,37 @@ function renderRemittanceAmountScreen(container, session) {
     title: amountConfig.title,
     description: amountConfig.description,
     body: `
-      <div class="mb-4 rounded-3xl border border-white/10 bg-white/[0.05] p-4 text-sm text-slate-300">
+      <div class="mb-4 rounded-3xl border ${themeClasses.softPanel} p-4 text-sm">
         <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
           Ruta seleccionada
         </div>
-        <div class="mt-2 text-lg font-black text-white">
+        <div class="mt-2 text-lg font-black ${themeClasses.primaryText}">
           ${routeLabel}
         </div>
       </div>
 
       ${amountConfig.extraHtml || ""}
 
-      <div class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-xl">
-        <label for="quoteAmountInput" class="block text-sm font-bold text-slate-200">
+      <div class="rounded-[2rem] border ${themeClasses.cardPanel} p-5 shadow-xl">
+        <label for="quoteAmountInput" class="block text-sm font-bold ${themeClasses.labelText}">
           ${amountConfig.label}
         </label>
 
-        <div class="mt-3 flex items-center gap-3 rounded-3xl border border-white/10 bg-black/25 px-4 py-3">
+        <div class="mt-3 flex items-center gap-3 rounded-3xl border ${themeClasses.inputShell} px-4 py-3">
           <input
             id="quoteAmountInput"
             type="text"
             inputmode="decimal"
             autocomplete="off"
             placeholder="Ingresa el monto"
-            class="min-w-0 flex-1 bg-transparent text-2xl font-black text-white outline-none placeholder:text-slate-600"
+            class="min-w-0 flex-1 bg-transparent text-2xl font-black ${themeClasses.primaryText} outline-none placeholder:text-slate-500"
           />
-          <span class="shrink-0 rounded-2xl bg-white/10 px-3 py-2 text-xs font-bold text-slate-300">
+          <span class="shrink-0 rounded-2xl px-3 py-2 text-xs font-bold ${themeClasses.chip}">
             ${amountConfig.unit}
           </span>
         </div>
 
-        <p id="quoteAmountHelp" class="mt-3 text-xs leading-relaxed text-slate-400">
+        <p id="quoteAmountHelp" class="mt-3 text-xs leading-relaxed ${themeClasses.mutedText}">
           ${amountConfig.help}
         </p>
 
@@ -1097,6 +1135,8 @@ function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
         };
   }
 
+    const themeClasses = getQuoteThemeClasses();
+
   if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_AMOUNT) {
     return {
   title: `¿Cuántos ${destinoCurrency} quiere recibir el cliente?`,
@@ -1122,15 +1162,15 @@ function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
   validHelp:
     "Listo. Calcularemos el equivalente en bolívares y cuánto debe enviar.",
   extraHtml: `
-        <div class="mb-4 rounded-3xl border border-brandTeal/20 bg-brandTeal/10 p-4 text-sm text-slate-200">
-          <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
-            Referencia BCV
-          </div>
-          <div class="mt-2 text-lg font-black text-white">
-            ${refLabel}
-          </div>
+    <div class="mb-4 rounded-3xl border ${themeClasses.highlightedResultLine} p-4 text-sm">
+        <div class="text-[11px] font-bold uppercase tracking-[0.22em] ${themeClasses.sectionEyebrow}">
+        Referencia BCV
         </div>
-      `,
+        <div class="mt-2 text-lg font-black ${themeClasses.valueNumber}">
+        ${refLabel}
+        </div>
+    </div>
+   `,
     };
   }
 
@@ -1336,7 +1376,7 @@ function renderRemittanceResultView(container, result) {
     .querySelector("[data-remittance-whatsapp]")
     ?.addEventListener("click", async () => {
       const payload = buildRemittanceSharePayload(result);
-      await sharePremiumPayload(payload);
+      await sharePremiumPayload(withQuoteTheme(payload));
     });
 
   container
@@ -1353,6 +1393,8 @@ function renderRemittanceResultView(container, result) {
 }
 
 function renderRemittanceResultBody(result) {
+  const themeClasses = getQuoteThemeClasses();
+
   if (result.type === "send_amount") {
     const equivalente = renderVenezuelaUsdEquivalent(result.recibe);
 
@@ -1408,10 +1450,13 @@ function renderRemittanceResultBody(result) {
           ${renderResultLine("Debe enviar", result.debeEnviar.amount, result.debeEnviar.currencyLabel, true)}
         </div>
 
-        <div class="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-300">
-          Referencia usada: <span class="font-bold text-white">${result.bcvReference}</span>
-          · ${formatNumber(result.bcvRate)} bolívares
-        </div>
+        <div class="mt-4 rounded-2xl border ${themeClasses.metaBox} px-4 py-3 text-sm ${themeClasses.metaText}">
+  Referencia usada:
+  <span class="font-bold ${themeClasses.valueNumber}">
+    ${result.bcvReference}
+  </span>
+  · ${formatNumber(result.bcvRate)} bolívares
+</div>
 
         ${renderResultMeta(result)}
         ${renderResultActions()}
@@ -1427,15 +1472,27 @@ function renderRemittanceResultBody(result) {
 }
 
 function renderResultLine(label, amount, currencyLabel, highlight = false) {
+  const themeClasses = getQuoteThemeClasses();
+
   return `
-    <div class="rounded-3xl border ${highlight ? "border-brandTeal/30 bg-brandTeal/10" : "border-white/10 bg-black/20"} p-4">
-      <div class="text-xs font-bold uppercase tracking-[0.18em] ${highlight ? "text-brandTeal" : "text-slate-500"}">
+    <div class="rounded-3xl border ${
+      highlight
+        ? themeClasses.highlightedResultLine
+        : themeClasses.resultLine
+    } p-4">
+      <div class="text-xs font-bold uppercase tracking-[0.18em] ${
+        highlight
+          ? themeClasses.sectionEyebrow
+          : themeClasses.valueLabel
+      }">
         ${label}
       </div>
-      <div class="mt-2 text-2xl font-black text-white">
+
+      <div class="mt-2 text-2xl font-black ${themeClasses.valueNumber}">
         ${formatNumber(amount)}
       </div>
-      <div class="mt-1 text-sm text-slate-300">
+
+      <div class="mt-1 text-sm ${themeClasses.valueUnit}">
         ${currencyLabel}
       </div>
     </div>
@@ -1443,12 +1500,18 @@ function renderResultLine(label, amount, currencyLabel, highlight = false) {
 }
 
 function renderResultMeta(result) {
+  const themeClasses = getQuoteThemeClasses();
+
   return `
-    <div class="mt-4 grid grid-cols-1 gap-2 text-sm text-slate-300">
-      <div class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-        Tasa aplicada: <span class="font-bold text-white">${formatearTasa(result.tasaVisible)}</span>
+    <div class="mt-4 grid grid-cols-1 gap-2 text-sm ${themeClasses.metaText}">
+      <div class="rounded-2xl border ${themeClasses.metaBox} px-4 py-3">
+        Tasa aplicada:
+        <span class="font-bold ${themeClasses.valueNumber}">
+          ${formatearTasa(result.tasaVisible)}
+        </span>
       </div>
-      <div class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+
+      <div class="rounded-2xl border ${themeClasses.metaBox} px-4 py-3">
         Actualizado: ${result.fecha}
       </div>
     </div>
@@ -1456,11 +1519,13 @@ function renderResultMeta(result) {
 }
 
 function renderResultActions() {
+  const themeClasses = getQuoteThemeClasses();
+
   return `
     <button
       type="button"
       data-remittance-whatsapp="1"
-      class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110"
+      class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
     >
       Enviar por WhatsApp
     </button>
@@ -1468,11 +1533,10 @@ function renderResultActions() {
     <button
       type="button"
       data-result-back-to-amount="1"
-      class="mt-3 w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-sm font-black text-white shadow-xl transition hover:bg-white/15"
+      class="mt-3 w-full rounded-2xl border px-5 py-4 text-sm font-black transition ${themeClasses.secondaryButton}"
     >
       Editar monto
     </button>
-
   `;
 }
 
@@ -1482,15 +1546,19 @@ function renderVenezuelaUsdEquivalent(amountObj) {
   const amount = Number(amountObj.amount);
   if (!Number.isFinite(amount) || amount <= 0) return "";
 
+  const themeClasses = getQuoteThemeClasses();
+
   return `
-    <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
-      <div class="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+    <div class="rounded-3xl border ${themeClasses.resultLine} p-4">
+      <div class="text-xs font-bold uppercase tracking-[0.18em] ${themeClasses.valueLabel}">
         Equivalente referencial
       </div>
-      <div class="mt-2 text-2xl font-black text-white" data-ves-usd-equivalent="${amount}">
+
+      <div class="mt-2 text-2xl font-black ${themeClasses.valueNumber}" data-ves-usd-equivalent="${amount}">
         Calculando...
       </div>
-      <div class="mt-1 text-sm text-slate-300">
+
+      <div class="mt-1 text-sm ${themeClasses.valueUnit}">
         dólares según BCV
       </div>
     </div>
