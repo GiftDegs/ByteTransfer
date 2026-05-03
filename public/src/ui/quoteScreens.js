@@ -490,9 +490,6 @@ function renderReferenceError(container, title) {
       </div>
     `,
   });
-
-  bindCommonNavigation(container);
-
   bindCommonNavigation(container);
 }
 
