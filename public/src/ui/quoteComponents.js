@@ -85,3 +85,12 @@ export function renderQuoteLoadingPanel(themeClasses, message = "Cargando...") {
     </div>
   `;
 }
+
+
+export function renderQuoteErrorPanel(message) {
+  return `
+    <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
+      ${message}
+    </div>
+  `;
+}

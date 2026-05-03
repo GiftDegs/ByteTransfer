@@ -19,6 +19,7 @@ import {
   getQuoteIconBoxClass,
   getQuoteSelectionCardClass,
   renderQuoteLoadingPanel,
+  renderQuoteErrorPanel,
 } from "./quoteComponents.js";
 import { renderQuoteShell } from "./quoteShell.js";
 
@@ -483,9 +484,7 @@ function renderReferenceError(container, title) {
     title,
     description: "No se pudo cargar esta referencia.",
     body: `
-      <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-        No hay una referencia válida disponible en este momento.
-      </div>
+      ${renderQuoteErrorPanel("No hay una referencia válida disponible en este momento.")}
     `,
   });
   bindCommonNavigation(container);
@@ -636,9 +635,7 @@ function renderRateError(container, routeLabel) {
     title: routeLabel,
     description: "No se pudo cargar la tasa de este cruce.",
     body: `
-      <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-        No hay una tasa válida disponible para este cruce.
-      </div>
+      ${renderQuoteErrorPanel("No hay una tasa válida disponible para este cruce.")}
     `,
   });
 
