@@ -18,6 +18,7 @@ import {
   getQuoteChipClass,
   getQuoteIconBoxClass,
   getQuoteSelectionCardClass,
+  renderQuoteLoadingPanel,
 } from "./quoteComponents.js";
 import { renderQuoteShell } from "./quoteShell.js";
 
@@ -398,10 +399,7 @@ async function renderReferenceResultScreen(container, session) {
     title: "Consultando referencia",
     description: "Leyendo la referencia guardada desde el sistema.",
     body: `
-      <div class="rounded-3xl border ${themeClasses.panel} p-6 text-center">
-        <div class="mx-auto h-10 w-10 rounded-full border border-[#22d8cb]/30 border-t-[#22d8cb] animate-spin"></div>
-        <p class="mt-4 text-sm ${themeClasses.secondaryText}">Cargando ${title}...</p>
-      </div>
+      ${renderQuoteLoadingPanel(themeClasses, `Cargando ${title}...`)}
     `,
   });
 
@@ -552,10 +550,7 @@ async function renderRateResultScreen(container, session) {
     title: routeLabel,
     description: "Consultando la tasa guardada para este cruce.",
     body: `
-      <div class="rounded-3xl border ${themeClasses.panel} p-6 text-center">
-        <div class="mx-auto h-10 w-10 rounded-full border border-[#22d8cb]/30 border-t-[#22d8cb] animate-spin"></div>
-        <p class="mt-4 text-sm ${themeClasses.secondaryText}">Cargando tasa...</p>
-      </div>
+      ${renderQuoteLoadingPanel(themeClasses, "Cargando tasa...")}
     `,
   });
 

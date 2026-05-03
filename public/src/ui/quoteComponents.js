@@ -75,3 +75,13 @@ export function getQuoteChipClass(themeClasses, extra = "") {
     extra,
   ].filter(Boolean).join(" ");
 }
+
+
+export function renderQuoteLoadingPanel(themeClasses, message = "Cargando...") {
+  return `
+    <div class="rounded-3xl border ${themeClasses.panel} p-6 text-center">
+      <div class="mx-auto h-10 w-10 rounded-full border border-[#22d8cb]/30 border-t-[#22d8cb] animate-spin"></div>
+      <p class="mt-4 text-sm ${themeClasses.secondaryText}">${message}</p>
+    </div>
+  `;
+}
