@@ -20,6 +20,7 @@ import {
   getQuoteSelectionCardClass,
   renderQuoteLoadingPanel,
   renderQuoteErrorPanel,
+  renderQuoteInfoPanel,
 } from "./quoteComponents.js";
 import { renderQuoteShell } from "./quoteShell.js";
 
@@ -1691,14 +1692,14 @@ function formatNumber(value, options = {}) {
 }
 
 function renderComingSoon(container, session) {
+  const themeClasses = getQuoteThemeClasses();
+
   container.innerHTML = renderScreenShell({
     eyebrow: "En construcción",
     title: "Módulo preparado",
     description: `Pantalla pendiente para: ${session.module || "sin módulo"} / ${session.step || "sin paso"}.`,
     body: `
-      <div class="rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-center text-sm text-slate-300">
-        Esta sección será conectada en el siguiente bloque.
-      </div>
+      ${renderQuoteInfoPanel(themeClasses, "Esta sección será conectada en el siguiente bloque.")}
     `,
   });
 

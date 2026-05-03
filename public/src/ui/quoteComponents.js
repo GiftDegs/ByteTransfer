@@ -94,3 +94,10 @@ export function renderQuoteErrorPanel(message) {
     </div>
   `;
 }
+export function renderQuoteInfoPanel(themeClasses, message) {
+  return `
+    <div class="rounded-3xl border ${themeClasses.panel} p-5 text-center text-sm ${themeClasses.secondaryText}">
+      ${message}
+    </div>
+  `;
+}
