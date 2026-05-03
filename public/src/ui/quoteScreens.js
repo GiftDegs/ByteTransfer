@@ -1463,12 +1463,9 @@ function renderRemittanceResultBody(result) {
   }
 
   return `
-    <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-      No se pudo mostrar el resultado.
-    </div>
+    ${renderQuoteErrorPanel("No se pudo mostrar el resultado.")}
   `;
 }
-
 function renderResultLine(label, amount, currencyLabel, highlight = false) {
   const themeClasses = getQuoteThemeClasses();
 
