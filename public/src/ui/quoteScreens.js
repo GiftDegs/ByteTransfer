@@ -1634,9 +1634,7 @@ function renderRemittanceResultError(container, routeLabel, message) {
     title: routeLabel,
     description: "No se pudo completar la cotización.",
     body: `
-      <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-        ${message}
-      </div>
+      ${renderQuoteErrorPanel(message)}
     `,
   });
 
