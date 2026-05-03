@@ -21,8 +21,23 @@ function iniciarCotizadorPublico() {
   renderQuoteScreen(DOM.quoteApp);
 }
 
+function shouldEnableSharePreviewTools() {
+  const host = window.location.hostname || "";
+  const params = new URLSearchParams(window.location.search || "");
+
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    params.get("sharePreview") === "1"
+  );
+}
+
 window.onload = () => {
   initRipple();
-  enableSharePreviewTools();
+
+  if (shouldEnableSharePreviewTools()) {
+    enableSharePreviewTools();
+  }
+
   iniciarCotizadorPublico();
 };
