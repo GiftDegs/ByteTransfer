@@ -1,4 +1,4 @@
-﻿// public/src/ui/quoteScreens.js
+// public/src/ui/quoteScreens.js
 
 import {
   QUOTE_MODULES,
@@ -1144,7 +1144,7 @@ function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
     "Calcularemos el equivalente en bolívares y cuánto debe enviar.",
   label: "Monto en dólares",
   unit: "dólares",
-  help: `Referencia seleccionada: ${refLabel}. Ingresa el monto en dólares que el cliente quiere recibir.`,
+  help: "Ingresa el monto en dólares que el cliente quiere recibir.",
   validHelp:
     "Listo. Calcularemos el equivalente en bolívares y cuánto debe enviar.",
   extraHtml: `
@@ -1153,8 +1153,13 @@ function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
         Referencia BCV
         </div>
         <div class="mt-2 text-lg font-black ${themeClasses.valueNumber}">
-        ${refLabel}
-        </div>
+  ${
+    session.bcvReferenceType === BCV_REFERENCE_TYPES.CUSTOM &&
+    Number.isFinite(Number(session.customBcvRate))
+      ? `Precio personalizado · 1 USD = ${formatNumber(session.customBcvRate)} bolívares`
+      : refLabel
+  }
+</div>
     </div>
    `,
     };
@@ -1326,6 +1331,9 @@ async function renderRemittanceResultScreen(container, session) {
         tasaVisible: tasaOperativa.value,
         fecha: formattedDate,
         bcvReference: getBcvReferenceLabel(session.bcvReferenceType),
+        bcvReferenceType: session.bcvReferenceType,
+        bcvReferenceIsCustom:
+          session.bcvReferenceType === BCV_REFERENCE_TYPES.CUSTOM,
         bcvRate,
         usdDeseados: amount,
         vesObjetivo,
@@ -1448,12 +1456,19 @@ function renderRemittanceResultBody(result) {
           ${renderResultLine("Debe enviar", result.debeEnviar.amount, result.debeEnviar.currencyLabel, true)}
         </div>
 
-        <div class="mt-4 rounded-2xl border ${themeClasses.metaBox} px-4 py-3 text-sm ${themeClasses.metaText}">
-  Referencia usada:
-  <span class="font-bold ${themeClasses.valueNumber}">
-    ${result.bcvReference}
-  </span>
-  · ${formatNumber(result.bcvRate)} bolívares
+        <div class="mt-4 rounded-2xl border ${
+  result.bcvReferenceIsCustom
+    ? "border-amber-400/25 bg-amber-500/10"
+    : themeClasses.metaBox
+} px-4 py-3 text-sm ${themeClasses.metaText}">
+  <div class="text-sm leading-relaxed text-center">
+    <span class="font-semibold ${themeClasses.valueNumber}">
+      ${result.bcvReferenceIsCustom ? "Precio BCV personalizado" : result.bcvReference}
+    </span>
+    <span class="opacity-80"> · 1 USD = </span>
+    <span class="font-bold ${themeClasses.valueNumber}">${formatNumber(result.bcvRate)}</span>
+    <span class="opacity-80"> bolívares</span>
+  </div>
 </div>
 
         ${renderResultMeta(result)}
@@ -1466,6 +1481,7 @@ function renderRemittanceResultBody(result) {
     ${renderQuoteErrorPanel("No se pudo mostrar el resultado.")}
   `;
 }
+
 function renderResultLine(label, amount, currencyLabel, highlight = false) {
   const themeClasses = getQuoteThemeClasses();
 

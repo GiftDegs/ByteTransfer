@@ -126,7 +126,9 @@ export function buildRemittanceSharePayload(result) {
         },
         {
           label: "Referencia",
-          value: result.bcvReference,
+          value: result.bcvReferenceIsCustom
+            ? `Precio personalizado · ${formatCompactShareNumber(result.bcvRate)} bolívares`
+            : result.bcvReference,
           unit: null,
           raw: true,
         },
@@ -141,6 +143,16 @@ export function buildRemittanceSharePayload(result) {
   }
 
   return null;
+}
+
+function formatCompactShareNumber(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }).format(n);
 }
 
 function buildVenezuelaEquivalentRows(amountObj) {
