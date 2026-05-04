@@ -4,6 +4,12 @@ import { getMainModules } from "../core/quoteModes.js";
 import { startQuoteModule } from "../state/quoteSession.js";
 import { getQuoteTheme, toggleQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
+import {
+  getQuoteArrowBoxClass,
+  getQuoteIconBoxClass,
+  getQuoteSelectionCardClass,
+} from "./quoteComponents.js";
+import { renderQuoteShell, renderQuoteShellFooter } from "./quoteShell.js";
 
 const MODULE_ICONS = {
   references: "◆",
@@ -34,61 +40,36 @@ export function renderQuoteHub(container, onModuleSelected = null) {
   const themeClasses = getQuoteThemeClasses();
   const isLight = theme === "light";
 
-  container.innerHTML = `
-<section class="relative flex h-full w-full flex-col overflow-hidden border-0 px-4 py-4 shadow-none transition-colors sm:h-auto sm:max-h-[calc(100svh-2rem)] sm:overflow-y-auto sm:rounded-[2rem] sm:border sm:px-6 sm:py-7 sm:shadow-2xl ${themeClasses.shell}">      <div class="pointer-events-none absolute inset-0">
-        <div class="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full ${themeClasses.glowA} blur-3xl"></div>
-        <div class="absolute -bottom-28 right-0 h-72 w-72 rounded-full ${themeClasses.glowB} blur-3xl"></div>
-        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,_transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,_transparent_1px)] bg-[size:38px_38px] ${themeClasses.gridOpacity}"></div>
+  container.innerHTML = renderQuoteShell({
+    eyebrow: "Centro de cotización",
+    title: "¿Qué quieres resolver?",
+    description:
+      "Elige el tipo de consulta y genera una respuesta lista para enviar por WhatsApp.",
+    topbar: `
+      <div class="mb-5 flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 backdrop-blur-xl ${themeClasses.topbar}">
+        <span class="rounded-md bg-[linear-gradient(135deg,#22d3c5,#2f8cff)] px-2 py-1 text-[10px] font-black uppercase tracking-[0.26em] text-white shadow-sm">
+          Centro de cotización
+        </span>
+
+        <button
+          type="button"
+          data-quote-theme-toggle="1"
+          class="rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition ${themeClasses.themeButton}"
+        >
+          ${isLight ? "Modo oscuro" : "Modo claro"}
+        </button>
       </div>
-
-      <div class="relative flex min-h-0 flex-1 flex-col">
-        <div class="mb-5 flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 backdrop-blur-xl ${themeClasses.topbar}">
-          <span class="rounded-md bg-[linear-gradient(135deg,#22d3c5,#2f8cff)] px-2 py-1 text-[10px] font-black uppercase tracking-[0.26em] text-white shadow-sm">
-            Centro de cotización
-          </span>
-
-          <button
-            type="button"
-            data-quote-theme-toggle="1"
-            class="rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition ${themeClasses.themeButton}"
-          >
-            ${isLight ? "Modo oscuro" : "Modo claro"}
-          </button>
-        </div>
-
-        <div class="mb-7 text-center">
-          <p class="text-[11px] uppercase tracking-[0.34em] ${themeClasses.accentText}">
-            Centro de cotización
-          </p>
-
-          <h2 class="mt-3 text-3xl font-black leading-tight tracking-tight ${themeClasses.primaryText} sm:text-4xl">
-            ¿Qué quieres resolver?
-          </h2>
-
-          <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed ${themeClasses.secondaryText} sm:text-base">
-            Elige el tipo de consulta y genera una respuesta lista para enviar por WhatsApp.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 gap-3">
-          ${modules.map((module) => renderModuleCard(module, themeClasses)).join("")}
-        </div>
-
-                <div class="mt-auto flex flex-col items-center justify-end pt-5">
-          <img
-            src="logo.png"
-            alt="Logo ByteTransfer"
-            class="h-12 w-12 select-none object-contain drop-shadow-[0_14px_24px_rgba(13,148,136,0.24)] sm:h-14 sm:w-14"
-          />
-
-          <p class="mt-2 text-[10px] font-black uppercase tracking-[0.28em] ${themeClasses.accentText}">
-            ByteTransfer
-          </p>
-        </div>
-
+    `,
+    body: `
+      <div class="grid grid-cols-1 gap-3">
+        ${modules.map((module) => renderModuleCard(module, themeClasses)).join("")}
       </div>
-    </section>
-  `;
+    `,
+    footer: renderQuoteShellFooter({
+      logoSize: "h-12 w-12 sm:h-14 sm:w-14",
+      paddingTop: "pt-5",
+    }),
+  });
 
   container
     .querySelector("[data-quote-theme-toggle]")
@@ -117,12 +98,12 @@ function renderModuleCard(module, themeClasses) {
     <button
       type="button"
       data-quote-module="${module.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/16 to-transparent opacity-0 transition group-hover:opacity-100"></div>
 
       <div class="relative flex items-center gap-4">
-        <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border text-xl font-black ${themeClasses.iconBox}">
+        <div class="${getQuoteIconBoxClass(themeClasses, "h-12 w-12", "text-xl")}">
           ${icon}
         </div>
 
@@ -142,7 +123,7 @@ function renderModuleCard(module, themeClasses) {
           </p>
         </div>
 
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-10 w-10")}">
           →
         </div>
       </div>

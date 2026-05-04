@@ -200,7 +200,7 @@ async function writeSnapshotToDb(obj) {
 }
 
 function getQuoteEngineConfigPath() {
-  return path.join(__dirname, "..", "public", "quote-engine-config.json");
+  return path.join(__dirname, "..", "storage", "quote-engine-config.json");
 }
 
 function readLocalQuoteEngineConfig() {
@@ -250,7 +250,7 @@ async function readQuoteEngineConfig() {
 }
 
 function getPaytypeCatalogPath() {
-  return path.join(__dirname, "..", "public", "paytype-catalog.json");
+  return path.join(__dirname, "..", "storage", "paytype-catalog.json");
 }
 
 function readLocalPaytypeCatalog() {
@@ -360,7 +360,7 @@ async function writeQuoteEngineConfig(obj) {
 }
 
 function getAuditLogPath() {
-  return path.join(__dirname, "..", "public", "audit-log.json");
+  return path.join(__dirname, "..", "storage", "audit-log.json");
 }
 
 function readLocalAuditLog() {
@@ -508,7 +508,7 @@ async function readAuditLogs({ area = null, limit = 50 } = {}) {
 function getSnapshotPath() {
   const custom = process.env.SNAPSHOT_FALLBACK_PATH;
   if (custom) return custom;
-  return path.join(__dirname, "..", "public", "snapshot.json");
+  return path.join(__dirname, "..", "storage", "snapshot.json");
 }
 
 function readLocalSnapshot() {
@@ -547,10 +547,10 @@ module.exports = {
   readLocalSnapshot,
   writeLocalSnapshot,
   isDbAvailable,
-    readQuoteEngineConfig,
+  readQuoteEngineConfig,
   writeQuoteEngineConfig,
-    writeAuditLog,
+  writeAuditLog,
   readAuditLogs,
   readPaytypeCatalog,
-writePaytypeCatalog,
+  writePaytypeCatalog,
 };

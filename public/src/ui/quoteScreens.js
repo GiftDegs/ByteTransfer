@@ -11,6 +11,18 @@ import {
 
 import { toggleQuoteTheme, withQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
+import {
+  getQuoteActionButtonClass,
+  getQuoteArrowBoxClass,
+  getQuoteBadgeClass,
+  getQuoteChipClass,
+  getQuoteIconBoxClass,
+  getQuoteSelectionCardClass,
+  renderQuoteLoadingPanel,
+  renderQuoteErrorPanel,
+  renderQuoteInfoPanel,
+} from "./quoteComponents.js";
+import { renderQuoteShell } from "./quoteShell.js";
 
 import { paisesDisponibles } from "../core/config.js";
 import {
@@ -18,7 +30,6 @@ import {
   formatearTasa,
   limpiarResultadoRaw,
   normalizarTasaOperativa,
-  redondearPorMoneda,
 } from "../core/utils.js";
 import { calcularCruce, obtenerTasaVisible } from "../core/fx.js";
 import { obtenerBCV, obtenerTasa } from "../services/rates.js";
@@ -78,73 +89,41 @@ export function renderQuoteScreen(container) {
 function renderScreenShell({ eyebrow, title, description, body }) {
   const themeClasses = getQuoteThemeClasses();
 
-  return `
-    <section class="relative flex h-full w-full flex-col overflow-hidden border-0 px-4 py-4 shadow-none transition-colors sm:h-auto sm:max-h-[calc(100svh-2rem)] sm:overflow-hidden sm:rounded-[2rem] sm:border sm:px-6 sm:py-7 sm:shadow-2xl ${themeClasses.shell}">
-      <div class="pointer-events-none absolute inset-0">
-        <div class="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full ${themeClasses.glowA} blur-3xl"></div>
-        <div class="absolute -bottom-28 right-0 h-72 w-72 rounded-full ${themeClasses.glowB} blur-3xl"></div>
-        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,_transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,_transparent_1px)] bg-[size:38px_38px] ${themeClasses.gridOpacity}"></div>
-      </div>
+  return renderQuoteShell({
+    eyebrow,
+    title,
+    description,
+    body,
+    topbar: `
+      <div class="shrink-0 -mx-1 mb-4 flex items-center justify-between gap-2 rounded-2xl border p-1 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 ${themeClasses.topbar}">
+        <button
+          type="button"
+          data-quote-back="1"
+          class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
+        >
+          ← Volver
+        </button>
 
-      <div class="relative flex min-h-0 flex-1 flex-col">
-        <div class="shrink-0 -mx-1 mb-4 flex items-center justify-between gap-2 rounded-2xl border p-1 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 ${themeClasses.topbar}">
+        <div class="flex items-center gap-2">
           <button
             type="button"
-            data-quote-back="1"
-            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
+            data-quote-theme-toggle="1"
+            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${themeClasses.themeButton}"
           >
-            ← Volver
+            ${themeClasses.isLight ? "Modo oscuro" : "Modo claro"}
           </button>
 
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              data-quote-theme-toggle="1"
-              class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${themeClasses.themeButton}"
-            >
-              ${themeClasses.isLight ? "Modo oscuro" : "Modo claro"}
-            </button>
-
-            <button
-              type="button"
-              data-quote-home="1"
-              class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
-            >
-              Inicio
-            </button>
-          </div>
-        </div>
-
-        <div class="shrink-0 mb-4 text-center sm:mb-6">
-          <p class="text-[11px] uppercase tracking-[0.34em] ${themeClasses.accentText}">
-            ${eyebrow}
-          </p>
-          <h2 class="mt-3 text-[clamp(1.75rem,7vw,2.25rem)] font-black leading-tight tracking-tight ${themeClasses.primaryText} sm:text-4xl">
-            ${title}
-          </h2>
-          <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed ${themeClasses.secondaryText} sm:text-base">
-            ${description}
-          </p>
-        </div>
-
-        <div class="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 sm:pr-2">
-          ${body}
-        </div>
-
-        <div class="shrink-0 flex flex-col items-center justify-end pt-4">
-          <img
-            src="logo.png"
-            alt="Logo ByteTransfer"
-            class="h-10 w-10 select-none object-contain drop-shadow-[0_14px_24px_rgba(13,148,136,0.24)] sm:h-12 sm:w-12"
-          />
-
-          <p class="mt-2 text-[10px] font-black uppercase tracking-[0.28em] ${themeClasses.accentText}">
-            ByteTransfer
-          </p>
+          <button
+            type="button"
+            data-quote-home="1"
+            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
+          >
+            Inicio
+          </button>
         </div>
       </div>
-    </section>
-  `;
+    `,
+  });
 }
 
 function bindCommonNavigation(container) {
@@ -310,10 +289,10 @@ function renderCountryOption(country) {
     <button
       type="button"
       data-country-code="${code}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-4 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-4")}"
     >
       <div class="flex items-center gap-3">
-        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border text-xl font-black ${themeClasses.iconBox}">
+        <div class="${getQuoteIconBoxClass(themeClasses, "h-11 w-11", "text-xl")}">
           ${flag}
         </div>
 
@@ -326,7 +305,7 @@ function renderCountryOption(country) {
           </div>
         </div>
 
-        <div class="grid h-9 w-9 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-9 w-9")}">
           →
         </div>
       </div>
@@ -384,13 +363,13 @@ function renderReferenceOption(option) {
     <button
       type="button"
       data-reference-type="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/12 to-transparent opacity-0 transition group-hover:opacity-100"></div>
 
       <div class="relative flex items-center justify-between gap-4">
         <div class="min-w-0 flex-1">
-          <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${themeClasses.badge}">
+          <span class="${getQuoteBadgeClass(themeClasses)}">
             BCV
           </span>
 
@@ -403,7 +382,7 @@ function renderReferenceOption(option) {
           </p>
         </div>
 
-        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-11 w-11", "font-black")}">
           →
         </div>
       </div>
@@ -422,10 +401,7 @@ async function renderReferenceResultScreen(container, session) {
     title: "Consultando referencia",
     description: "Leyendo la referencia guardada desde el sistema.",
     body: `
-      <div class="rounded-3xl border ${themeClasses.panel} p-6 text-center">
-        <div class="mx-auto h-10 w-10 rounded-full border border-[#22d8cb]/30 border-t-[#22d8cb] animate-spin"></div>
-        <p class="mt-4 text-sm ${themeClasses.secondaryText}">Cargando ${title}...</p>
-      </div>
+      ${renderQuoteLoadingPanel(themeClasses, `Cargando ${title}...`)}
     `,
   });
 
@@ -476,7 +452,7 @@ async function renderReferenceResultScreen(container, session) {
           <button
             type="button"
             data-reference-whatsapp="1"
-            class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
+            class="${getQuoteActionButtonClass(themeClasses, "primary", "mt-5")}"
           >
             Enviar por WhatsApp
           </button>
@@ -509,14 +485,9 @@ function renderReferenceError(container, title) {
     title,
     description: "No se pudo cargar esta referencia.",
     body: `
-      <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-        No hay una referencia válida disponible en este momento.
-      </div>
+      ${renderQuoteErrorPanel("No hay una referencia válida disponible en este momento.")}
     `,
   });
-
-  bindCommonNavigation(container);
-
   bindCommonNavigation(container);
 }
 
@@ -579,10 +550,7 @@ async function renderRateResultScreen(container, session) {
     title: routeLabel,
     description: "Consultando la tasa guardada para este cruce.",
     body: `
-      <div class="rounded-3xl border ${themeClasses.panel} p-6 text-center">
-        <div class="mx-auto h-10 w-10 rounded-full border border-[#22d8cb]/30 border-t-[#22d8cb] animate-spin"></div>
-        <p class="mt-4 text-sm ${themeClasses.secondaryText}">Cargando tasa...</p>
-      </div>
+      ${renderQuoteLoadingPanel(themeClasses, "Cargando tasa...")}
     `,
   });
 
@@ -634,7 +602,7 @@ async function renderRateResultScreen(container, session) {
           <button
             type="button"
             data-rate-whatsapp="1"
-            class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
+            class="${getQuoteActionButtonClass(themeClasses, "primary", "mt-5")}"
           >
             Enviar por WhatsApp
           </button>
@@ -668,9 +636,7 @@ function renderRateError(container, routeLabel) {
     title: routeLabel,
     description: "No se pudo cargar la tasa de este cruce.",
     body: `
-      <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-        No hay una tasa válida disponible para este cruce.
-      </div>
+      ${renderQuoteErrorPanel("No hay una tasa válida disponible para este cruce.")}
     `,
   });
 
@@ -824,7 +790,7 @@ function renderRemittanceModeOption(option) {
     <button
       type="button"
       data-remittance-mode="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="relative flex items-center justify-between gap-4">
         <div class="min-w-0 flex-1">
@@ -841,7 +807,7 @@ function renderRemittanceModeOption(option) {
           </p>
         </div>
 
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-lg transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-10 w-10")}">
           →
         </div>
       </div>
@@ -903,13 +869,13 @@ function renderBcvReferenceOption(option) {
     <button
       type="button"
       data-bcv-reference="${option.id}"
-      class="group relative w-full overflow-hidden rounded-3xl border p-5 text-left backdrop-blur-xl transition hover:-translate-y-0.5 ${themeClasses.card} ${themeClasses.cardHover}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
     >
       <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/12 to-transparent opacity-0 transition group-hover:opacity-100"></div>
 
       <div class="relative flex items-center justify-between gap-4">
         <div class="min-w-0 flex-1">
-          <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${themeClasses.badge}">
+          <span class="${getQuoteBadgeClass(themeClasses)}">
             BCV
           </span>
 
@@ -922,7 +888,7 @@ function renderBcvReferenceOption(option) {
           </p>
         </div>
 
-        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-lg font-black transition ${themeClasses.arrowBox}">
+        <div class="${getQuoteArrowBoxClass(themeClasses, "h-11 w-11", "font-black")}">
           →
         </div>
       </div>
@@ -962,7 +928,7 @@ function renderCustomBcvRateScreen(container, session) {
             placeholder="Ej: 487.12"
             class="min-w-0 flex-1 bg-transparent text-2xl font-black ${themeClasses.primaryText} outline-none placeholder:text-slate-500"
           />
-          <span class="shrink-0 rounded-2xl px-3 py-2 text-xs font-bold ${themeClasses.chip}">
+          <span class="${getQuoteChipClass(themeClasses)}">
             bolívares
           </span>
         </div>
@@ -974,7 +940,7 @@ function renderCustomBcvRateScreen(container, session) {
         <button
           type="button"
           data-custom-bcv-next="1"
-          class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          class="${getQuoteActionButtonClass(themeClasses, "continue", "mt-5")}"
           disabled
         >
           Continuar
@@ -1074,7 +1040,7 @@ function renderRemittanceAmountScreen(container, session) {
             placeholder="Ingresa el monto"
             class="min-w-0 flex-1 bg-transparent text-2xl font-black ${themeClasses.primaryText} outline-none placeholder:text-slate-500"
           />
-          <span class="shrink-0 rounded-2xl px-3 py-2 text-xs font-bold ${themeClasses.chip}">
+          <span class="${getQuoteChipClass(themeClasses)}">
             ${amountConfig.unit}
           </span>
         </div>
@@ -1086,7 +1052,7 @@ function renderRemittanceAmountScreen(container, session) {
         <button
           type="button"
           data-remittance-next="1"
-          class="mt-5 w-full rounded-2xl bg-brandTeal px-5 py-4 text-sm font-black text-slate-950 shadow-xl transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          class="${getQuoteActionButtonClass(themeClasses, "continue", "mt-5")}"
           disabled
         >
           Continuar
@@ -1497,12 +1463,9 @@ function renderRemittanceResultBody(result) {
   }
 
   return `
-    <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-      No se pudo mostrar el resultado.
-    </div>
+    ${renderQuoteErrorPanel("No se pudo mostrar el resultado.")}
   `;
 }
-
 function renderResultLine(label, amount, currencyLabel, highlight = false) {
   const themeClasses = getQuoteThemeClasses();
 
@@ -1557,7 +1520,7 @@ function renderResultActions() {
     <button
       type="button"
       data-remittance-whatsapp="1"
-      class="mt-5 w-full rounded-2xl px-5 py-4 text-sm font-black transition ${themeClasses.gemButton}"
+      class="${getQuoteActionButtonClass(themeClasses, "primary", "mt-5")}"
     >
       Enviar por WhatsApp
     </button>
@@ -1565,7 +1528,7 @@ function renderResultActions() {
     <button
       type="button"
       data-result-back-to-amount="1"
-      class="mt-3 w-full rounded-2xl border px-5 py-4 text-sm font-black transition ${themeClasses.secondaryButton}"
+      class="${getQuoteActionButtonClass(themeClasses, "secondary", "mt-3")}"
     >
       Editar monto
     </button>
@@ -1669,9 +1632,7 @@ function renderRemittanceResultError(container, routeLabel, message) {
     title: routeLabel,
     description: "No se pudo completar la cotización.",
     body: `
-      <div class="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 text-center text-sm text-red-100">
-        ${message}
-      </div>
+      ${renderQuoteErrorPanel(message)}
     `,
   });
 
@@ -1715,21 +1676,7 @@ function parseAmountInput(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function roundDisplayAmount(value, currencyCode) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
 
-  if (currencyCode === "VES") return Math.round(n);
-
-  return Math.round(n);
-}
-
-function roundSendAmount(value, currencyCode) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-
-  return redondearPorMoneda(Math.round(n), currencyCode);
-}
 
 function formatNumber(value, options = {}) {
   const n = Number(value);
@@ -1742,14 +1689,14 @@ function formatNumber(value, options = {}) {
 }
 
 function renderComingSoon(container, session) {
+  const themeClasses = getQuoteThemeClasses();
+
   container.innerHTML = renderScreenShell({
     eyebrow: "En construcción",
     title: "Módulo preparado",
     description: `Pantalla pendiente para: ${session.module || "sin módulo"} / ${session.step || "sin paso"}.`,
     body: `
-      <div class="rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-center text-sm text-slate-300">
-        Esta sección será conectada en el siguiente bloque.
-      </div>
+      ${renderQuoteInfoPanel(themeClasses, "Esta sección será conectada en el siguiente bloque.")}
     `,
   });
 
