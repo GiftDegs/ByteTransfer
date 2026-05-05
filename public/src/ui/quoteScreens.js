@@ -424,7 +424,7 @@ async function renderReferenceResultScreen(container, session) {
 
     const formattedDate =
       fecha && !Number.isNaN(fecha.getTime())
-        ? fecha.toLocaleString("es-AR")
+        ? formatVenezuelaDateTime(fecha)
         : "Fecha no disponible";
 
     container.innerHTML = renderScreenShell({
@@ -574,7 +574,7 @@ async function renderRateResultScreen(container, session) {
     const tasaFmt = formatearTasa(tasaVisible);
     const formattedDate =
       fecha && !Number.isNaN(fecha.getTime())
-        ? fecha.toLocaleString("es-AR")
+        ? formatVenezuelaDateTime(fecha)
         : "Fecha no disponible";
 
     container.innerHTML = renderScreenShell({
@@ -1231,7 +1231,7 @@ async function renderRemittanceResultScreen(container, session) {
     const fecha = data?.fecha ? new Date(data.fecha) : null;
     const formattedDate =
       fecha && !Number.isNaN(fecha.getTime())
-        ? fecha.toLocaleString("es-AR")
+        ? formatVenezuelaDateTime(fecha)
         : "Fecha no disponible";
 
     const amount = Number(session.amount);
@@ -1659,6 +1659,22 @@ function renderRemittanceResultError(container, routeLabel, message) {
 // HELPERS
 // =====================================================
 
+function formatVenezuelaDateTime(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "Fecha no disponible";
+  }
+
+  const value = new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Caracas",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  return `${value.replace(",", " ·")} VZLA`;
+}
 function getBcvReferenceLabel(type) {
   if (type === BCV_REFERENCE_TYPES.USD) return "Dólar BCV";
   if (type === BCV_REFERENCE_TYPES.EUR) return "Euro BCV";

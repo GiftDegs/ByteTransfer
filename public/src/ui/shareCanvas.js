@@ -464,7 +464,6 @@ async function drawFooter(ctx, theme, payload) {
 
   const dividerY = CANVAS_HEIGHT - 210;
 
-  // Línea divisoria
   ctx.strokeStyle = theme.line;
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -472,7 +471,6 @@ async function drawFooter(ctx, theme, payload) {
   ctx.lineTo(SHARE_SAFE_X + SHARE_SAFE_W - 38, dividerY);
   ctx.stroke();
 
-  // ===== Logo + marca en el espacio libre de la tarjeta =====
   const centerX = CANVAS_WIDTH / 2;
   const logoSize = 112;
   const logoY = dividerY - 120;
@@ -493,37 +491,69 @@ async function drawFooter(ctx, theme, payload) {
   ctx.font = font(900, 18);
   drawSpacedTextCentered(ctx, "BYTETRANSFER", centerX, logoY + 84, 5);
 
-  // ===== Fecha abajo izquierda =====
+  const leftLabel = String(payload.footerLeftLabel || "ACTUALIZADO").toUpperCase();
+  const leftValue = payload.footerLeftValue || payload.updatedAt || "Fecha no disponible";
+  const rightLabel = payload.footerRightLabel
+    ? String(payload.footerRightLabel).toUpperCase()
+    : "";
+  const rightValue = payload.footerRightValue || "";
+
+  const footerLabelY = dividerY + 62;
+  const footerValueY = dividerY + 102;
+  const labelSize = 16;
+  const valueSize = 24;
+
   ctx.textAlign = "left";
   ctx.fillStyle = theme.muted;
-  ctx.font = font(800, 18);
-  drawSpacedText(ctx, "ACTUALIZADO", SHARE_SAFE_X + 44, dividerY + 58, 5);
-
-  ctx.fillStyle = theme.text;
-  ctx.font = font(900, 30);
+  ctx.font = font(800, labelSize);
   fitText(
     ctx,
-    payload.updatedAt || "Fecha no disponible",
+    leftLabel,
     SHARE_SAFE_X + 44,
-    dividerY + 104,
-    420,
-    30,
+    footerLabelY,
+    430,
+    labelSize,
     "left"
   );
 
-  // ===== Disclaimer abajo derecha =====
-  ctx.textAlign = "right";
-  ctx.fillStyle = theme.muted;
-  ctx.font = font(700, 17);
+  ctx.fillStyle = theme.text;
+  ctx.font = font(900, valueSize);
   fitText(
     ctx,
-    "Tasa sujeta a disponibilidad operativa",
-    SHARE_SAFE_X + SHARE_SAFE_W - 44,
-    dividerY + 80,
+    leftValue,
+    SHARE_SAFE_X + 44,
+    footerValueY,
     430,
-    17,
-    "right"
+    valueSize,
+    "left"
   );
+
+  if (rightLabel || rightValue) {
+    ctx.textAlign = "right";
+    ctx.fillStyle = theme.muted;
+    ctx.font = font(800, labelSize);
+    fitText(
+      ctx,
+      rightLabel,
+      SHARE_SAFE_X + SHARE_SAFE_W - 44,
+      footerLabelY,
+      430,
+      labelSize,
+      "right"
+    );
+
+    ctx.fillStyle = theme.text;
+    ctx.font = font(900, valueSize);
+    fitText(
+      ctx,
+      rightValue || "Fecha no disponible",
+      SHARE_SAFE_X + SHARE_SAFE_W - 44,
+      footerValueY,
+      430,
+      valueSize,
+      "right"
+    );
+  }
 }
 
 function drawRoundRect(ctx, x, y, w, h, r, fill, stroke = null, strokeWidth = 1) {

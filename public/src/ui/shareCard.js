@@ -150,25 +150,37 @@ function renderDisclaimer(disclaimer, dense = false) {
 }
 
 function renderShareFooter(payload, dense = false) {
+  const leftLabel = payload.footerLeftLabel || "Actualizado";
+  const leftValue = payload.footerLeftValue || payload.updatedAt || "Fecha no disponible";
+  const rightLabel = payload.footerRightLabel || "";
+  const rightValue = payload.footerRightValue || "Fecha no disponible";
+  const hasRightFooter = Boolean(rightLabel);
+
   return `
-    <footer class="${dense ? "mt-5 pt-4" : "mt-8 pt-6"} flex items-end justify-between gap-8 border-t border-white/10">
+    <footer class="${dense ? "mt-5 pt-4" : "mt-8 pt-6"} flex items-end ${
+      hasRightFooter ? "justify-between" : "justify-start"
+    } gap-8 border-t border-white/10">
       <div>
-        <div class="${dense ? "text-sm" : "text-base"} font-semibold uppercase tracking-[0.24em] text-slate-500">
-          Actualizado
+        <div class="${dense ? "text-xs" : "text-sm"} font-semibold uppercase tracking-[0.18em] text-slate-500">
+          ${escapeHtml(leftLabel)}
         </div>
-        <div class="${dense ? "mt-1 text-xl" : "mt-2 text-2xl"} font-black text-white">
-          ${escapeHtml(payload.updatedAt || "Fecha no disponible")}
+        <div class="${dense ? "mt-1 text-lg" : "mt-2 text-xl"} font-black text-white">
+          ${escapeHtml(leftValue)}
         </div>
       </div>
 
-      <div class="text-right">
-        <div class="${dense ? "text-sm" : "text-base"} font-semibold text-slate-500">
-          Tasa sujeta a disponibilidad operativa
-        </div>
-        <div class="${dense ? "mt-1 text-xl" : "mt-2 text-2xl"} font-black text-[#13E6C6]">
-          ByteTransfer
-        </div>
-      </div>
+      ${
+        hasRightFooter
+          ? `<div class="text-right">
+              <div class="${dense ? "text-xs" : "text-sm"} font-semibold uppercase tracking-[0.18em] text-slate-500">
+                ${escapeHtml(rightLabel)}
+              </div>
+              <div class="${dense ? "mt-1 text-lg" : "mt-2 text-xl"} font-black text-white">
+                ${escapeHtml(rightValue)}
+              </div>
+            </div>`
+          : ""
+      }
     </footer>
   `;
 }

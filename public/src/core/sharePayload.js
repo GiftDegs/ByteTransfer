@@ -15,6 +15,8 @@ export function buildReferenceSharePayload({ referenceTitle, value, updatedAt })
     brand: "ByteTransfer",
     title: "Referencia BCV",
     subtitle: referenceTitle,
+    footerLeftLabel: "Referencia vigente",
+    footerLeftValue: updatedAt,
     primaryLabel: referenceTitle,
     primaryValue: value,
     primaryUnit: "bolívares",
@@ -30,6 +32,8 @@ export function buildRateSharePayload({ origen, destino, tasa, updatedAt }) {
     brand: "ByteTransfer",
     title: "Tasa de cambio",
     subtitle: getRouteLabel(origen, destino),
+    footerLeftLabel: "Tasa vigente",
+    footerLeftValue: updatedAt,
     primaryLabel: getRouteLabel(origen, destino),
     primaryValue: tasa,
     primaryUnit: null,
@@ -51,6 +55,10 @@ export function buildRemittanceSharePayload(result) {
     subtitle: result.routeLabel || "",
     disclaimer: null,
     updatedAt: result.fecha || "",
+    footerLeftLabel: "Tasa vigente",
+    footerLeftValue: result.fecha || "",
+    footerRightLabel: "Cotizado",
+    footerRightValue: formatShareCurrentTimestamp(),
     rows: [],
   };
 
@@ -153,6 +161,19 @@ function formatCompactShareNumber(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 6,
   }).format(n);
+}
+
+function formatShareCurrentTimestamp(date = new Date()) {
+  const value = new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Caracas",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  return `${value.replace(",", " ·")} VZLA`;
 }
 
 function buildVenezuelaEquivalentRows(amountObj) {
