@@ -2,14 +2,19 @@
 
 import { getMainModules } from "../core/quoteModes.js";
 import { startQuoteModule } from "../state/quoteSession.js";
-import { getQuoteTheme, toggleQuoteTheme } from "../state/quoteTheme.js";
+import { toggleQuoteTheme } from "../state/quoteTheme.js";
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
 import {
   getQuoteArrowBoxClass,
   getQuoteIconBoxClass,
   getQuoteSelectionCardClass,
 } from "./quoteComponents.js";
-import { renderQuoteShell, renderQuoteShellFooter } from "./quoteShell.js";
+import {
+  animateQuoteThemeSwitch,
+  renderQuoteShell,
+  renderQuoteShellFooter,
+  renderQuoteTopbar,
+} from "./quoteShell.js";
 
 const MODULE_ICONS = {
   references: "◆",
@@ -36,30 +41,18 @@ export function renderQuoteHub(container, onModuleSelected = null) {
   if (!container) return;
 
   const modules = getMainModules();
-  const theme = getQuoteTheme();
   const themeClasses = getQuoteThemeClasses();
-  const isLight = theme === "light";
 
   container.innerHTML = renderQuoteShell({
     eyebrow: "Centro de cotización",
     title: "¿Qué quieres resolver?",
     description:
       "Elige el tipo de consulta y genera una respuesta lista para enviar por WhatsApp.",
-    topbar: `
-      <div class="mb-5 flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 backdrop-blur-xl ${themeClasses.topbar}">
-        <span class="rounded-md bg-[linear-gradient(135deg,#22d3c5,#2f8cff)] px-2 py-1 text-[10px] font-black uppercase tracking-[0.26em] text-white shadow-sm">
-          Centro de cotización
-        </span>
+     topbar: renderQuoteTopbar({
+      showBack: false,
+      showHome: false,
+    }),
 
-        <button
-          type="button"
-          data-quote-theme-toggle="1"
-          class="rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition ${themeClasses.themeButton}"
-        >
-          ${isLight ? "Modo oscuro" : "Modo claro"}
-        </button>
-      </div>
-    `,
     body: `
       <div class="grid grid-cols-1 gap-3">
         ${modules.map((module) => renderModuleCard(module, themeClasses)).join("")}
@@ -71,12 +64,14 @@ export function renderQuoteHub(container, onModuleSelected = null) {
     }),
   });
 
-  container
-    .querySelector("[data-quote-theme-toggle]")
-    ?.addEventListener("click", () => {
+  const themeToggle = container.querySelector("[data-quote-theme-toggle]");
+
+  themeToggle?.addEventListener("click", () => {
+    animateQuoteThemeSwitch(themeToggle, () => {
       toggleQuoteTheme();
       renderQuoteHub(container, onModuleSelected);
     });
+  });
 
   container.querySelectorAll("[data-quote-module]").forEach((btn) => {
     btn.addEventListener("click", () => {

@@ -1,4 +1,4 @@
-// public/src/ui/quoteScreens.js
+﻿// public/src/ui/quoteScreens.js
 
 import {
   QUOTE_MODULES,
@@ -22,7 +22,13 @@ import {
   renderQuoteErrorPanel,
   renderQuoteInfoPanel,
 } from "./quoteComponents.js";
-import { renderQuoteShell } from "./quoteShell.js";
+
+import {
+  animateQuoteThemeSwitch,
+  animateQuoteTopbarExit,
+  renderQuoteShell,
+  renderQuoteTopbar,
+} from "./quoteShell.js";
 
 import { paisesDisponibles } from "../core/config.js";
 import {
@@ -54,15 +60,18 @@ import {
 } from "../core/sharePayload.js";
 import { sharePremiumPayload } from "./sharing.js";
 
+  let flowTopbarControlsEntered = false;
+
 export function renderQuoteScreen(container) {
   if (!container) return;
 
   const session = getQuoteSession();
 
   if (!session.module || session.step === "home") {
-    renderQuoteHub(container, () => renderQuoteScreen(container));
-    return;
-  }
+  flowTopbarControlsEntered = false;
+  renderQuoteHub(container, () => renderQuoteScreen(container));
+  return;
+}
 
   if (session.module === QUOTE_MODULES.REFERENCES) {
     renderReferencesScreen(container, session);
@@ -87,166 +96,150 @@ export function renderQuoteScreen(container) {
 // =====================================================
 
 function renderScreenShell({ eyebrow, title, description, body }) {
-  const themeClasses = getQuoteThemeClasses();
+  const animateControls = !flowTopbarControlsEntered;
+  flowTopbarControlsEntered = true;
 
   return renderQuoteShell({
     eyebrow,
     title,
     description,
     body,
-    topbar: `
-      <div class="shrink-0 -mx-1 mb-4 flex items-center justify-between gap-2 rounded-2xl border p-1 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 ${themeClasses.topbar}">
-        <button
-          type="button"
-          data-quote-back="1"
-          class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
-        >
-          ← Volver
-        </button>
-
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            data-quote-theme-toggle="1"
-            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${themeClasses.themeButton}"
-          >
-            ${themeClasses.isLight ? "Modo oscuro" : "Modo claro"}
-          </button>
-
-          <button
-            type="button"
-            data-quote-home="1"
-            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
-          >
-            Inicio
-          </button>
-        </div>
-      </div>
-    `,
+    topbar: renderQuoteTopbar({
+      showBack: true,
+      showHome: true,
+      animateControls,
+    }),
   });
 }
 
 function bindCommonNavigation(container) {
+  const themeToggle = container.querySelector("[data-quote-theme-toggle]");
 
-  container
-    .querySelector("[data-quote-theme-toggle]")
-    ?.addEventListener("click", () => {
+  themeToggle?.addEventListener("click", () => {
+    animateQuoteThemeSwitch(themeToggle, () => {
       toggleQuoteTheme();
       renderQuoteScreen(container);
     });
+  });
 
-  container
-    .querySelector("[data-quote-home]")
-    ?.addEventListener("click", () => {
+  const goHomeFromTopbar = (trigger) => {
+    animateQuoteTopbarExit(trigger, () => {
+      flowTopbarControlsEntered = false;
       resetQuoteSession();
       renderQuoteScreen(container);
     });
+  };
 
-  container
-    .querySelector("[data-quote-back]")
-    ?.addEventListener("click", () => {
-      const session = getQuoteSession();
+  const homeButton = container.querySelector("[data-quote-home]");
 
-      if (session.step === "reference_type") {
-        resetQuoteSession();
+  homeButton?.addEventListener("click", (event) => {
+    goHomeFromTopbar(event.currentTarget);
+  });
+
+  const backButton = container.querySelector("[data-quote-back]");
+
+  backButton?.addEventListener("click", (event) => {
+    const session = getQuoteSession();
+    const trigger = event.currentTarget;
+
+    if (session.step === "reference_type") {
+      goHomeFromTopbar(trigger);
+      return;
+    }
+
+    if (session.module === QUOTE_MODULES.REFERENCES) {
+      startQuoteModule(QUOTE_MODULES.REFERENCES);
+      renderQuoteScreen(container);
+      return;
+    }
+
+    if (session.module === QUOTE_MODULES.RATE) {
+      if (session.step === "destination") {
+        startQuoteModule(QUOTE_MODULES.RATE);
         renderQuoteScreen(container);
         return;
       }
 
-      if (session.module === QUOTE_MODULES.REFERENCES) {
-        startQuoteModule(QUOTE_MODULES.REFERENCES);
+      if (session.step === "rate_result") {
+        setQuoteSession({
+          destino: null,
+          step: "destination",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
+    }
+
+    if (session.module === QUOTE_MODULES.REMITTANCE) {
+      if (session.step === "destination") {
+        startQuoteModule(QUOTE_MODULES.REMITTANCE);
         renderQuoteScreen(container);
         return;
       }
 
-      if (session.module === QUOTE_MODULES.RATE) {
-        if (session.step === "destination") {
-          startQuoteModule(QUOTE_MODULES.RATE);
-          renderQuoteScreen(container);
-          return;
-        }
-
-        if (session.step === "rate_result") {
-          setQuoteSession({
-            destino: null,
-            step: "destination",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
+      if (session.step === "remittance_mode") {
+        setQuoteSession({
+          destino: null,
+          remittanceMode: null,
+          step: "destination",
+        });
+        renderQuoteScreen(container);
+        return;
       }
 
-      if (session.module === QUOTE_MODULES.REMITTANCE) {
-        if (session.step === "destination") {
-          startQuoteModule(QUOTE_MODULES.REMITTANCE);
-          renderQuoteScreen(container);
-          return;
-        }
+      if (session.step === "bcv_reference") {
+        setQuoteSession({
+          remittanceMode: null,
+          bcvReferenceType: null,
+          customBcvRate: null,
+          step: "remittance_mode",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
 
-        if (session.step === "remittance_mode") {
-          setQuoteSession({
-            destino: null,
-            remittanceMode: null,
-            step: "destination",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
+      if (session.step === "custom_bcv_rate") {
+        setQuoteSession({
+          bcvReferenceType: null,
+          customBcvRate: null,
+          step: "bcv_reference",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
 
-        if (session.step === "bcv_reference") {
+      if (session.step === "amount") {
+        if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
           setQuoteSession({
-            remittanceMode: null,
-            bcvReferenceType: null,
-            customBcvRate: null,
-            step: "remittance_mode",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
-
-        if (session.step === "custom_bcv_rate") {
-          setQuoteSession({
-            bcvReferenceType: null,
-            customBcvRate: null,
+            amount: null,
             step: "bcv_reference",
           });
           renderQuoteScreen(container);
           return;
         }
 
-        if (session.step === "amount") {
-          if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
-            setQuoteSession({
-              amount: null,
-              step: "bcv_reference",
-            });
-            renderQuoteScreen(container);
-            return;
-          }
-
-          setQuoteSession({
-            remittanceMode: null,
-            amount: null,
-            step: "remittance_mode",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
-
-        if (session.step === "result") {
-          setQuoteSession({
-            amount: null,
-            result: null,
-            step: "amount",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
+        setQuoteSession({
+          remittanceMode: null,
+          amount: null,
+          step: "remittance_mode",
+        });
+        renderQuoteScreen(container);
+        return;
       }
 
-      resetQuoteSession();
-      renderQuoteScreen(container);
-    });
+      if (session.step === "result") {
+        setQuoteSession({
+          amount: null,
+          result: null,
+          step: "amount",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
+    }
+
+    goHomeFromTopbar(trigger);
+  });
 }
 
 // =====================================================
