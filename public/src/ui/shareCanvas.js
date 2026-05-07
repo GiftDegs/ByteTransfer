@@ -9,6 +9,7 @@ import {
 
 const CANVAS_WIDTH = 1080;
 const CANVAS_HEIGHT = 1920;
+const EXPORT_SCALE = 2;
 
 const SHARE_SAFE_X = 86;
 const SHARE_SAFE_W = CANVAS_WIDTH - SHARE_SAFE_X * 2;
@@ -200,7 +201,7 @@ async function drawHeader(ctx, theme, payload) {
 
   ctx.fillStyle = theme.accent;
   ctx.font = font(900, 18);
-  drawSpacedText(ctx, getTypeLabel(payload.type), x + 98, y + 65, 5);
+  drawSpacedText(ctx, getTypeLabel(payload.type), x + 98, y + 65, 2);
 
   drawBadge(ctx, theme, SHARE_SAFE_X + SHARE_SAFE_W - 270, y + 12, 220, 50, "Oficial");
 }
@@ -259,13 +260,11 @@ function drawRemittanceLayout(ctx, theme, payload) {
 
   ctx.fillStyle = theme.accent;
   ctx.font = font(900, 24);
-  drawSpacedTextCentered(
-    ctx,
-    String(payload.title || "Cotización").toUpperCase(),
-    x + w / 2,
-    top + 66,
-    6
-  );
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = theme.accent;
+  ctx.font = font(900, 24);
+  ctx.fillText(String(payload.title || "Cotización").toUpperCase(), x + w / 2, top + 66);
 
   ctx.fillStyle = theme.text;
   ctx.font = font(900, 76);
@@ -273,22 +272,21 @@ function drawRemittanceLayout(ctx, theme, payload) {
 
   const heroY = top + 206;
   const heroH = 338;
+  const heroColors = getFlowRoleColors(theme, payload.primaryRole);
 
   const heroGradient = ctx.createLinearGradient(x + 36, heroY, x + w - 36, heroY + heroH);
-  heroGradient.addColorStop(0, alpha(theme.accent, 0.18));
-  heroGradient.addColorStop(1, alpha(theme.accent, 0.09));
+  heroGradient.addColorStop(0, heroColors.fillStrong);
+  heroGradient.addColorStop(1, heroColors.fillSoft);
 
-  drawRoundRect(ctx, x + 36, heroY, w - 72, heroH, 34, heroGradient, theme.accentLine, 1);
+  drawRoundRect(ctx, x + 36, heroY, w - 72, heroH, 34, heroGradient, heroColors.line, 1);
 
-  ctx.fillStyle = theme.accent;
+  ctx.fillStyle = heroColors.label;
   ctx.font = font(900, 26);
-  drawSpacedTextCentered(
-    ctx,
-    String(payload.primaryLabel || "").toUpperCase(),
-    x + w / 2,
-    heroY + 58,
-    5
-  );
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = heroColors.label;
+  ctx.font = font(900, 24);
+  ctx.fillText(String(payload.primaryLabel || "").toUpperCase(), x + w / 2, heroY + 58);
 
   ctx.fillStyle = theme.text;
   ctx.font = font(900, 118);
@@ -322,25 +320,45 @@ function drawRemittanceLayout(ctx, theme, payload) {
   );
 
   visibleRows.forEach((row, index) => {
+    const rowY = rowTop + index * (rowHeight + gap);
+
+    if (row?.type === "flow_side") {
+      drawFlowSideRow(ctx, theme, {
+        x: x + 24,
+        y: rowY,
+        w: w - 48,
+        h: rowHeight,
+        row,
+        dense: rowHeight < 126,
+      });
+      return;
+    }
+
+    if (row?.type === "split_metric") {
+      drawSplitMetricRow(ctx, theme, {
+        x: x + 24,
+        y: rowY,
+        w: w - 48,
+        h: rowHeight,
+        row,
+        dense: rowHeight < 126,
+      });
+      return;
+    }
     const rawValue = formatShareValue(row);
     const rawText = `${row?.label || ""} ${rawValue || ""}`;
-    const normalizedLabel = String(row?.label || "").toLowerCase();
-
     const variant = /bcv|referenc/i.test(rawText) ? "reference" : "default";
 
-    const highlighted =
-    /cliente recibe|recibe|debe enviar|envía|envia/.test(normalizedLabel);
-
     drawDataRow(ctx, theme, {
-    x: x + 24,
-    y: rowTop + index * (rowHeight + gap),
-    w: w - 48,
-    h: rowHeight,
-    label: row.label,
-    value: rawValue,
-    dense: rowHeight < 126,
-    variant,
-    highlighted,
+      x: x + 24,
+      y: rowY,
+      w: w - 48,
+      h: rowHeight,
+      label: row.label,
+      value: rawValue,
+      dense: rowHeight < 126,
+      variant,
+      highlighted: false,
     });
   });
 }
@@ -367,7 +385,11 @@ function drawHeroBlock(ctx, theme, config) {
 
   ctx.fillStyle = theme.accent;
   ctx.font = font(900, compact ? 23 : 25);
-  drawSpacedTextCentered(ctx, String(title || "").toUpperCase(), x + w / 2, top + 70, 6);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = theme.accent;
+  ctx.font = font(900, 24);
+  ctx.fillText(String(title || "").toUpperCase(), x + w / 2, top + 66);
 
   ctx.fillStyle = theme.text;
   ctx.font = font(900, compact ? 50 : 58);
@@ -384,7 +406,11 @@ function drawHeroBlock(ctx, theme, config) {
 
   ctx.fillStyle = theme.accent;
   ctx.font = font(900, compact ? 16 : 17);
-  drawSpacedTextCentered(ctx, String(label || "").toUpperCase(), x + w / 2, heroY + 37, 5);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = heroColors.label;
+  ctx.font = font(900, 24);
+  ctx.fillText(String(label || "").toUpperCase(), x + w / 2, heroY + 58);
 
   ctx.fillStyle = theme.text;
   ctx.font = font(900, compact ? 60 : 68);
@@ -400,6 +426,133 @@ function drawHeroBlock(ctx, theme, config) {
   }
 }
 
+function getFlowRoleColors(theme, role) {
+  if (role === "origin") {
+    return {
+      line: "rgba(34, 197, 94, 0.52)",
+      label: "rgba(16, 185, 129, 0.92)",
+      fillStrong: "rgba(34, 197, 94, 0.16)",
+      fillSoft: "rgba(34, 197, 94, 0.06)",
+    };
+  }
+
+  if (role === "destination") {
+    return {
+      line: "rgba(244, 63, 94, 0.44)",
+      label: "rgba(225, 82, 112, 0.90)",
+      fillStrong: "rgba(244, 63, 94, 0.12)",
+      fillSoft: "rgba(244, 63, 94, 0.045)",
+    };
+  }
+
+  return {
+    line: theme.accentLine,
+    label: theme.accent,
+    fillStrong: alpha(theme.accent, 0.18),
+    fillSoft: alpha(theme.accent, 0.09),
+  };
+}
+
+function drawFlowSideRow(ctx, theme, { x, y, w, h, row, dense }) {
+  const colors = getFlowRoleColors(theme, row?.role);
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+  gradient.addColorStop(0, colors.fillStrong);
+  gradient.addColorStop(1, colors.fillSoft);
+
+  drawRoundRect(ctx, x, y, w, h, 24, gradient, colors.line, 1);
+  drawRoundRect(ctx, x + 16, y + 18, 6, h - 36, 4, colors.line, null, 0);
+
+  const side = row?.side || {};
+  const actionLabel =
+    side.actionLabel || side.label || (row?.role === "origin" ? "Envías" : "Recibes");
+  const countryText = side.country || "";
+  const amountText = side.value || "—";
+  const unitText = side.unit || "";
+
+  const padX = h >= 138 ? 34 : 30;
+  const leftW = w * 0.34;
+  const rightW = w * 0.42;
+
+  const titleSize = dense ? 24 : h >= 138 ? 28 : 26;
+  const countrySize = dense ? 18 : 21;
+  const amountSize = dense ? 46 : h >= 138 ? 56 : 52;
+  const unitSize = dense ? 22 : 25;
+
+  const centerY = y + h / 2;
+
+  const leftTitleY = centerY - 6;
+  const leftCountryY = centerY + 26;
+
+  const amountY = centerY - 2;
+  const unitY = centerY + 30;
+
+  ctx.textBaseline = "middle";
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = colors.label;
+  ctx.font = font(900, titleSize);
+  fitText(ctx, actionLabel, x + padX, leftTitleY, leftW, titleSize, "left");
+
+  ctx.fillStyle = theme.muted;
+  ctx.font = font(800, countrySize);
+  fitText(ctx, countryText, x + padX, leftCountryY, leftW, countrySize, "left");
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = theme.text;
+  ctx.font = font(900, amountSize);
+  fitText(ctx, amountText, x + w - padX, amountY, rightW, amountSize, "right");
+
+  ctx.fillStyle = theme.muted;
+  ctx.font = font(800, unitSize);
+  fitText(ctx, unitText, x + w - padX, unitY, rightW, unitSize, "right");
+}
+
+function drawSplitMetricRow(ctx, theme, { x, y, w, h, row, dense }) {
+  const isReference = row?.variant === "reference";
+
+  const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+  gradient.addColorStop(0, isReference ? "rgba(238, 242, 247, 0.98)" : "rgba(218, 244, 255, 0.98)");
+  gradient.addColorStop(1, isReference ? "rgba(248, 250, 252, 0.96)" : "rgba(238, 249, 255, 0.96)");
+
+  const stroke = isReference ? "rgba(148, 163, 184, 0.34)" : "rgba(45, 169, 220, 0.38)";
+  const accentLine = isReference ? "rgba(148, 163, 184, 0.48)" : "rgba(19, 230, 198, 0.55)";
+
+  drawRoundRect(ctx, x, y, w, h, 24, gradient, stroke, 1);
+  drawRoundRect(ctx, x + 16, y + 20, 6, h - 40, 4, accentLine, null, 0);
+
+  const labelText = row?.label || "";
+  const valueText = row?.raw ? String(row?.value || "—") : formatShareNumber(row?.value);
+  const unitText = row?.unit || "";
+
+  const sidePad = h >= 138 ? 32 : 28;
+  const labelOffset = 18;
+  const centerY = y + h / 2;
+
+  const labelSize = isReference ? (dense ? 22 : 25) : (dense ? 22 : 26);
+  const valueSize = isReference ? (dense ? 30 : 34) : (dense ? 34 : 40);
+  const unitSize = isReference ? (dense ? 17 : 20) : (dense ? 18 : 22);
+
+  const labelWidth = isReference ? w * 0.42 : w * 0.48;
+  const valueWidth = isReference ? w * 0.50 : w * 0.44;
+
+  ctx.textBaseline = "middle";
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = theme.muted;
+  ctx.font = font(800, labelSize);
+  fitText(ctx, labelText, x + sidePad + labelOffset, centerY, labelWidth, labelSize, "left");
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = theme.text;
+  ctx.font = font(900, valueSize);
+  fitText(ctx, valueText, x + w - sidePad, centerY - (unitText ? 14 : 0), valueWidth, valueSize, "right");
+
+  if (unitText) {
+    ctx.fillStyle = theme.muted;
+    ctx.font = font(800, unitSize);
+    fitText(ctx, unitText, x + w - sidePad, centerY + 22, valueWidth, unitSize, "right");
+  }
+}
 function drawDataRow(
   ctx,
   theme,
@@ -407,6 +560,16 @@ function drawDataRow(
 ) {
   let fill = theme.row;
   let stroke = theme.rowBorder;
+  let accentLine = null;
+
+  if (variant === "default" && !highlighted) {
+    const neutralGradient = ctx.createLinearGradient(x, y, x + w, y + h);
+    neutralGradient.addColorStop(0, "rgba(218, 244, 255, 0.98)");
+    neutralGradient.addColorStop(1, "rgba(238, 249, 255, 0.96)");
+    fill = neutralGradient;
+    stroke = "rgba(45, 169, 220, 0.38)";
+    accentLine = "rgba(19, 230, 198, 0.55)";
+  }
 
   if (highlighted) {
     const rowGradient = ctx.createLinearGradient(x, y, x + w, y + h);
@@ -418,26 +581,31 @@ function drawDataRow(
 
   drawRoundRect(ctx, x, y, w, h, 24, fill, stroke, 1);
 
+  if (accentLine) {
+    drawRoundRect(ctx, x + 16, y + 20, 6, h - 40, 4, accentLine, null, 0);
+  }
+
   ctx.textBaseline = "middle";
 
   const isReference = variant === "reference";
 
   const labelSize = isReference
-    ? highlighted ? 24 : (dense ? 22 : 26)
-    : highlighted ? 28 : (dense ? 24 : h >= 138 ? 30 : 26);
+    ? (highlighted ? 24 : dense ? 22 : 26)
+    : (highlighted ? 28 : dense ? 24 : h >= 138 ? 30 : 26);
 
   const valueSize = isReference
-    ? highlighted ? 34 : (dense ? 28 : 34)
-    : highlighted ? 48 : (dense ? 34 : h >= 138 ? 44 : 38);
+    ? (highlighted ? 34 : dense ? 28 : 34)
+    : (highlighted ? 48 : dense ? 34 : h >= 138 ? 44 : 38);
 
   const sidePad = h >= 138 ? 32 : 28;
-  const labelWidth = isReference ? w * 0.34 : w * 0.40;
-  const valueWidth = isReference ? w * 0.58 : w * 0.52;
+  const labelOffset = accentLine ? 18 : 0;
+  const labelWidth = isReference ? w * 0.40 : w * 0.44;
+  const valueWidth = isReference ? w * 0.58 : w * 0.50;
 
   ctx.fillStyle = highlighted ? theme.accent : theme.muted;
   ctx.font = font(800, labelSize);
   ctx.textAlign = "left";
-  fitText(ctx, label || "", x + sidePad, y + h / 2, labelWidth, labelSize, "left");
+  fitText(ctx, label || "", x + sidePad + labelOffset, y + h / 2, labelWidth, labelSize, "left");
 
   ctx.fillStyle = theme.text;
   ctx.font = font(900, valueSize);

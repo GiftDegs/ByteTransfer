@@ -72,7 +72,7 @@ function renderShareHeader(payload) {
           <div class="text-4xl font-black tracking-tight">
             ${escapeHtml(payload.brand || "ByteTransfer")}
           </div>
-          <div class="mt-1 text-lg font-semibold tracking-[0.24em] text-[#13E6C6] uppercase">
+          <div class="mt-1 text-lg font-semibold tracking-[0.03em] text-[#13E6C6] uppercase">
             ${getTypeLabel(payload.type)}
           </div>
         </div>
@@ -89,7 +89,7 @@ function renderShareMain(payload, dense = false) {
   return `
     <section class="rounded-[44px] border border-white/10 bg-white/[0.075] ${dense ? "p-8" : "p-10"} shadow-2xl backdrop-blur-xl">
       <div class="text-center">
-        <div class="${dense ? "text-xl" : "text-2xl"} font-bold uppercase tracking-[0.24em] text-[#13E6C6]">
+        <div class="${dense ? "text-xl" : "text-2xl"} font-bold uppercase tracking-[0.03em] text-[#13E6C6]">
           ${escapeHtml(payload.title || "Cotización")}
         </div>
 
@@ -99,8 +99,8 @@ function renderShareMain(payload, dense = false) {
           </div>
         ` : ""}
 
-        <div class="${dense ? "mt-6 rounded-[32px] px-8 py-7" : "mt-8 rounded-[36px] px-10 py-9"} border border-[#13E6C6]/25 bg-[#13E6C6]/10">
-          <div class="${dense ? "text-lg" : "text-xl"} font-bold uppercase tracking-[0.22em] text-[#13E6C6]">
+        <div class="${getHeroRoleClass(payload.primaryRole, dense)}">
+          <div class="${getHeroRoleTextClass(payload.primaryRole, dense)}">
             ${escapeHtml(payload.primaryLabel || "Resultado")}
           </div>
 
@@ -128,14 +128,99 @@ function renderRows(rows, dense = false) {
 }
 
 function renderRow(row, dense = false) {
+  if (row?.type === "flow_side") {
+    return renderFlowSideRow(row, dense);
+  }
+
+  if (row?.type === "split_metric") {
+    return renderSplitMetricRow(row, dense);
+  }
+
   return `
-    <div class="flex items-center justify-between gap-6 rounded-[28px] border border-white/10 bg-black/20 ${dense ? "px-6 py-4" : "px-7 py-5"}">
+    <div class="relative flex items-center justify-between gap-6 rounded-[28px] border border-cyan-300/35 bg-cyan-50/85 ${dense ? "px-6 py-4" : "px-7 py-5"} before:absolute before:left-4 before:top-5 before:bottom-5 before:w-1.5 before:rounded-full before:bg-[#13E6C6]/55">
       <div class="${dense ? "text-lg" : "text-xl"} font-bold text-slate-400">
         ${escapeHtml(row.label || "")}
       </div>
 
       <div class="text-right ${dense ? "text-xl" : "text-2xl"} font-black text-white">
         ${escapeHtml(formatShareValue(row))}
+      </div>
+    </div>
+  `;
+}
+
+function renderSplitMetricRow(row, dense = false) {
+  const isReference = row?.variant === "reference";
+  const valueText = row?.raw ? String(row?.value || "—") : formatShareNumber(row?.value);
+  const unitText = row?.unit || "";
+  const accentClass = isReference
+    ? "border-slate-300/40 bg-slate-100/75 before:bg-slate-400/45"
+    : "border-cyan-300/40 bg-cyan-50/90 before:bg-[#13E6C6]/55";
+
+  return `
+    <div class="relative flex items-center justify-between gap-6 rounded-[28px] border ${accentClass} ${dense ? "px-6 py-4" : "px-7 py-5"} before:absolute before:left-4 before:top-5 before:bottom-5 before:w-1.5 before:rounded-full">
+      <div class="min-w-0 pl-4 ${dense ? "text-lg" : "text-xl"} font-bold text-slate-500">
+        ${escapeHtml(row.label || "")}
+      </div>
+
+      <div class="min-w-0 text-right">
+        <div class="${dense ? "text-2xl" : "text-3xl"} leading-none font-black text-slate-950">
+          ${escapeHtml(valueText)}
+        </div>
+        ${unitText ? `
+          <div class="${dense ? "mt-1 text-sm" : "mt-1 text-base"} leading-tight font-bold text-slate-500">
+            ${escapeHtml(unitText)}
+          </div>
+        ` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function getHeroRoleClass(role, dense = false) {
+  const base = dense ? "mt-6 rounded-[32px] px-8 py-7" : "mt-8 rounded-[36px] px-10 py-9";
+  if (role === "origin") return `${base} border border-emerald-400/25 bg-emerald-400/10`;
+  if (role === "destination") return `${base} border border-rose-400/25 bg-rose-400/10`;
+  return `${base} border border-[#13E6C6]/25 bg-[#13E6C6]/10`;
+}
+
+function getHeroRoleTextClass(role, dense = false) {
+  const base = dense ? "text-lg" : "text-xl";
+  if (role === "origin") return `${base} font-bold uppercase tracking-[0.02em] text-emerald-300`;
+  if (role === "destination") return `${base} font-bold uppercase tracking-[0.02em] text-rose-300`;
+  return `${base} font-bold uppercase tracking-[0.02em] text-[#13E6C6]`;
+}
+
+function renderFlowSideRow(row, dense = false) {
+  const isOrigin = row?.role === "origin";
+  const accentClass = isOrigin
+    ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
+    : "border-rose-400/25 bg-rose-400/10 text-rose-200";
+
+  const side = row?.side || {};
+  const actionLabel = side.actionLabel || side.label || (isOrigin ? "Envías" : "Recibes");
+  const countryText = side.country || "";
+  const amountText = side.value || "—";
+  const unitText = side.unit || "";
+
+  return `
+    <div class="flex items-center justify-between gap-6 rounded-[28px] border ${accentClass} ${dense ? "px-6 py-4" : "px-7 py-5"}">
+      <div class="min-w-0 self-center">
+        <div class="${dense ? "text-xl" : "text-[1.45rem]"} leading-none font-black">
+          ${escapeHtml(actionLabel)}
+        </div>
+        <div class="${dense ? "mt-2 text-base" : "mt-2 text-[1.05rem]"} leading-none font-bold text-slate-400">
+          ${escapeHtml(countryText)}
+        </div>
+      </div>
+
+      <div class="min-w-0 self-center text-right">
+        <div class="${dense ? "text-4xl" : "text-[2.55rem]"} leading-none font-black text-white">
+          ${escapeHtml(amountText)}
+        </div>
+        <div class="${dense ? "mt-2 text-lg" : "mt-2 text-[1.2rem]"} leading-none font-bold text-slate-300">
+          ${escapeHtml(unitText)}
+        </div>
       </div>
     </div>
   `;
@@ -161,7 +246,7 @@ function renderShareFooter(payload, dense = false) {
       hasRightFooter ? "justify-between" : "justify-start"
     } gap-8 border-t border-white/10">
       <div>
-        <div class="${dense ? "text-xs" : "text-sm"} font-semibold uppercase tracking-[0.18em] text-slate-500">
+        <div class="${dense ? "text-xs" : "text-sm"} font-semibold uppercase tracking-[0.01em] text-slate-500">
           ${escapeHtml(leftLabel)}
         </div>
         <div class="${dense ? "mt-1 text-lg" : "mt-2 text-xl"} font-black text-white">
@@ -172,7 +257,7 @@ function renderShareFooter(payload, dense = false) {
       ${
         hasRightFooter
           ? `<div class="text-right">
-              <div class="${dense ? "text-xs" : "text-sm"} font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <div class="${dense ? "text-xs" : "text-sm"} font-semibold uppercase tracking-[0.01em] text-slate-500">
                 ${escapeHtml(rightLabel)}
               </div>
               <div class="${dense ? "mt-1 text-lg" : "mt-2 text-xl"} font-black text-white">
