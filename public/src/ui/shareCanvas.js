@@ -82,13 +82,15 @@ export async function generatePremiumShareBlob(payload) {
   await waitForFonts();
 
   const canvas = document.createElement("canvas");
-  canvas.width = CANVAS_WIDTH;
-  canvas.height = CANVAS_HEIGHT;
+  canvas.width = CANVAS_WIDTH * EXPORT_SCALE;
+  canvas.height = CANVAS_HEIGHT * EXPORT_SCALE;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error("No se pudo crear el contexto canvas.");
   }
+
+  ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
 
   const theme = THEMES[payload.theme || "dark"] || THEMES.dark;
 
@@ -218,31 +220,101 @@ function drawBadge(ctx, theme, x, y, w, h, text) {
 }
 
 function drawRateLayout(ctx, theme, payload) {
-  drawHeroBlock(ctx, theme, {
-    top: payload.disclaimer ? 520 : 610,
-    title: payload.title || "Tasa de cambio",
-    subtitle: payload.subtitle || "",
-    label: "Tasa vigente",
-    value: formatShareRateForDisplay(payload.primaryValue),
-    unit: payload.primaryUnit || "",
-    compact: false,
-  });
+  const x = 124;
+  const w = 832;
+  const top = 500;
+  const panelH = 560;
+
+  drawRoundRect(ctx, x, top, w, panelH, 42, theme.card2, theme.line, 1);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = font(900, 24);
+  ctx.fillText("TASA VIGENTE", x + w / 2, top + 72);
+
+  ctx.fillStyle = theme.text;
+  ctx.font = font(900, 70);
+  fitText(ctx, payload.subtitle || "", x + w / 2, top + 165, w - 90, 70);
+
+  const heroY = top + 220;
+  const heroH = 210;
+
+  const heroGradient = ctx.createLinearGradient(x + 44, heroY, x + w - 44, heroY + heroH);
+  heroGradient.addColorStop(0, alpha(theme.accent, 0.15));
+  heroGradient.addColorStop(1, alpha(theme.accent, 0.07));
+
+  drawRoundRect(ctx, x + 44, heroY, w - 88, heroH, 30, heroGradient, theme.accentLine, 1);
+
+  ctx.fillStyle = theme.text;
+  ctx.font = font(900, 96);
+  ctx.textBaseline = "middle";
+  fitText(
+    ctx,
+    formatShareRateForDisplay(payload.primaryValue),
+    x + w / 2,
+    heroY + heroH / 2 + 8,
+    w - 170,
+    96
+  );
 
   if (payload.disclaimer) {
-    drawNotice(ctx, theme, 124, 1060, 832, 84, payload.disclaimer);
+    drawNotice(ctx, theme, 124, top + panelH + 80, 832, 88, payload.disclaimer);
   }
 }
 
 function drawReferenceLayout(ctx, theme, payload) {
-  drawHeroBlock(ctx, theme, {
-    top: 610,
-    title: payload.title || "Referencia BCV",
-    subtitle: payload.subtitle || "",
-    label: payload.primaryLabel || "",
-    value: formatShareNumber(payload.primaryValue),
-    unit: payload.primaryUnit || "",
-    compact: false,
-  });
+  const x = 124;
+  const w = 832;
+  const top = 560;
+  const panelH = 520;
+
+  drawRoundRect(ctx, x, top, w, panelH, 42, theme.card2, theme.line, 1);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = font(900, 24);
+  ctx.fillText(String(payload.title || "Referencia BCV").toUpperCase(), x + w / 2, top + 70);
+
+  ctx.fillStyle = theme.text;
+  ctx.font = font(900, 72);
+  fitText(ctx, payload.subtitle || "", x + w / 2, top + 154, w - 110, 72);
+
+  const heroY = top + 205;
+  const heroH = 220;
+
+  const heroGradient = ctx.createLinearGradient(x + 44, heroY, x + w - 44, heroY + heroH);
+  heroGradient.addColorStop(0, alpha(theme.accent, 0.16));
+  heroGradient.addColorStop(1, alpha(theme.accent, 0.075));
+
+  drawRoundRect(ctx, x + 44, heroY, w - 88, heroH, 30, heroGradient, theme.accentLine, 1);
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = font(900, 22);
+  ctx.fillText(String(payload.primaryLabel || "").toUpperCase(), x + w / 2, heroY + 52);
+
+  ctx.fillStyle = theme.text;
+  ctx.font = font(900, 82);
+  ctx.textBaseline = "middle";
+  fitText(
+    ctx,
+    payload.primaryRaw ? String(payload.primaryValue || "—") : formatShareNumber(payload.primaryValue),
+    x + w / 2,
+    heroY + 122,
+    w - 170,
+    82
+  );
+
+  if (payload.primaryUnit) {
+    ctx.fillStyle = theme.text;
+    ctx.globalAlpha = 0.9;
+    ctx.font = font(900, 34);
+    fitText(ctx, payload.primaryUnit, x + w / 2, heroY + 176, w - 170, 34);
+    ctx.globalAlpha = 1;
+  }
 }
 
 function drawRemittanceLayout(ctx, theme, payload) {
@@ -408,8 +480,6 @@ function drawHeroBlock(ctx, theme, config) {
   ctx.font = font(900, compact ? 16 : 17);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = heroColors.label;
-  ctx.font = font(900, 24);
   ctx.fillText(String(label || "").toUpperCase(), x + w / 2, heroY + 58);
 
   ctx.fillStyle = theme.text;

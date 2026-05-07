@@ -10,19 +10,61 @@ export const SHARE_PAYLOAD_TYPES = {
 };
 
 export function buildReferenceSharePayload({ referenceTitle, value, updatedAt }) {
+  const referenceInfo = getBcvReferenceInfo({
+    bcvReference: referenceTitle,
+    bcvRate: value,
+    bcvReferenceIsCustom: /personal/i.test(String(referenceTitle || "")),
+  });
+
   return {
     type: SHARE_PAYLOAD_TYPES.REFERENCE,
     brand: "ByteTransfer",
     title: "Referencia BCV",
-    subtitle: referenceTitle,
+    subtitle: referenceInfo.value,
     footerLeftLabel: "Referencia vigente",
     footerLeftValue: updatedAt,
-    primaryLabel: referenceTitle,
-    primaryValue: value,
+    primaryLabel: referenceInfo.heroLabel,
+    primaryValue: formatCompactShareNumber(value),
     primaryUnit: "bolívares",
+    primaryRaw: true,
     disclaimer: null,
     updatedAt,
     rows: [],
+  };
+}
+
+function getBcvReferenceInfo(result = {}) {
+  const rawName = String(result.bcvReference || "Dólar BCV").trim();
+  const isCustom = Boolean(result.bcvReferenceIsCustom) || /personal/i.test(rawName);
+  const isEuro = /euro|eur/i.test(rawName);
+  const rate = formatCompactShareNumber(result.bcvRate);
+
+  if (isCustom) {
+    return {
+      label: "tasa personalizada",
+      value: "Personalizada",
+      detail: buildReferenceRateDetail("USD", rate),
+      heroLabel: "1 USD",
+      baseCode: "USD",
+    };
+  }
+
+  if (isEuro) {
+    return {
+      label: "tasa euro BCV",
+      value: "Euro BCV",
+      detail: buildReferenceRateDetail("EUR", rate),
+      heroLabel: "1 EUR",
+      baseCode: "EUR",
+    };
+  }
+
+  return {
+    label: "tasa dólar BCV",
+    value: "Dólar BCV",
+    detail: buildReferenceRateDetail("USD", rate),
+    heroLabel: "1 USD",
+    baseCode: "USD",
   };
 }
 
@@ -30,7 +72,7 @@ export function buildRateSharePayload({ origen, destino, tasa, updatedAt }) {
   return {
     type: SHARE_PAYLOAD_TYPES.RATE,
     brand: "ByteTransfer",
-    title: "Tasa de cambio",
+    title: "Tasa vigente",
     subtitle: getRouteLabel(origen, destino),
     footerLeftLabel: "Tasa vigente",
     footerLeftValue: updatedAt,
@@ -165,35 +207,6 @@ function buildReferenceMetricRow(result) {
       variant: "reference",
     }
   );
-}
-
-function getBcvReferenceInfo(result = {}) {
-  const rawName = String(result.bcvReference || "Dólar BCV");
-  const isCustom = Boolean(result.bcvReferenceIsCustom) || /personal/i.test(rawName);
-  const isEuro = /euro|eur/i.test(rawName);
-  const rate = formatCompactShareNumber(result.bcvRate);
-
-  if (isCustom) {
-    return {
-      label: "tasa personalizada",
-      value: "Personalizada",
-      detail: buildReferenceRateDetail("USD", rate),
-    };
-  }
-
-  if (isEuro) {
-    return {
-      label: "tasa euro BCV",
-      value: rawName || "Euro BCV",
-      detail: buildReferenceRateDetail("EUR", rate),
-    };
-  }
-
-  return {
-    label: "tasa dólar BCV",
-    value: rawName || "Dólar BCV",
-    detail: buildReferenceRateDetail("USD", rate),
-  };
 }
 
 function buildReferenceRateDetail(code, rate) {
