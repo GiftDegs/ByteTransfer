@@ -126,6 +126,20 @@ async function waitForFonts() {
   } catch (_) {}
 }
 
+function applyDarkValueGlow(ctx, color, hero = false) {
+  ctx.shadowColor = color || "transparent";
+  ctx.shadowBlur = hero ? 18 : 10;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+function resetTextEffects(ctx) {
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+}
+
 function font(weight, size) {
   return `${weight} ${size}px Poppins, Arial, sans-serif`;
 }
@@ -319,26 +333,31 @@ function drawReferenceLayout(ctx, theme, payload) {
 
 function drawRemittanceLayout(ctx, theme, payload) {
   const rows = Array.isArray(payload.rows) ? payload.rows.filter(Boolean) : [];
+  const isDark = isDarkShareTheme(theme);
 
   const x = SHARE_SAFE_X + 28;
   const w = SHARE_SAFE_W - 56;
   const top = 290;
   const h = 1140;
 
-  drawRoundRect(ctx, x, top, w, h, 42, theme.card2, theme.line, 1);
+  let remittancePanelFill = theme.card2;
+
+  if (isDark) {
+    remittancePanelFill = ctx.createLinearGradient(x, top, x, top + h);
+    remittancePanelFill.addColorStop(0, "rgba(6, 17, 31, 0.98)");
+    remittancePanelFill.addColorStop(1, "rgba(8, 28, 43, 0.96)");
+  }
+
+  drawRoundRect(ctx, x, top, w, h, 42, remittancePanelFill, theme.line, 1);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
 
-  ctx.fillStyle = theme.accent;
-  ctx.font = font(900, 24);
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = theme.accent;
   ctx.font = font(900, 24);
   ctx.fillText(String(payload.title || "Cotización").toUpperCase(), x + w / 2, top + 66);
 
-  ctx.fillStyle = theme.text;
+  ctx.fillStyle = isDark ? "rgba(236, 242, 250, 0.90)" : theme.text;
   ctx.font = font(900, 76);
   fitText(ctx, payload.subtitle || "", x + w / 2, top + 156, w - 96, 76);
 
@@ -353,27 +372,39 @@ function drawRemittanceLayout(ctx, theme, payload) {
   drawRoundRect(ctx, x + 36, heroY, w - 72, heroH, 34, heroGradient, heroColors.line, 1);
 
   ctx.fillStyle = heroColors.label;
-  ctx.font = font(900, 26);
+  ctx.font = font(900, 24);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = heroColors.label;
-  ctx.font = font(900, 24);
   ctx.fillText(String(payload.primaryLabel || "").toUpperCase(), x + w / 2, heroY + 58);
 
-  ctx.fillStyle = theme.text;
+  ctx.fillStyle = isDark ? heroColors.value : theme.text;
   ctx.font = font(900, 118);
   ctx.textBaseline = "middle";
-  fitText(
+
+  if (isDark) {
+    applyDarkValueGlow(ctx, heroColors.glow, true);
+  }
+
+  fitTextWithOutline(
     ctx,
     payload.primaryRaw ? String(payload.primaryValue || "—") : formatShareNumber(payload.primaryValue),
     x + w / 2,
     heroY + 144,
     w - 150,
-    118
+    118,
+    "center",
+    isDark
+      ? {
+          strokeStyle: heroColors.stroke,
+          strokeWidth: 3,
+        }
+      : {}
   );
 
+  resetTextEffects(ctx);
+
   if (payload.primaryUnit) {
-    ctx.fillStyle = theme.text;
+    ctx.fillStyle = isDark ? heroColors.unit : theme.text;
     ctx.font = font(900, 52);
     ctx.globalAlpha = 0.96;
     fitText(ctx, payload.primaryUnit, x + w / 2, heroY + 250, w - 150, 52);
@@ -417,8 +448,9 @@ function drawRemittanceLayout(ctx, theme, payload) {
       });
       return;
     }
+
     const rawValue = formatShareValue(row);
-    const rawText = `${row?.label || ""} ${rawValue || ""}`;
+    const rawText = String(row?.label || "") + " " + String(rawValue || "");
     const variant = /bcv|referenc/i.test(rawText) ? "reference" : "default";
 
     drawDataRow(ctx, theme, {
@@ -463,7 +495,7 @@ function drawHeroBlock(ctx, theme, config) {
   ctx.font = font(900, 24);
   ctx.fillText(String(title || "").toUpperCase(), x + w / 2, top + 66);
 
-  ctx.fillStyle = theme.text;
+  ctx.fillStyle = isDarkShareTheme(theme) ? "rgba(220, 228, 238, 0.86)" : theme.text;
   ctx.font = font(900, compact ? 50 : 58);
   fitText(ctx, subtitle || "", x + w / 2, top + (compact ? 130 : 145), w - 90, compact ? 50 : 58);
 
@@ -496,35 +528,88 @@ function drawHeroBlock(ctx, theme, config) {
   }
 }
 
+function isDarkShareTheme(theme) {
+  return theme?.bgBottom === "#020817";
+}
+
 function getFlowRoleColors(theme, role) {
+  const isDark = isDarkShareTheme(theme);
+
   if (role === "origin") {
-    return {
-      line: "rgba(34, 197, 94, 0.52)",
-      label: "rgba(16, 185, 129, 0.92)",
-      fillStrong: "rgba(34, 197, 94, 0.16)",
-      fillSoft: "rgba(34, 197, 94, 0.06)",
-    };
+    return isDark
+      ? {
+          line: "rgba(45, 212, 191, 0.55)",
+          label: "rgba(94, 234, 212, 0.98)",
+          value: "rgba(219, 255, 249, 0.94)",
+          unit: "rgba(169, 218, 213, 0.84)",
+          stroke: "rgba(45, 212, 191, 0.50)",
+          fillStrong: "rgba(6, 46, 48, 0.52)",
+          fillSoft: "rgba(6, 19, 30, 0.96)",
+          glow: "rgba(45, 212, 191, 0.24)",
+        }
+      : {
+          line: "rgba(34, 197, 94, 0.52)",
+          label: "rgba(16, 185, 129, 0.92)",
+          value: theme.text,
+          unit: theme.muted,
+          stroke: "transparent",
+          fillStrong: "rgba(34, 197, 94, 0.16)",
+          fillSoft: "rgba(34, 197, 94, 0.06)",
+          glow: "rgba(34, 197, 94, 0.12)",
+        };
   }
 
   if (role === "destination") {
-    return {
-      line: "rgba(244, 63, 94, 0.44)",
-      label: "rgba(225, 82, 112, 0.90)",
-      fillStrong: "rgba(244, 63, 94, 0.12)",
-      fillSoft: "rgba(244, 63, 94, 0.045)",
-    };
+    return isDark
+      ? {
+          line: "rgba(251, 113, 133, 0.52)",
+          label: "rgba(251, 113, 133, 0.98)",
+          value: "rgba(255, 225, 232, 0.94)",
+          unit: "rgba(224, 174, 190, 0.84)",
+          stroke: "rgba(251, 113, 133, 0.50)",
+          fillStrong: "rgba(46, 14, 28, 0.50)",
+          fillSoft: "rgba(9, 18, 30, 0.96)",
+          glow: "rgba(251, 113, 133, 0.24)",
+        }
+      : {
+          line: "rgba(244, 63, 94, 0.44)",
+          label: "rgba(225, 82, 112, 0.90)",
+          value: theme.text,
+          unit: theme.muted,
+          stroke: "transparent",
+          fillStrong: "rgba(244, 63, 94, 0.12)",
+          fillSoft: "rgba(244, 63, 94, 0.045)",
+          glow: "rgba(244, 63, 94, 0.12)",
+        };
   }
 
-  return {
-    line: theme.accentLine,
-    label: theme.accent,
-    fillStrong: alpha(theme.accent, 0.18),
-    fillSoft: alpha(theme.accent, 0.09),
-  };
+  return isDark
+    ? {
+        line: "rgba(45, 212, 191, 0.38)",
+        label: "rgba(94, 234, 212, 0.86)",
+        value: "rgba(225, 238, 248, 0.92)",
+        unit: "rgba(170, 190, 212, 0.78)",
+        stroke: "rgba(45, 212, 191, 0.30)",
+        fillStrong: "rgba(8, 21, 34, 0.96)",
+        fillSoft: "rgba(7, 18, 30, 0.96)",
+        glow: "rgba(45, 212, 191, 0.14)",
+      }
+    : {
+        line: theme.accentLine,
+        label: theme.accent,
+        value: theme.text,
+        unit: theme.muted,
+        stroke: "transparent",
+        fillStrong: alpha(theme.accent, 0.18),
+        fillSoft: alpha(theme.accent, 0.09),
+        glow: alpha(theme.accent, 0.10),
+      };
 }
 
 function drawFlowSideRow(ctx, theme, { x, y, w, h, row, dense }) {
+  const isDark = isDarkShareTheme(theme);
   const colors = getFlowRoleColors(theme, row?.role);
+
   const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
   gradient.addColorStop(0, colors.fillStrong);
   gradient.addColorStop(1, colors.fillSoft);
@@ -549,12 +634,12 @@ function drawFlowSideRow(ctx, theme, { x, y, w, h, row, dense }) {
   const unitSize = dense ? 22 : 25;
 
   const centerY = y + h / 2;
-
   const leftTitleY = centerY - 6;
   const leftCountryY = centerY + 26;
-
   const amountY = centerY - 2;
   const unitY = centerY + 30;
+
+  const countryColor = isDark ? "rgba(162, 176, 196, 0.78)" : theme.muted;
 
   ctx.textBaseline = "middle";
 
@@ -563,29 +648,76 @@ function drawFlowSideRow(ctx, theme, { x, y, w, h, row, dense }) {
   ctx.font = font(900, titleSize);
   fitText(ctx, actionLabel, x + padX, leftTitleY, leftW, titleSize, "left");
 
-  ctx.fillStyle = theme.muted;
+  ctx.fillStyle = countryColor;
   ctx.font = font(800, countrySize);
   fitText(ctx, countryText, x + padX, leftCountryY, leftW, countrySize, "left");
 
   ctx.textAlign = "right";
-  ctx.fillStyle = theme.text;
+  ctx.fillStyle = isDark ? colors.value : theme.text;
   ctx.font = font(900, amountSize);
-  fitText(ctx, amountText, x + w - padX, amountY, rightW, amountSize, "right");
 
-  ctx.fillStyle = theme.muted;
+  if (isDark) {
+    applyDarkValueGlow(ctx, colors.glow, false);
+  }
+
+  fitTextWithOutline(
+    ctx,
+    amountText,
+    x + w - padX,
+    amountY,
+    rightW,
+    amountSize,
+    "right",
+    isDark
+      ? {
+          strokeStyle: colors.stroke,
+          strokeWidth: 2,
+        }
+      : {}
+  );
+
+  resetTextEffects(ctx);
+
+  ctx.fillStyle = isDark ? colors.unit : theme.muted;
   ctx.font = font(800, unitSize);
   fitText(ctx, unitText, x + w - padX, unitY, rightW, unitSize, "right");
 }
 
 function drawSplitMetricRow(ctx, theme, { x, y, w, h, row, dense }) {
+  const isDark = isDarkShareTheme(theme);
   const isReference = row?.variant === "reference";
 
   const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-  gradient.addColorStop(0, isReference ? "rgba(238, 242, 247, 0.98)" : "rgba(218, 244, 255, 0.98)");
-  gradient.addColorStop(1, isReference ? "rgba(248, 250, 252, 0.96)" : "rgba(238, 249, 255, 0.96)");
 
-  const stroke = isReference ? "rgba(148, 163, 184, 0.34)" : "rgba(45, 169, 220, 0.38)";
-  const accentLine = isReference ? "rgba(148, 163, 184, 0.48)" : "rgba(19, 230, 198, 0.55)";
+  if (isDark) {
+    gradient.addColorStop(0, "rgba(8, 21, 34, 0.96)");
+    gradient.addColorStop(1, "rgba(7, 18, 30, 0.96)");
+  } else {
+    gradient.addColorStop(
+      0,
+      isReference ? "rgba(238, 242, 247, 0.98)" : "rgba(218, 244, 255, 0.98)"
+    );
+    gradient.addColorStop(
+      1,
+      isReference ? "rgba(248, 250, 252, 0.96)" : "rgba(238, 249, 255, 0.96)"
+    );
+  }
+
+  const stroke = isDark
+    ? isReference
+      ? "rgba(125, 165, 215, 0.28)"
+      : "rgba(45, 212, 191, 0.28)"
+    : isReference
+      ? "rgba(148, 163, 184, 0.34)"
+      : "rgba(45, 169, 220, 0.38)";
+
+  const accentLine = isDark
+    ? isReference
+      ? "rgba(125, 165, 215, 0.52)"
+      : "rgba(45, 212, 191, 0.52)"
+    : isReference
+      ? "rgba(148, 163, 184, 0.48)"
+      : "rgba(19, 230, 198, 0.55)";
 
   drawRoundRect(ctx, x, y, w, h, 24, gradient, stroke, 1);
   drawRoundRect(ctx, x + 16, y + 20, 6, h - 40, 4, accentLine, null, 0);
@@ -605,48 +737,113 @@ function drawSplitMetricRow(ctx, theme, { x, y, w, h, row, dense }) {
   const labelWidth = isReference ? w * 0.42 : w * 0.48;
   const valueWidth = isReference ? w * 0.50 : w * 0.44;
 
+  const labelColor = isDark
+    ? isReference
+      ? "rgba(170, 188, 214, 0.76)"
+      : "rgba(94, 234, 212, 0.80)"
+    : theme.muted;
+
+  const valueColor = isDark ? "rgba(225, 238, 248, 0.92)" : theme.text;
+  const unitColor = isDark ? "rgba(176, 190, 211, 0.78)" : theme.muted;
+  const outlineColor = isDark
+    ? isReference
+      ? "rgba(125, 165, 215, 0.26)"
+      : "rgba(45, 212, 191, 0.26)"
+    : "transparent";
+
   ctx.textBaseline = "middle";
 
   ctx.textAlign = "left";
-  ctx.fillStyle = theme.muted;
+  ctx.fillStyle = labelColor;
   ctx.font = font(800, labelSize);
   fitText(ctx, labelText, x + sidePad + labelOffset, centerY, labelWidth, labelSize, "left");
 
   ctx.textAlign = "right";
-  ctx.fillStyle = theme.text;
+  ctx.fillStyle = valueColor;
   ctx.font = font(900, valueSize);
-  fitText(ctx, valueText, x + w - sidePad, centerY - (unitText ? 14 : 0), valueWidth, valueSize, "right");
+
+  if (isDark) {
+    applyDarkValueGlow(ctx, outlineColor, false);
+  }
+
+  fitTextWithOutline(
+    ctx,
+    valueText,
+    x + w - sidePad,
+    centerY - (unitText ? 14 : 0),
+    valueWidth,
+    valueSize,
+    "right",
+    isDark
+      ? {
+          strokeStyle: outlineColor,
+          strokeWidth: 1.6,
+        }
+      : {}
+  );
+
+  resetTextEffects(ctx);
 
   if (unitText) {
-    ctx.fillStyle = theme.muted;
+    ctx.fillStyle = unitColor;
     ctx.font = font(800, unitSize);
     fitText(ctx, unitText, x + w - sidePad, centerY + 22, valueWidth, unitSize, "right");
   }
 }
+
 function drawDataRow(
   ctx,
   theme,
   { x, y, w, h, label, value, dense, variant = "default", highlighted = false }
 ) {
+  const isDark = isDarkShareTheme(theme);
+  const isReference = variant === "reference";
+
   let fill = theme.row;
   let stroke = theme.rowBorder;
   let accentLine = null;
 
   if (variant === "default" && !highlighted) {
     const neutralGradient = ctx.createLinearGradient(x, y, x + w, y + h);
-    neutralGradient.addColorStop(0, "rgba(218, 244, 255, 0.98)");
-    neutralGradient.addColorStop(1, "rgba(238, 249, 255, 0.96)");
+
+    if (isDark) {
+      neutralGradient.addColorStop(0, "rgba(8, 21, 34, 0.96)");
+      neutralGradient.addColorStop(1, "rgba(7, 18, 30, 0.96)");
+      stroke = "rgba(45, 212, 191, 0.25)";
+      accentLine = "rgba(45, 212, 191, 0.50)";
+    } else {
+      neutralGradient.addColorStop(0, "rgba(218, 244, 255, 0.98)");
+      neutralGradient.addColorStop(1, "rgba(238, 249, 255, 0.96)");
+      stroke = "rgba(45, 169, 220, 0.38)";
+      accentLine = "rgba(19, 230, 198, 0.55)";
+    }
+
     fill = neutralGradient;
-    stroke = "rgba(45, 169, 220, 0.38)";
-    accentLine = "rgba(19, 230, 198, 0.55)";
+  }
+
+  if (variant === "reference" && !highlighted && isDark) {
+    const referenceGradient = ctx.createLinearGradient(x, y, x + w, y + h);
+    referenceGradient.addColorStop(0, "rgba(19, 31, 49, 0.96)");
+    referenceGradient.addColorStop(1, "rgba(10, 22, 37, 0.98)");
+    fill = referenceGradient;
+    stroke = "rgba(125, 165, 215, 0.26)";
+    accentLine = "rgba(125, 165, 215, 0.50)";
   }
 
   if (highlighted) {
     const rowGradient = ctx.createLinearGradient(x, y, x + w, y + h);
-    rowGradient.addColorStop(0, alpha(theme.accent, 0.18));
-    rowGradient.addColorStop(1, alpha(theme.accent, 0.08));
+
+    if (isDark) {
+      rowGradient.addColorStop(0, "rgba(20, 184, 166, 0.11)");
+      rowGradient.addColorStop(1, "rgba(8, 47, 73, 0.05)");
+      stroke = "rgba(45, 212, 191, 0.28)";
+    } else {
+      rowGradient.addColorStop(0, alpha(theme.accent, 0.18));
+      rowGradient.addColorStop(1, alpha(theme.accent, 0.08));
+      stroke = theme.accentLine;
+    }
+
     fill = rowGradient;
-    stroke = theme.accentLine;
   }
 
   drawRoundRect(ctx, x, y, w, h, 24, fill, stroke, 1);
@@ -656,8 +853,6 @@ function drawDataRow(
   }
 
   ctx.textBaseline = "middle";
-
-  const isReference = variant === "reference";
 
   const labelSize = isReference
     ? (highlighted ? 24 : dense ? 22 : 26)
@@ -672,15 +867,51 @@ function drawDataRow(
   const labelWidth = isReference ? w * 0.40 : w * 0.44;
   const valueWidth = isReference ? w * 0.58 : w * 0.50;
 
-  ctx.fillStyle = highlighted ? theme.accent : theme.muted;
+  const labelColor = isDark
+    ? isReference
+      ? "rgba(170, 188, 214, 0.76)"
+      : "rgba(94, 234, 212, 0.78)"
+    : highlighted
+      ? theme.accent
+      : theme.muted;
+
+  const valueColor = isDark ? "rgba(225, 238, 248, 0.92)" : theme.text;
+  const outlineColor = isDark
+    ? isReference
+      ? "rgba(125, 165, 215, 0.24)"
+      : "rgba(45, 212, 191, 0.24)"
+    : "transparent";
+
+  ctx.fillStyle = labelColor;
   ctx.font = font(800, labelSize);
   ctx.textAlign = "left";
   fitText(ctx, label || "", x + sidePad + labelOffset, y + h / 2, labelWidth, labelSize, "left");
 
-  ctx.fillStyle = theme.text;
+  ctx.fillStyle = valueColor;
   ctx.font = font(900, valueSize);
   ctx.textAlign = "right";
-  fitText(ctx, value || "—", x + w - sidePad, y + h / 2, valueWidth, valueSize, "right");
+
+  if (isDark) {
+    applyDarkValueGlow(ctx, outlineColor, false);
+  }
+
+  fitTextWithOutline(
+    ctx,
+    value || "—",
+    x + w - sidePad,
+    y + h / 2,
+    valueWidth,
+    valueSize,
+    "right",
+    isDark
+      ? {
+          strokeStyle: outlineColor,
+          strokeWidth: 1.6,
+        }
+      : {}
+  );
+
+  resetTextEffects(ctx);
 }
 
 function drawNotice(ctx, theme, x, y, w, h, text) {
@@ -842,6 +1073,40 @@ function fitText(ctx, text, x, y, maxWidth, startSize, align = "center") {
     ctx.font = ctx.font.replace(/\d+px/, `${size}px`);
     if (ctx.measureText(value).width <= maxWidth) break;
     size -= 1;
+  }
+
+  ctx.fillText(value, x, y);
+}
+
+
+function fitTextWithOutline(ctx, text, x, y, maxWidth, startSize, align = "center", options = {}) {
+  const value = String(text ?? "");
+  let size = startSize;
+
+  ctx.textAlign = align;
+
+  while (size > 10) {
+    ctx.font = ctx.font.replace(/\d+px/, size + "px");
+    if (ctx.measureText(value).width <= maxWidth) break;
+    size -= 1;
+  }
+
+  const strokeStyle = options.strokeStyle || null;
+  const strokeWidth = Number(options.strokeWidth || 0);
+
+  if (strokeStyle && strokeWidth > 0) {
+    const previousStrokeStyle = ctx.strokeStyle;
+    const previousLineWidth = ctx.lineWidth;
+    const previousLineJoin = ctx.lineJoin;
+
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineJoin = "round";
+    ctx.strokeText(value, x, y);
+
+    ctx.strokeStyle = previousStrokeStyle;
+    ctx.lineWidth = previousLineWidth;
+    ctx.lineJoin = previousLineJoin;
   }
 
   ctx.fillText(value, x, y);
