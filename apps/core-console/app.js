@@ -1,11 +1,6 @@
 const dhemkaState = {
   activeSection: "dashboard",
-
-  activeTenant: {
-    product: "Remit",
-    name: "ByteTransfer",
-    status: "operational",
-  },
+  activeTenantId: "bytetransfer",
 };
 
 function setActiveSidebarItem(section) {
@@ -53,6 +48,52 @@ function renderSectionCards(cards = []) {
     .join("");
 }
 
+function getActiveTenant() {
+  return (window.coreTenants || []).find((tenant) => tenant.id === dhemkaState.activeTenantId) || null;
+}
+
+function renderActiveTenantCard() {
+  const container = document.getElementById("active-tenant-card");
+  if (!container) return;
+
+  const tenant = getActiveTenant();
+
+  if (!tenant) {
+    container.innerHTML = `
+      <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+        <p class="text-sm text-slate-400">
+          No active tenant selected.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  const dotClass = tenant.status === "operational" ? "bg-emerald-400" : "bg-amber-400";
+
+  container.innerHTML = `
+    <div class="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-cyan-300/70">
+            ${tenant.product}
+          </p>
+
+          <h2 class="mt-2 text-2xl font-black">
+            ${tenant.name}
+          </h2>
+        </div>
+
+        <div class="status-dot h-3 w-3 rounded-full ${dotClass}"></div>
+      </div>
+
+      <p class="mt-3 text-sm text-slate-300">
+        ${tenant.description}
+      </p>
+    </div>
+  `;
+}
+
 function bindSidebarNavigation() {
   document.querySelectorAll("[data-section]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -65,6 +106,7 @@ function bindSidebarNavigation() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  renderActiveTenantCard();
   bindSidebarNavigation();
 
   setActiveSidebarItem(dhemkaState.activeSection);

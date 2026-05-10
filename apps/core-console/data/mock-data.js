@@ -114,3 +114,22 @@ window.coreSections = {
     ],
   },
 };
+
+window.coreTenants = [
+  {
+    id: "bytetransfer",
+    product: "Remit",
+    name: "ByteTransfer",
+    status: "operational",
+    statusLabel: "Operational",
+    description: "First operational tenant running inside the Remit infrastructure.",
+  },
+  {
+    id: "demo-remit",
+    product: "Remit",
+    name: "Demo Remit",
+    status: "provisioning",
+    statusLabel: "Provisioning",
+    description: "Example tenant slot prepared for future onboarding.",
+  },
+];
