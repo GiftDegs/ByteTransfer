@@ -22,7 +22,14 @@ import {
   renderQuoteErrorPanel,
   renderQuoteInfoPanel,
 } from "./quoteComponents.js";
-import { renderQuoteShell } from "./quoteShell.js";
+
+import {
+  animateQuoteThemeSwitch,
+  animateQuoteTopbarExit,
+  renderQuoteShell,
+  renderQuoteShellFooter,
+  renderQuoteTopbar,
+} from "./quoteShell.js";
 
 import { paisesDisponibles } from "../core/config.js";
 import {
@@ -53,6 +60,9 @@ import {
   buildRemittanceSharePayload,
 } from "../core/sharePayload.js";
 import { sharePremiumPayload } from "./sharing.js";
+import { getPublicOperationStatus } from "../state/publicOperation.js";
+
+  let flowTopbarControlsEntered = false;
 
 export function renderQuoteScreen(container) {
   if (!container) return;
@@ -60,7 +70,9 @@ export function renderQuoteScreen(container) {
   const session = getQuoteSession();
 
   if (!session.module || session.step === "home") {
+    flowTopbarControlsEntered = false;
     renderQuoteHub(container, () => renderQuoteScreen(container));
+    bindPublicOperationRestrictionUi(container);
     return;
   }
 
@@ -87,166 +99,615 @@ export function renderQuoteScreen(container) {
 // =====================================================
 
 function renderScreenShell({ eyebrow, title, description, body }) {
-  const themeClasses = getQuoteThemeClasses();
+  const animateControls = !flowTopbarControlsEntered;
+  flowTopbarControlsEntered = true;
 
   return renderQuoteShell({
     eyebrow,
     title,
     description,
-    body,
-    topbar: `
-      <div class="shrink-0 -mx-1 mb-4 flex items-center justify-between gap-2 rounded-2xl border p-1 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 ${themeClasses.topbar}">
-        <button
-          type="button"
-          data-quote-back="1"
-          class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
-        >
-          ← Volver
-        </button>
-
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            data-quote-theme-toggle="1"
-            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition ${themeClasses.themeButton}"
-          >
-            ${themeClasses.isLight ? "Modo oscuro" : "Modo claro"}
-          </button>
-
-          <button
-            type="button"
-            data-quote-home="1"
-            class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${themeClasses.topbarButton}"
-          >
-            Inicio
-          </button>
-        </div>
-      </div>
+    body: `
+      ${renderPublicOperationRestrictionNotice()}
+      ${body || ""}
     `,
+    topbar: renderQuoteTopbar({
+      animateControls,
+    }),
+    footer: renderQuoteShellFooter({
+      showHome: true,
+      showBack: true,
+      animateControls,
+    }),
   });
 }
-
 function bindCommonNavigation(container) {
+  bindPublicOperationRestrictionUi(container);
 
-  container
-    .querySelector("[data-quote-theme-toggle]")
-    ?.addEventListener("click", () => {
+  const themeToggle = container.querySelector("[data-quote-theme-toggle]");
+
+  themeToggle?.addEventListener("click", () => {
+    animateQuoteThemeSwitch(themeToggle, () => {
       toggleQuoteTheme();
       renderQuoteScreen(container);
     });
+  });
 
-  container
-    .querySelector("[data-quote-home]")
-    ?.addEventListener("click", () => {
+  const goHomeFromTopbar = (trigger) => {
+    animateQuoteTopbarExit(trigger, () => {
+      flowTopbarControlsEntered = false;
       resetQuoteSession();
       renderQuoteScreen(container);
     });
+  };
 
-  container
-    .querySelector("[data-quote-back]")
-    ?.addEventListener("click", () => {
-      const session = getQuoteSession();
+  const homeButton = container.querySelector("[data-quote-home]");
 
-      if (session.step === "reference_type") {
-        resetQuoteSession();
+  homeButton?.addEventListener("click", (event) => {
+    goHomeFromTopbar(event.currentTarget);
+  });
+
+  const backButton = container.querySelector("[data-quote-back]");
+
+  backButton?.addEventListener("click", (event) => {
+    const session = getQuoteSession();
+    const trigger = event.currentTarget;
+
+    if (session.step === "reference_type") {
+      goHomeFromTopbar(trigger);
+      return;
+    }
+
+    if (session.module === QUOTE_MODULES.REFERENCES) {
+      startQuoteModule(QUOTE_MODULES.REFERENCES);
+      renderQuoteScreen(container);
+      return;
+    }
+
+    if (session.module === QUOTE_MODULES.RATE) {
+      if (session.step === "destination") {
+        startQuoteModule(QUOTE_MODULES.RATE);
         renderQuoteScreen(container);
         return;
       }
 
-      if (session.module === QUOTE_MODULES.REFERENCES) {
-        startQuoteModule(QUOTE_MODULES.REFERENCES);
+      if (session.step === "rate_result") {
+        setQuoteSession({
+          destino: null,
+          step: "destination",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
+    }
+
+    if (session.module === QUOTE_MODULES.REMITTANCE) {
+      if (session.step === "destination") {
+        startQuoteModule(QUOTE_MODULES.REMITTANCE);
         renderQuoteScreen(container);
         return;
       }
 
-      if (session.module === QUOTE_MODULES.RATE) {
-        if (session.step === "destination") {
-          startQuoteModule(QUOTE_MODULES.RATE);
-          renderQuoteScreen(container);
-          return;
-        }
-
-        if (session.step === "rate_result") {
-          setQuoteSession({
-            destino: null,
-            step: "destination",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
+      if (session.step === "remittance_mode") {
+        setQuoteSession({
+          destino: null,
+          remittanceMode: null,
+          step: "destination",
+        });
+        renderQuoteScreen(container);
+        return;
       }
 
-      if (session.module === QUOTE_MODULES.REMITTANCE) {
-        if (session.step === "destination") {
-          startQuoteModule(QUOTE_MODULES.REMITTANCE);
-          renderQuoteScreen(container);
-          return;
-        }
+      if (session.step === "bcv_reference") {
+        setQuoteSession({
+          remittanceMode: null,
+          bcvReferenceType: null,
+          customBcvRate: null,
+          step: "remittance_mode",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
 
-        if (session.step === "remittance_mode") {
-          setQuoteSession({
-            destino: null,
-            remittanceMode: null,
-            step: "destination",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
+      if (session.step === "custom_bcv_rate") {
+        setQuoteSession({
+          bcvReferenceType: null,
+          customBcvRate: null,
+          step: "bcv_reference",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
 
-        if (session.step === "bcv_reference") {
+      if (session.step === "amount") {
+        if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
           setQuoteSession({
-            remittanceMode: null,
-            bcvReferenceType: null,
-            customBcvRate: null,
-            step: "remittance_mode",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
-
-        if (session.step === "custom_bcv_rate") {
-          setQuoteSession({
-            bcvReferenceType: null,
-            customBcvRate: null,
+            amount: null,
             step: "bcv_reference",
           });
           renderQuoteScreen(container);
           return;
         }
 
-        if (session.step === "amount") {
-          if (session.remittanceMode === REMITTANCE_MODES.RECEIVE_BCV_USD) {
-            setQuoteSession({
-              amount: null,
-              step: "bcv_reference",
-            });
-            renderQuoteScreen(container);
-            return;
-          }
-
-          setQuoteSession({
-            remittanceMode: null,
-            amount: null,
-            step: "remittance_mode",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
-
-        if (session.step === "result") {
-          setQuoteSession({
-            amount: null,
-            result: null,
-            step: "amount",
-          });
-          renderQuoteScreen(container);
-          return;
-        }
+        setQuoteSession({
+          remittanceMode: null,
+          amount: null,
+          step: "remittance_mode",
+        });
+        renderQuoteScreen(container);
+        return;
       }
 
-      resetQuoteSession();
-      renderQuoteScreen(container);
+      if (session.step === "result") {
+        setQuoteSession({
+          amount: null,
+          result: null,
+          step: "amount",
+        });
+        renderQuoteScreen(container);
+        return;
+      }
+    }
+
+    goHomeFromTopbar(trigger);
+  });
+}
+
+function getPublicOperationRestrictionStatus() {
+  const status = getPublicOperationStatus();
+  const restrictedStatuses = ["opening_soon", "closed_schedule", "closed_manual"];
+
+  const isRestricted = Boolean(
+    status?.isReferenceOnly ||
+      status?.canWhatsapp === false ||
+      status?.canShare === false ||
+      restrictedStatuses.includes(status?.status),
+  );
+
+  return isRestricted ? status : null;
+}
+
+function renderPublicOperationRestrictionNotice() {
+  const status = getPublicOperationRestrictionStatus();
+
+  if (!status) return "";
+
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+  const isManual = status?.status === "closed_manual";
+
+  const wrapperClass = isManual
+    ? isLight
+      ? "border-rose-300/40 bg-rose-50/55 text-rose-950"
+      : "border-rose-400/16 bg-rose-500/[0.06] text-rose-50"
+    : isLight
+      ? "border-amber-300/45 bg-amber-50/60 text-amber-950"
+      : "border-amber-300/16 bg-amber-400/[0.06] text-amber-50";
+
+  const label = isManual ? "Servicio pausado" : "Cotización referencial";
+  const detail = isManual
+    ? status?.detail || "Las cotizaciones oficiales están pausadas temporalmente."
+    : "Puedes consultar valores, pero fuera del horario operativo no representan una cotización oficial.";
+
+  return `
+    <div class="mb-4 rounded-2xl border px-4 py-3 text-center text-xs leading-relaxed shadow-sm backdrop-blur-xl ${wrapperClass}">
+      <div class="font-black uppercase tracking-[0.18em]">
+        ${escapeOperationHtml(label)}
+      </div>
+      <div class="mx-auto mt-1 max-w-md font-semibold opacity-80">
+        ${escapeOperationHtml(detail)}
+      </div>
+    </div>
+  `;
+}
+
+function bindPublicOperationRestrictionUi(container) {
+  const status = getPublicOperationRestrictionStatus();
+
+  if (!status) {
+    clearPublicOperationModalSessionMemory();
+    return;
+  }
+
+  applyPublicOperationShareLocks(container, status);
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  window.setTimeout(() => {
+    showPublicOperationRestrictionModal(status);
+  }, 30);
+}
+
+function applyPublicOperationShareLocks(container, status = getPublicOperationRestrictionStatus()) {
+  if (!container || !status) return;
+
+  const buttons = container.querySelectorAll(
+    "[data-reference-whatsapp], [data-rate-whatsapp], [data-remittance-whatsapp]",
+  );
+
+  buttons.forEach((button) => {
+    if (!button || button.dataset.publicOperationLocked === "1") return;
+
+    button.dataset.publicOperationLocked = "1";
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+    button.setAttribute("title", getPublicOperationBlockedActionText(status));
+
+    button.className = getPublicOperationBlockedActionButtonClass();
+    button.innerHTML = `
+      <span class="relative flex items-center justify-center gap-2">
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-current opacity-65"></span>
+        ${escapeOperationHtml(getPublicOperationBlockedActionLabel(status))}
+      </span>
+    `;
+
+    const notice = document.createElement("div");
+    notice.dataset.publicOperationShareNotice = "1";
+    notice.className = getPublicOperationBlockedActionNoticeClass();
+    notice.innerHTML = escapeOperationHtml(getPublicOperationBlockedActionText(status));
+
+    button.insertAdjacentElement("afterend", notice);
+  });
+}
+
+function getPublicOperationBlockedActionLabel(status) {
+  if (status?.status === "closed_manual") {
+    return "Compartir pausado";
+  }
+
+  if (status?.status === "opening_soon") {
+    return "Disponible al abrir";
+  }
+
+  return "Fuera de horario";
+}
+
+function getPublicOperationBlockedActionText(status) {
+  if (status?.status === "closed_manual") {
+    return "WhatsApp e imagen compartible estarán disponibles cuando el servicio vuelva a estar activo.";
+  }
+
+  if (status?.status === "opening_soon") {
+    return "Puedes consultar el resultado, pero compartir por WhatsApp se habilita al abrir.";
+  }
+
+  return "Puedes consultar valores referenciales, pero WhatsApp e imagen se habilitan en horario operativo.";
+}
+
+function getPublicOperationBlockedActionButtonClass() {
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+
+  return [
+    "mt-5 inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl border px-4 py-3.5 text-sm font-black uppercase tracking-[0.13em]",
+    "opacity-85 shadow-sm transition duration-200",
+    isLight
+      ? "border-slate-200 bg-slate-100/80 text-slate-500"
+      : "border-white/10 bg-white/[0.045] text-slate-300/70",
+  ].join(" ");
+}
+
+function getPublicOperationBlockedActionNoticeClass() {
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+
+  return [
+    "mx-auto mt-2 max-w-sm rounded-2xl border px-3 py-2 text-center text-[11px] font-semibold leading-relaxed",
+    isLight
+      ? "border-slate-200/80 bg-white/55 text-slate-500"
+      : "border-white/10 bg-white/[0.035] text-slate-300/62",
+  ].join(" ");
+}
+function clearPublicOperationModalSessionMemory() {
+  if (typeof window === "undefined") return;
+
+  try {
+    const prefix = "bt-public-operation-modal:";
+
+    Object.keys(window.sessionStorage || {}).forEach((key) => {
+      if (key.startsWith(prefix)) {
+        window.sessionStorage.removeItem(key);
+      }
     });
+  } catch {}
+}
+function showPublicOperationRestrictionModal(status) {
+  if (document.querySelector("[data-public-operation-modal]")) return;
+
+  const fingerprint = [
+    status?.status || "",
+    status?.detail || "",
+    status?.phrase || "",
+  ].join("|");
+
+  const storageKey = `bt-public-operation-modal:${fingerprint}`;
+
+  try {
+    if (window.sessionStorage?.getItem(storageKey) === "1") return;
+    window.sessionStorage?.setItem(storageKey, "1");
+  } catch {}
+
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+  const isManual = status?.status === "closed_manual";
+
+  const cleanDetail = String(status?.detail || "").trim();
+  const cleanPhrase = String(status?.phrase || "").trim();
+
+  const copy = isManual
+    ? {
+        eyebrow: "Servicio pausado",
+        title: "Pausado temporalmente",
+        lead: "Las cotizaciones oficiales están detenidas por ahora.",
+        detail:
+          cleanDetail && cleanDetail !== cleanPhrase
+            ? cleanDetail
+            : "Confirma disponibilidad con el equipo antes de operar.",
+        tagA: "Cotización no oficial",
+        tagB: "Confirmación requerida",
+      }
+    : {
+        eyebrow: "Horario finalizado",
+        title: "Fuera de horario",
+        lead: "Puedes revisar tasas y preparar una cotización de consulta.",
+        detail:
+          cleanDetail && cleanDetail !== cleanPhrase
+            ? cleanDetail
+            : "Los valores pueden variar hasta la próxima apertura.",
+        tagA: "Consulta permitida",
+        tagB: "Resultado referencial",
+      };
+
+  const tone = isManual
+    ? {
+        accent: "#f43f5e",
+        accentSoft: "rgba(244,63,94,0.12)",
+        accentBorder: "rgba(244,63,94,0.24)",
+        accentTextLight: "text-rose-700",
+        accentTextDark: "text-rose-200",
+        ringLight: "rgba(244,63,94,0.22)",
+        ringDark: "rgba(244,63,94,0.18)",
+        icon: `
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6">
+            <path d="M12 8v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M12 16.8h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M10.45 4.15c.69-1.2 2.41-1.2 3.1 0l8.05 13.94c.69 1.2-.17 2.7-1.55 2.7H3.95c-1.38 0-2.24-1.5-1.55-2.7l8.05-13.94Z" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        `,
+      }
+    : {
+        accent: "#f59e0b",
+        accentSoft: "rgba(245,158,11,0.12)",
+        accentBorder: "rgba(245,158,11,0.26)",
+        accentTextLight: "text-amber-700",
+        accentTextDark: "text-amber-200",
+        ringLight: "rgba(245,158,11,0.22)",
+        ringDark: "rgba(245,158,11,0.17)",
+        icon: `
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6">
+            <circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.9"/>
+            <path d="M12 7.4v5.1l3.2 1.9" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `,
+      };
+
+  const backdropClass = isLight
+    ? "bg-slate-950/24"
+    : "bg-black/60";
+
+  const cardClass = isLight
+    ? "border-white/80 bg-white/92 text-slate-950 shadow-[0_32px_90px_rgba(15,23,42,0.24)]"
+    : "border-white/10 bg-[#07111f]/94 text-white shadow-[0_32px_90px_rgba(0,0,0,0.58)]";
+
+  const mutedClass = isLight ? "text-slate-600" : "text-slate-300/78";
+  const subtlePanelClass = isLight
+    ? "border-slate-200/80 bg-slate-50/70 text-slate-700"
+    : "border-white/10 bg-white/[0.045] text-slate-200/82";
+
+  const accentTextClass = isLight ? tone.accentTextLight : tone.accentTextDark;
+  const previousBodyOverflow = document.body.style.overflow;
+
+  const modalHtml = `
+    <style data-public-operation-modal-style="1">
+      @keyframes btModalGlowPulse {
+        0%, 100% { transform: scale(1); opacity: .72; }
+        50% { transform: scale(1.08); opacity: 1; }
+      }
+
+      @keyframes btModalButtonSheen {
+        0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+        22% { opacity: .45; }
+        48%, 100% { transform: translateX(165%) skewX(-18deg); opacity: 0; }
+      }
+
+      [data-public-operation-modal] {
+        opacity: 0;
+        transition: opacity 260ms cubic-bezier(.22,1,.36,1);
+      }
+
+      [data-public-operation-modal][data-state="open"] {
+        opacity: 1;
+      }
+
+      [data-public-operation-modal][data-state="closing"] {
+        opacity: 0;
+      }
+
+      .bt-op-modal-card {
+        opacity: 0;
+        transform: translateY(18px) scale(.955);
+        filter: blur(5px);
+        transition:
+          opacity 320ms cubic-bezier(.22,1,.36,1),
+          transform 320ms cubic-bezier(.22,1,.36,1),
+          filter 320ms cubic-bezier(.22,1,.36,1);
+      }
+
+      [data-public-operation-modal][data-state="open"] .bt-op-modal-card {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+
+      [data-public-operation-modal][data-state="closing"] .bt-op-modal-card {
+        opacity: 0;
+        transform: translateY(12px) scale(.975);
+        filter: blur(3px);
+      }
+
+      .bt-op-modal-orb {
+        animation: btModalGlowPulse 2.8s ease-in-out infinite;
+      }
+
+      .bt-op-modal-button::before {
+        content: "";
+        position: absolute;
+        inset: -20%;
+        width: 46%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.58), transparent);
+        animation: btModalButtonSheen 3.4s ease-in-out infinite;
+      }
+
+      .bt-op-modal-button:disabled {
+        opacity: .78;
+        transform: scale(.99);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        [data-public-operation-modal],
+        .bt-op-modal-card,
+        .bt-op-modal-orb,
+        .bt-op-modal-button::before {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+
+    <div
+      data-public-operation-modal="1"
+      data-state="entering"
+      class="fixed inset-0 z-[9998] grid place-items-center px-4 py-6 ${backdropClass} backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="public-operation-modal-title"
+    >
+      <div class="bt-op-modal-card relative w-full max-w-md overflow-hidden rounded-[2rem] border p-5 backdrop-blur-2xl ${cardClass}">
+        <div
+          class="pointer-events-none absolute -top-24 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full blur-3xl"
+          style="background: ${isLight ? tone.ringLight : tone.ringDark};"
+        ></div>
+
+        <div
+          class="pointer-events-none absolute inset-x-10 top-0 h-px"
+          style="background: linear-gradient(90deg, transparent, ${tone.accent}, transparent); opacity: .42;"
+        ></div>
+
+        <div class="relative text-center">
+          <div class="relative mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border ${accentTextClass}"
+            style="background: ${tone.accentSoft}; border-color: ${tone.accentBorder};"
+          >
+            <div
+              class="bt-op-modal-orb absolute inset-[-7px] rounded-[1.35rem]"
+              style="border: 1px solid ${tone.accentBorder};"
+            ></div>
+            ${tone.icon}
+          </div>
+
+          <div
+            class="mx-auto inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${accentTextClass}"
+            style="background: ${tone.accentSoft}; border-color: ${tone.accentBorder};"
+          >
+            ${escapeOperationHtml(copy.eyebrow)}
+          </div>
+
+          <h3 id="public-operation-modal-title" class="mx-auto mt-4 max-w-[18rem] text-2xl font-black leading-tight tracking-tight sm:text-3xl">
+            ${escapeOperationHtml(copy.title)}
+          </h3>
+
+          <p class="mx-auto mt-3 max-w-sm text-sm font-semibold leading-relaxed ${mutedClass}">
+            ${escapeOperationHtml(copy.lead)}
+          </p>
+
+          <div class="mt-5 grid grid-cols-2 gap-2 text-[10px] font-black uppercase tracking-[0.12em]">
+            <div class="rounded-2xl border px-3 py-2 ${subtlePanelClass}">
+              ${escapeOperationHtml(copy.tagA)}
+            </div>
+            <div class="rounded-2xl border px-3 py-2 ${subtlePanelClass}">
+              ${escapeOperationHtml(copy.tagB)}
+            </div>
+          </div>
+
+          <div class="mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold leading-relaxed ${subtlePanelClass}">
+            ${escapeOperationHtml(copy.detail)}
+          </div>
+
+          <button
+            type="button"
+            data-public-operation-modal-close="1"
+            class="bt-op-modal-button relative mt-5 inline-flex w-full items-center justify-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#20decf,#12c7ba_48%,#15ead9)] px-4 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-[#042321] shadow-[0_18px_44px_rgba(18,199,186,0.30)] transition duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985] focus:outline-none focus:ring-4 focus:ring-brandTeal/25"
+          >
+            <span class="relative">Entendido, continuar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.style.overflow = "hidden";
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  const modal = document.querySelector("[data-public-operation-modal]");
+  const closeButton = modal?.querySelector("[data-public-operation-modal-close]");
+
+  let closing = false;
+
+  const closeModal = () => {
+    if (!modal || closing) return;
+
+    closing = true;
+
+    if (closeButton) {
+      closeButton.disabled = true;
+      closeButton.innerHTML = '<span class="relative">Continuar</span>';
+    }
+
+    modal.dataset.state = "closing";
+
+    window.setTimeout(() => {
+      modal.remove();
+      document.querySelector("[data-public-operation-modal-style]")?.remove();
+      document.body.style.overflow = previousBodyOverflow;
+      document.removeEventListener("keydown", handleKeydown);
+    }, 260);
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") closeModal();
+  };
+
+  closeButton?.addEventListener("click", closeModal);
+
+  modal?.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
+
+  document.addEventListener("keydown", handleKeydown);
+
+  window.requestAnimationFrame(() => {
+    modal.dataset.state = "open";
+  });
+
+  window.setTimeout(() => {
+    closeButton?.focus?.();
+  }, 220);
+}
+
+function escapeOperationHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // =====================================================
@@ -424,7 +885,7 @@ async function renderReferenceResultScreen(container, session) {
 
     const formattedDate =
       fecha && !Number.isNaN(fecha.getTime())
-        ? fecha.toLocaleString("es-AR")
+        ? formatVenezuelaDateTime(fecha)
         : "Fecha no disponible";
 
     container.innerHTML = renderScreenShell({
@@ -574,7 +1035,7 @@ async function renderRateResultScreen(container, session) {
     const tasaFmt = formatearTasa(tasaVisible);
     const formattedDate =
       fecha && !Number.isNaN(fecha.getTime())
-        ? fecha.toLocaleString("es-AR")
+        ? formatVenezuelaDateTime(fecha)
         : "Fecha no disponible";
 
     container.innerHTML = renderScreenShell({
@@ -1144,7 +1605,7 @@ function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
     "Calcularemos el equivalente en bolívares y cuánto debe enviar.",
   label: "Monto en dólares",
   unit: "dólares",
-  help: `Referencia seleccionada: ${refLabel}. Ingresa el monto en dólares que el cliente quiere recibir.`,
+  help: "Ingresa el monto en dólares que el cliente quiere recibir.",
   validHelp:
     "Listo. Calcularemos el equivalente en bolívares y cuánto debe enviar.",
   extraHtml: `
@@ -1153,8 +1614,13 @@ function getAmountScreenConfig(session, { origenCurrency, destinoCurrency }) {
         Referencia BCV
         </div>
         <div class="mt-2 text-lg font-black ${themeClasses.valueNumber}">
-        ${refLabel}
-        </div>
+  ${
+    session.bcvReferenceType === BCV_REFERENCE_TYPES.CUSTOM &&
+    Number.isFinite(Number(session.customBcvRate))
+      ? `Precio personalizado · 1 USD = ${formatNumber(session.customBcvRate)} bolívares`
+      : refLabel
+  }
+</div>
     </div>
    `,
     };
@@ -1226,7 +1692,7 @@ async function renderRemittanceResultScreen(container, session) {
     const fecha = data?.fecha ? new Date(data.fecha) : null;
     const formattedDate =
       fecha && !Number.isNaN(fecha.getTime())
-        ? fecha.toLocaleString("es-AR")
+        ? formatVenezuelaDateTime(fecha)
         : "Fecha no disponible";
 
     const amount = Number(session.amount);
@@ -1326,6 +1792,9 @@ async function renderRemittanceResultScreen(container, session) {
         tasaVisible: tasaOperativa.value,
         fecha: formattedDate,
         bcvReference: getBcvReferenceLabel(session.bcvReferenceType),
+        bcvReferenceType: session.bcvReferenceType,
+        bcvReferenceIsCustom:
+          session.bcvReferenceType === BCV_REFERENCE_TYPES.CUSTOM,
         bcvRate,
         usdDeseados: amount,
         vesObjetivo,
@@ -1448,12 +1917,19 @@ function renderRemittanceResultBody(result) {
           ${renderResultLine("Debe enviar", result.debeEnviar.amount, result.debeEnviar.currencyLabel, true)}
         </div>
 
-        <div class="mt-4 rounded-2xl border ${themeClasses.metaBox} px-4 py-3 text-sm ${themeClasses.metaText}">
-  Referencia usada:
-  <span class="font-bold ${themeClasses.valueNumber}">
-    ${result.bcvReference}
-  </span>
-  · ${formatNumber(result.bcvRate)} bolívares
+        <div class="mt-4 rounded-2xl border ${
+  result.bcvReferenceIsCustom
+    ? "border-amber-400/25 bg-amber-500/10"
+    : themeClasses.metaBox
+} px-4 py-3 text-sm ${themeClasses.metaText}">
+  <div class="text-sm leading-relaxed text-center">
+    <span class="font-semibold ${themeClasses.valueNumber}">
+      ${result.bcvReferenceIsCustom ? "Precio BCV personalizado" : result.bcvReference}
+    </span>
+    <span class="opacity-80"> · 1 USD = </span>
+    <span class="font-bold ${themeClasses.valueNumber}">${formatNumber(result.bcvRate)}</span>
+    <span class="opacity-80"> bolívares</span>
+  </div>
 </div>
 
         ${renderResultMeta(result)}
@@ -1464,6 +1940,51 @@ function renderRemittanceResultBody(result) {
 
   return `
     ${renderQuoteErrorPanel("No se pudo mostrar el resultado.")}
+  `;
+}
+
+function renderRemittanceReferenceOnlyBadge() {
+  const status = getPublicOperationRestrictionStatus();
+
+  if (!status) return "";
+
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+  const isManual = status?.status === "closed_manual";
+
+  const wrapperClass = isManual
+    ? isLight
+      ? "border-rose-300/45 bg-rose-50/65 text-rose-950"
+      : "border-rose-400/18 bg-rose-500/[0.07] text-rose-50"
+    : isLight
+      ? "border-amber-300/50 bg-amber-50/70 text-amber-950"
+      : "border-amber-300/18 bg-amber-400/[0.07] text-amber-50";
+
+  const pillClass = isManual
+    ? isLight
+      ? "border-rose-300/60 bg-white/65 text-rose-700"
+      : "border-rose-300/20 bg-rose-400/10 text-rose-200"
+    : isLight
+      ? "border-amber-300/60 bg-white/65 text-amber-700"
+      : "border-amber-300/20 bg-amber-400/10 text-amber-200";
+
+  const title = isManual ? "Servicio pausado" : "Resultado referencial";
+  const detail = isManual
+    ? "No representa una cotización oficial mientras el servicio esté pausado."
+    : "No representa una cotización oficial fuera del horario operativo.";
+
+  return `
+    <div class="mt-4 overflow-hidden rounded-2xl border px-4 py-3 text-center shadow-sm backdrop-blur-xl ${wrapperClass}">
+      <div class="flex items-center justify-center">
+        <span class="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${pillClass}">
+          ${escapeOperationHtml(title)}
+        </span>
+      </div>
+
+      <p class="mx-auto mt-2 max-w-sm text-xs font-semibold leading-relaxed opacity-75">
+        ${escapeOperationHtml(detail)}
+      </p>
+    </div>
   `;
 }
 function renderResultLine(label, amount, currencyLabel, highlight = false) {
@@ -1643,6 +2164,22 @@ function renderRemittanceResultError(container, routeLabel, message) {
 // HELPERS
 // =====================================================
 
+function formatVenezuelaDateTime(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return "Fecha no disponible";
+  }
+
+  const value = new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Caracas",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  return `${value.replace(",", " ·")} VZLA`;
+}
 function getBcvReferenceLabel(type) {
   if (type === BCV_REFERENCE_TYPES.USD) return "Dólar BCV";
   if (type === BCV_REFERENCE_TYPES.EUR) return "Euro BCV";
@@ -1702,3 +2239,11 @@ function renderComingSoon(container, session) {
 
   bindCommonNavigation(container);
 }
+
+
+
+
+
+
+
+

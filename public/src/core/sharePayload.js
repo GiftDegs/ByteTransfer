@@ -10,17 +10,61 @@ export const SHARE_PAYLOAD_TYPES = {
 };
 
 export function buildReferenceSharePayload({ referenceTitle, value, updatedAt }) {
+  const referenceInfo = getBcvReferenceInfo({
+    bcvReference: referenceTitle,
+    bcvRate: value,
+    bcvReferenceIsCustom: /personal/i.test(String(referenceTitle || "")),
+  });
+
   return {
     type: SHARE_PAYLOAD_TYPES.REFERENCE,
     brand: "ByteTransfer",
     title: "Referencia BCV",
-    subtitle: referenceTitle,
-    primaryLabel: referenceTitle,
-    primaryValue: value,
+    subtitle: referenceInfo.value,
+    footerLeftLabel: "Referencia vigente",
+    footerLeftValue: updatedAt,
+    primaryLabel: referenceInfo.heroLabel,
+    primaryValue: formatCompactShareNumber(value),
     primaryUnit: "bolívares",
+    primaryRaw: true,
     disclaimer: null,
     updatedAt,
     rows: [],
+  };
+}
+
+function getBcvReferenceInfo(result = {}) {
+  const rawName = String(result.bcvReference || "Dólar BCV").trim();
+  const isCustom = Boolean(result.bcvReferenceIsCustom) || /personal/i.test(rawName);
+  const isEuro = /euro|eur/i.test(rawName);
+  const rate = formatCompactShareNumber(result.bcvRate);
+
+  if (isCustom) {
+    return {
+      label: "tasa personalizada",
+      value: "Personalizada",
+      detail: buildReferenceRateDetail("USD", rate),
+      heroLabel: "1 USD",
+      baseCode: "USD",
+    };
+  }
+
+  if (isEuro) {
+    return {
+      label: "tasa euro BCV",
+      value: "Euro BCV",
+      detail: buildReferenceRateDetail("EUR", rate),
+      heroLabel: "1 EUR",
+      baseCode: "EUR",
+    };
+  }
+
+  return {
+    label: "tasa dólar BCV",
+    value: "Dólar BCV",
+    detail: buildReferenceRateDetail("USD", rate),
+    heroLabel: "1 USD",
+    baseCode: "USD",
   };
 }
 
@@ -28,8 +72,10 @@ export function buildRateSharePayload({ origen, destino, tasa, updatedAt }) {
   return {
     type: SHARE_PAYLOAD_TYPES.RATE,
     brand: "ByteTransfer",
-    title: "Tasa de cambio",
+    title: "Tasa vigente",
     subtitle: getRouteLabel(origen, destino),
+    footerLeftLabel: "Tasa vigente",
+    footerLeftValue: updatedAt,
     primaryLabel: getRouteLabel(origen, destino),
     primaryValue: tasa,
     primaryUnit: null,
@@ -51,6 +97,10 @@ export function buildRemittanceSharePayload(result) {
     subtitle: result.routeLabel || "",
     disclaimer: null,
     updatedAt: result.fecha || "",
+    footerLeftLabel: "Tasa vigente",
+    footerLeftValue: result.fecha || "",
+    footerRightLabel: "Cotizado",
+    footerRightValue: formatShareCurrentTimestamp(),
     rows: [],
   };
 
@@ -61,20 +111,11 @@ export function buildRemittanceSharePayload(result) {
       primaryValue: formatearResultadoRaw(result.recibe?.amount),
       primaryUnit: result.recibe?.currencyLabel,
       primaryRaw: true,
+      primaryRole: "destination",
       rows: [
-        {
-          label: "Envías",
-          value: formatearResultadoRaw(result.envia?.amount),
-          unit: result.envia?.currencyLabel,
-          raw: true,
-        },
-        {
-          label: "Tasa aplicada",
-          value: formatShareRateForDisplay(result.tasaVisible),
-          unit: null,
-          raw: true,
-        },
-        ...buildVenezuelaEquivalentRows(result.recibe),
+        buildFlowSideRow("origin", result.envia),
+        { label: "Tasa aplicada", value: formatShareRateForDisplay(result.tasaVisible), unit: null, raw: true },
+        ...buildVenezuelaEquivalentRows(result.recibe, result),
       ],
     };
   }
@@ -86,20 +127,11 @@ export function buildRemittanceSharePayload(result) {
       primaryValue: formatearResultadoRaw(result.debeEnviar?.amount),
       primaryUnit: result.debeEnviar?.currencyLabel,
       primaryRaw: true,
+      primaryRole: "origin",
       rows: [
-        {
-          label: "Deseas recibir",
-          value: formatearResultadoRaw(result.recibe?.amount),
-          unit: result.recibe?.currencyLabel,
-          raw: true,
-        },
-        {
-          label: "Tasa aplicada",
-          value: formatShareRateForDisplay(result.tasaVisible),
-          unit: null,
-          raw: true,
-        },
-        ...buildVenezuelaEquivalentRows(result.recibe),
+        buildFlowSideRow("destination", result.recibe),
+        { label: "Tasa aplicada", value: formatShareRateForDisplay(result.tasaVisible), unit: null, raw: true },
+        ...buildVenezuelaEquivalentRows(result.recibe, result),
       ],
     };
   }
@@ -111,31 +143,16 @@ export function buildRemittanceSharePayload(result) {
       primaryValue: formatearResultadoRaw(result.debeEnviar?.amount),
       primaryUnit: result.debeEnviar?.currencyLabel,
       primaryRaw: true,
+      primaryRole: "origin",
       rows: [
-        {
-          label: "Deseas recibir",
-          value: formatearResultadoRaw(result.usdDeseados),
-          unit: "dólares",
-          raw: true,
-        },
-        {
-          label: "Equivalente en Venezuela",
-          value: formatearResultadoRaw(result.vesObjetivo),
-          unit: "bolívares",
-          raw: true,
-        },
-        {
-          label: "Referencia",
-          value: result.bcvReference,
-          unit: null,
-          raw: true,
-        },
-        {
-          label: "Tasa aplicada",
-          value: formatShareRateForDisplay(result.tasaVisible),
-          unit: null,
-          raw: true,
-        },
+        buildFlowSideRow("destination", {
+          amount: result.vesObjetivo,
+          currencyCode: "VES",
+          currencyLabel: "bolívares",
+        }),
+        buildSplitMetricRow("Deseas recibir", formatearResultadoRaw(result.usdDeseados), "dólares", { raw: true }),
+        buildReferenceMetricRow(result),
+        { label: "Tasa aplicada", value: formatShareRateForDisplay(result.tasaVisible), unit: null, raw: true },
       ],
     };
   }
@@ -143,17 +160,97 @@ export function buildRemittanceSharePayload(result) {
   return null;
 }
 
-function buildVenezuelaEquivalentRows(amountObj) {
+function buildFlowSideRow(role, item) {
+  return {
+    type: "flow_side",
+    role,
+    side: buildFlowSide(role, item),
+  };
+}
+
+function buildFlowSide(role, item) {
+  const currencyCode = item?.currencyCode || "";
+  const country = getCountryLabel(currencyCode);
+  const actionLabel = role === "origin" ? "Envías" : "Recibes";
+
+  return {
+    role,
+    country,
+    actionLabel,
+    label: actionLabel,
+    value: formatearResultadoRaw(item?.amount),
+    unit: item?.currencyLabel || getCurrencyShortLabel(currencyCode),
+  };
+}
+function buildSplitMetricRow(label, value, unit, options = {}) {
+  return {
+    type: "split_metric",
+    label,
+    value,
+    unit,
+    raw: Boolean(options.raw),
+    variant: options.variant || "default",
+    computed: options.computed || null,
+    sourceAmount: options.sourceAmount ?? null,
+  };
+}
+
+function buildReferenceMetricRow(result) {
+  const referenceInfo = getBcvReferenceInfo(result);
+
+  return buildSplitMetricRow(
+    "Referencia",
+    referenceInfo.value,
+    referenceInfo.detail,
+    {
+      raw: true,
+      variant: "reference",
+    }
+  );
+}
+
+function buildReferenceRateDetail(code, rate) {
+  if (!rate || rate === "—") return "";
+  return `1 ${code} = ${rate} bolívares`;
+}
+function formatCompactShareNumber(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }).format(n);
+}
+
+function formatShareCurrentTimestamp(date = new Date()) {
+  const value = new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Caracas",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  return `${value.replace(",", " ·")} VZLA`;
+}
+
+function buildVenezuelaEquivalentRows(amountObj, result = {}) {
   if (amountObj?.currencyCode !== "VES") return [];
 
+  const referenceInfo = getBcvReferenceInfo(result);
+
   return [
-    {
-      label: "Equivalente referencial",
-      value: amountObj.usdEquivalent ?? null,
-      unit: "dólares según BCV",
-      computed: "ves_to_usd",
-      sourceAmount: amountObj.amount,
-    },
+    buildSplitMetricRow(
+      `Equivalente a ${referenceInfo.label}`,
+      amountObj.usdEquivalent ?? null,
+      "dólares",
+      {
+        computed: "ves_to_usd",
+        sourceAmount: amountObj.amount,
+      }
+    ),
   ];
 }
 

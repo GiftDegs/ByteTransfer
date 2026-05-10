@@ -1,2 +1,4 @@
 ﻿storage/audit-log.json
 storage/snapshots/
+.env
+node_modules/

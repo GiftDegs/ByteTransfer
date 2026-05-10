@@ -2,8 +2,24 @@ const express = require("express");
 const path = require("path");
 const axios = require("axios");
 
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
+const OpenAI = require("openai");
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY);
+
+const openai = hasOpenAiKey
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
+
+console.log(
+  "🔑 OPENAI_API_KEY:",
+  hasOpenAiKey ? "configurada" : "NO configurada"
+);
 
 
 const {
@@ -54,6 +70,27 @@ const {
 // 🔐 Admin
 const ADMIN_KEY = process.env.ADMIN_KEY;
 
+function requireAdmin(req, res) {
+  if (!ADMIN_KEY) {
+    res.status(503).json({
+      ok: false,
+      error: "ADMIN_KEY no configurada en el servidor.",
+    });
+    return false;
+  }
+
+  const clientKey = req.headers["x-admin-key"];
+
+  if (!clientKey || clientKey !== ADMIN_KEY) {
+    res.status(401).json({
+      ok: false,
+      error: "No autorizado.",
+    });
+    return false;
+  }
+
+  return true;
+}
 
 // ---------- Utils ----------
 function formatearTasa(v) {
@@ -182,6 +219,64 @@ function validarSnapshotPayload(payload, { requireCountries = false } = {}) {
 app.use(express.json({ limit: "1mb" }));
 app.use("/admin", express.static(path.join(__dirname, "public/admin")));
 app.use(express.static(path.join(__dirname, "public")));
+
+// -------------------------------------------------
+//  ✨  Endpoint: POST /api/openai/chat
+// -------------------------------------------------
+
+app.post("/api/openai/chat", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  try {
+    const userMessage = String(req.body?.message || "").trim();
+
+    if (!openai) {
+      return res.status(503).json({
+        ok: false,
+        error: "OPENAI_API_KEY no configurada en el servidor.",
+      });
+    }
+
+    if (!userMessage) {
+      return res.status(400).json({
+        ok: false,
+        error: "Falta el campo 'message'.",
+      });
+    }
+
+    if (userMessage.length > 4000) {
+      return res.status(400).json({
+        ok: false,
+        error: "Mensaje demasiado largo.",
+      });
+    }
+
+    const response = await openai.responses.create({
+      model: process.env.OPENAI_MODEL || "gpt-5.5",
+      input: userMessage,
+    });
+
+    return res.json({
+      ok: true,
+      reply: response.output_text || "",
+    });
+  } catch (err) {
+    console.error("❌ Error al llamar a OpenAI:", {
+      message: err.message,
+      status: err.status,
+      code: err.code,
+      type: err.type,
+    });
+
+    return res.status(err.status || 500).json({
+      ok: false,
+      error: "Error comunicándose con OpenAI.",
+      detail: err.message || null,
+      code: err.code || null,
+      type: err.type || null,
+    });
+  }
+});
 
 // ---------- Rutas ----------
 app.get("/healthz", async (req, res) => {
