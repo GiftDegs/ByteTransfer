@@ -59,6 +59,7 @@ import {
   buildRemittanceSharePayload,
 } from "../core/sharePayload.js";
 import { sharePremiumPayload } from "./sharing.js";
+import { getPublicOperationStatus } from "../state/publicOperation.js";
 
   let flowTopbarControlsEntered = false;
 
@@ -68,10 +69,11 @@ export function renderQuoteScreen(container) {
   const session = getQuoteSession();
 
   if (!session.module || session.step === "home") {
-  flowTopbarControlsEntered = false;
-  renderQuoteHub(container, () => renderQuoteScreen(container));
-  return;
-}
+    flowTopbarControlsEntered = false;
+    renderQuoteHub(container, () => renderQuoteScreen(container));
+    bindPublicOperationRestrictionUi(container);
+    return;
+  }
 
   if (session.module === QUOTE_MODULES.REFERENCES) {
     renderReferencesScreen(container, session);
@@ -103,7 +105,10 @@ function renderScreenShell({ eyebrow, title, description, body }) {
     eyebrow,
     title,
     description,
-    body,
+    body: `
+      ${renderPublicOperationRestrictionNotice()}
+      ${body || ""}
+    `,
     topbar: renderQuoteTopbar({
       showBack: true,
       showHome: true,
@@ -113,6 +118,8 @@ function renderScreenShell({ eyebrow, title, description, body }) {
 }
 
 function bindCommonNavigation(container) {
+  bindPublicOperationRestrictionUi(container);
+
   const themeToggle = container.querySelector("[data-quote-theme-toggle]");
 
   themeToggle?.addEventListener("click", () => {
@@ -240,6 +247,382 @@ function bindCommonNavigation(container) {
 
     goHomeFromTopbar(trigger);
   });
+}
+
+function getPublicOperationRestrictionStatus() {
+  const status = getPublicOperationStatus();
+  const restrictedStatuses = ["opening_soon", "closed_schedule", "closed_manual"];
+
+  const isRestricted = Boolean(
+    status?.isReferenceOnly ||
+      status?.canWhatsapp === false ||
+      status?.canShare === false ||
+      restrictedStatuses.includes(status?.status),
+  );
+
+  return isRestricted ? status : null;
+}
+
+function renderPublicOperationRestrictionNotice() {
+  const status = getPublicOperationRestrictionStatus();
+
+  if (!status) return "";
+
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+  const isManual = status?.status === "closed_manual";
+
+  const wrapperClass = isManual
+    ? isLight
+      ? "border-rose-300/40 bg-rose-50/55 text-rose-950"
+      : "border-rose-400/16 bg-rose-500/[0.06] text-rose-50"
+    : isLight
+      ? "border-amber-300/45 bg-amber-50/60 text-amber-950"
+      : "border-amber-300/16 bg-amber-400/[0.06] text-amber-50";
+
+  const label = isManual ? "Servicio pausado" : "Cotización referencial";
+  const detail = isManual
+    ? status?.detail || "Las cotizaciones oficiales están pausadas temporalmente."
+    : "Puedes consultar valores, pero fuera del horario operativo no representan una cotización oficial.";
+
+  return `
+    <div class="mb-4 rounded-2xl border px-4 py-3 text-center text-xs leading-relaxed shadow-sm backdrop-blur-xl ${wrapperClass}">
+      <div class="font-black uppercase tracking-[0.18em]">
+        ${escapeOperationHtml(label)}
+      </div>
+      <div class="mx-auto mt-1 max-w-md font-semibold opacity-80">
+        ${escapeOperationHtml(detail)}
+      </div>
+    </div>
+  `;
+}
+
+function bindPublicOperationRestrictionUi(container) {
+  const status = getPublicOperationRestrictionStatus();
+
+  if (!status) {
+    clearPublicOperationModalSessionMemory();
+    return;
+  }
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  window.setTimeout(() => {
+    showPublicOperationRestrictionModal(status);
+  }, 30);
+}
+
+function clearPublicOperationModalSessionMemory() {
+  if (typeof window === "undefined") return;
+
+  try {
+    const prefix = "bt-public-operation-modal:";
+
+    Object.keys(window.sessionStorage || {}).forEach((key) => {
+      if (key.startsWith(prefix)) {
+        window.sessionStorage.removeItem(key);
+      }
+    });
+  } catch {}
+}
+function showPublicOperationRestrictionModal(status) {
+  if (document.querySelector("[data-public-operation-modal]")) return;
+
+  const fingerprint = [
+    status?.status || "",
+    status?.detail || "",
+    status?.phrase || "",
+  ].join("|");
+
+  const storageKey = `bt-public-operation-modal:${fingerprint}`;
+
+  try {
+    if (window.sessionStorage?.getItem(storageKey) === "1") return;
+    window.sessionStorage?.setItem(storageKey, "1");
+  } catch {}
+
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+  const isManual = status?.status === "closed_manual";
+
+  const cleanDetail = String(status?.detail || "").trim();
+  const cleanPhrase = String(status?.phrase || "").trim();
+
+  const copy = isManual
+    ? {
+        eyebrow: "Servicio pausado",
+        title: "Pausado temporalmente",
+        lead: "Las cotizaciones oficiales están detenidas por ahora.",
+        detail:
+          cleanDetail && cleanDetail !== cleanPhrase
+            ? cleanDetail
+            : "Confirma disponibilidad con el equipo antes de operar.",
+        tagA: "Cotización no oficial",
+        tagB: "Confirmación requerida",
+      }
+    : {
+        eyebrow: "Horario finalizado",
+        title: "Fuera de horario",
+        lead: "Puedes revisar tasas y preparar una cotización de consulta.",
+        detail:
+          cleanDetail && cleanDetail !== cleanPhrase
+            ? cleanDetail
+            : "Los valores pueden variar hasta la próxima apertura.",
+        tagA: "Consulta permitida",
+        tagB: "Resultado referencial",
+      };
+
+  const tone = isManual
+    ? {
+        accent: "#f43f5e",
+        accentSoft: "rgba(244,63,94,0.12)",
+        accentBorder: "rgba(244,63,94,0.24)",
+        accentTextLight: "text-rose-700",
+        accentTextDark: "text-rose-200",
+        ringLight: "rgba(244,63,94,0.22)",
+        ringDark: "rgba(244,63,94,0.18)",
+        icon: `
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6">
+            <path d="M12 8v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M12 16.8h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M10.45 4.15c.69-1.2 2.41-1.2 3.1 0l8.05 13.94c.69 1.2-.17 2.7-1.55 2.7H3.95c-1.38 0-2.24-1.5-1.55-2.7l8.05-13.94Z" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        `,
+      }
+    : {
+        accent: "#f59e0b",
+        accentSoft: "rgba(245,158,11,0.12)",
+        accentBorder: "rgba(245,158,11,0.26)",
+        accentTextLight: "text-amber-700",
+        accentTextDark: "text-amber-200",
+        ringLight: "rgba(245,158,11,0.22)",
+        ringDark: "rgba(245,158,11,0.17)",
+        icon: `
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6">
+            <circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.9"/>
+            <path d="M12 7.4v5.1l3.2 1.9" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `,
+      };
+
+  const backdropClass = isLight
+    ? "bg-slate-950/24"
+    : "bg-black/60";
+
+  const cardClass = isLight
+    ? "border-white/80 bg-white/92 text-slate-950 shadow-[0_32px_90px_rgba(15,23,42,0.24)]"
+    : "border-white/10 bg-[#07111f]/94 text-white shadow-[0_32px_90px_rgba(0,0,0,0.58)]";
+
+  const mutedClass = isLight ? "text-slate-600" : "text-slate-300/78";
+  const subtlePanelClass = isLight
+    ? "border-slate-200/80 bg-slate-50/70 text-slate-700"
+    : "border-white/10 bg-white/[0.045] text-slate-200/82";
+
+  const accentTextClass = isLight ? tone.accentTextLight : tone.accentTextDark;
+  const previousBodyOverflow = document.body.style.overflow;
+
+  const modalHtml = `
+    <style data-public-operation-modal-style="1">
+      @keyframes btModalGlowPulse {
+        0%, 100% { transform: scale(1); opacity: .72; }
+        50% { transform: scale(1.08); opacity: 1; }
+      }
+
+      @keyframes btModalButtonSheen {
+        0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+        22% { opacity: .45; }
+        48%, 100% { transform: translateX(165%) skewX(-18deg); opacity: 0; }
+      }
+
+      [data-public-operation-modal] {
+        opacity: 0;
+        transition: opacity 260ms cubic-bezier(.22,1,.36,1);
+      }
+
+      [data-public-operation-modal][data-state="open"] {
+        opacity: 1;
+      }
+
+      [data-public-operation-modal][data-state="closing"] {
+        opacity: 0;
+      }
+
+      .bt-op-modal-card {
+        opacity: 0;
+        transform: translateY(18px) scale(.955);
+        filter: blur(5px);
+        transition:
+          opacity 320ms cubic-bezier(.22,1,.36,1),
+          transform 320ms cubic-bezier(.22,1,.36,1),
+          filter 320ms cubic-bezier(.22,1,.36,1);
+      }
+
+      [data-public-operation-modal][data-state="open"] .bt-op-modal-card {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+
+      [data-public-operation-modal][data-state="closing"] .bt-op-modal-card {
+        opacity: 0;
+        transform: translateY(12px) scale(.975);
+        filter: blur(3px);
+      }
+
+      .bt-op-modal-orb {
+        animation: btModalGlowPulse 2.8s ease-in-out infinite;
+      }
+
+      .bt-op-modal-button::before {
+        content: "";
+        position: absolute;
+        inset: -20%;
+        width: 46%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.58), transparent);
+        animation: btModalButtonSheen 3.4s ease-in-out infinite;
+      }
+
+      .bt-op-modal-button:disabled {
+        opacity: .78;
+        transform: scale(.99);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        [data-public-operation-modal],
+        .bt-op-modal-card,
+        .bt-op-modal-orb,
+        .bt-op-modal-button::before {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+
+    <div
+      data-public-operation-modal="1"
+      data-state="entering"
+      class="fixed inset-0 z-[9998] grid place-items-center px-4 py-6 ${backdropClass} backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="public-operation-modal-title"
+    >
+      <div class="bt-op-modal-card relative w-full max-w-md overflow-hidden rounded-[2rem] border p-5 backdrop-blur-2xl ${cardClass}">
+        <div
+          class="pointer-events-none absolute -top-24 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full blur-3xl"
+          style="background: ${isLight ? tone.ringLight : tone.ringDark};"
+        ></div>
+
+        <div
+          class="pointer-events-none absolute inset-x-10 top-0 h-px"
+          style="background: linear-gradient(90deg, transparent, ${tone.accent}, transparent); opacity: .42;"
+        ></div>
+
+        <div class="relative text-center">
+          <div class="relative mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border ${accentTextClass}"
+            style="background: ${tone.accentSoft}; border-color: ${tone.accentBorder};"
+          >
+            <div
+              class="bt-op-modal-orb absolute inset-[-7px] rounded-[1.35rem]"
+              style="border: 1px solid ${tone.accentBorder};"
+            ></div>
+            ${tone.icon}
+          </div>
+
+          <div
+            class="mx-auto inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${accentTextClass}"
+            style="background: ${tone.accentSoft}; border-color: ${tone.accentBorder};"
+          >
+            ${escapeOperationHtml(copy.eyebrow)}
+          </div>
+
+          <h3 id="public-operation-modal-title" class="mx-auto mt-4 max-w-[18rem] text-2xl font-black leading-tight tracking-tight sm:text-3xl">
+            ${escapeOperationHtml(copy.title)}
+          </h3>
+
+          <p class="mx-auto mt-3 max-w-sm text-sm font-semibold leading-relaxed ${mutedClass}">
+            ${escapeOperationHtml(copy.lead)}
+          </p>
+
+          <div class="mt-5 grid grid-cols-2 gap-2 text-[10px] font-black uppercase tracking-[0.12em]">
+            <div class="rounded-2xl border px-3 py-2 ${subtlePanelClass}">
+              ${escapeOperationHtml(copy.tagA)}
+            </div>
+            <div class="rounded-2xl border px-3 py-2 ${subtlePanelClass}">
+              ${escapeOperationHtml(copy.tagB)}
+            </div>
+          </div>
+
+          <div class="mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold leading-relaxed ${subtlePanelClass}">
+            ${escapeOperationHtml(copy.detail)}
+          </div>
+
+          <button
+            type="button"
+            data-public-operation-modal-close="1"
+            class="bt-op-modal-button relative mt-5 inline-flex w-full items-center justify-center overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#20decf,#12c7ba_48%,#15ead9)] px-4 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-[#042321] shadow-[0_18px_44px_rgba(18,199,186,0.30)] transition duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985] focus:outline-none focus:ring-4 focus:ring-brandTeal/25"
+          >
+            <span class="relative">Entendido, continuar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.style.overflow = "hidden";
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  const modal = document.querySelector("[data-public-operation-modal]");
+  const closeButton = modal?.querySelector("[data-public-operation-modal-close]");
+
+  let closing = false;
+
+  const closeModal = () => {
+    if (!modal || closing) return;
+
+    closing = true;
+
+    if (closeButton) {
+      closeButton.disabled = true;
+      closeButton.innerHTML = '<span class="relative">Continuar</span>';
+    }
+
+    modal.dataset.state = "closing";
+
+    window.setTimeout(() => {
+      modal.remove();
+      document.querySelector("[data-public-operation-modal-style]")?.remove();
+      document.body.style.overflow = previousBodyOverflow;
+      document.removeEventListener("keydown", handleKeydown);
+    }, 260);
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") closeModal();
+  };
+
+  closeButton?.addEventListener("click", closeModal);
+
+  modal?.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
+
+  document.addEventListener("keydown", handleKeydown);
+
+  window.requestAnimationFrame(() => {
+    modal.dataset.state = "open";
+  });
+
+  window.setTimeout(() => {
+    closeButton?.focus?.();
+  }, 220);
+}
+
+function escapeOperationHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // =====================================================
@@ -1727,3 +2110,6 @@ function renderComingSoon(container, session) {
 
   bindCommonNavigation(container);
 }
+
+
+
