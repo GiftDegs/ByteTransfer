@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Dhemka Core — Infrastructure Console</title>
+    <title>Dhemka Core - Infrastructure Console</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -111,6 +111,14 @@
         </p>
 
         <div id="active-tenant-card"></div>
+
+        <div class="mt-4">
+          <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
+            Tenant Switcher
+          </p>
+
+          <div id="tenant-switcher" class="space-y-2"></div>
+        </div>
 
       </div>
 
@@ -284,7 +292,7 @@
             </h3>
           </div>
 
-          <div class="mt-6 space-y-4">
+          <div id="tenant-ecosystem-list" class="mt-6 space-y-4">
 
             <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
 
@@ -328,7 +336,6 @@
 
   </div>
   <script src="./data/mock-data.js"></script>
-  <script src="./app.js"></script>
   <script src="./app.js"></script>
 
 </body>
