@@ -27,6 +27,30 @@ function renderSectionContent() {
   eyebrow.textContent = section.eyebrow;
   title.textContent = section.title;
   description.textContent = section.description;
+  renderSectionCards(section.cards || []);
+}
+
+function renderSectionCards(cards = []) {
+  const container = document.getElementById("section-cards");
+  if (!container) return;
+
+  container.innerHTML = cards
+    .map((card) => `
+      <div class="core-card glass rounded-3xl p-6">
+        <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+          ${card.eyebrow}
+        </p>
+
+        <h3 class="mt-4 text-3xl font-black">
+          ${card.title}
+        </h3>
+
+        <p class="mt-3 text-sm leading-relaxed text-slate-400">
+          ${card.description}
+        </p>
+      </div>
+    `)
+    .join("");
 }
 
 function bindSidebarNavigation() {
