@@ -47,6 +47,50 @@ function getTenantStatusStyles(status) {
   };
 }
 
+function getModuleStatusStyles(status) {
+  if (status === "current") {
+    return "border-emerald-400/20 bg-emerald-400/10 text-emerald-300";
+  }
+
+  if (status === "planned" || status === "future" || status === "future-simple") {
+    return "border-cyan-400/20 bg-cyan-400/10 text-cyan-200";
+  }
+
+  if (status === "upsell-ready" || status === "available") {
+    return "border-violet-400/20 bg-violet-400/10 text-violet-200";
+  }
+
+  if (status === "locked") {
+    return "border-white/10 bg-black/20 text-slate-500";
+  }
+
+  return "border-white/10 bg-black/20 text-slate-300";
+}
+
+function getEnabledModules(tenant) {
+  return Object.values(tenant.modules || {}).filter((module) => module.enabled);
+}
+
+function renderModulePills(tenant, limit = 4) {
+  const modules = getEnabledModules(tenant).slice(0, limit);
+
+  if (!modules.length) {
+    return `
+      <span class="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+        No modules enabled
+      </span>
+    `;
+  }
+
+  return modules
+    .map((module) => `
+      <span class="rounded-full border ${getModuleStatusStyles(module.status)} px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em]">
+        ${escapeHtml(module.label)}
+      </span>
+    `)
+    .join("");
+}
+
 function setActiveSidebarItem(section) {
   document.querySelectorAll("[data-section]").forEach((button) => {
     const isActive = button.dataset.section === section;
@@ -57,11 +101,12 @@ function setActiveSidebarItem(section) {
 function buildTenantSectionCards() {
   return getTenants().map((tenant) => {
     const isActive = tenant.id === dhemkaState.activeTenantId;
+    const moduleCount = getEnabledModules(tenant).length;
 
     return {
       eyebrow: `${tenant.product} · ${tenant.statusLabel}`,
       title: tenant.name,
-      description: `${isActive ? "Selected in Core Console. " : ""}${tenant.description}`,
+      description: `${isActive ? "Selected in Core Console. " : ""}${tenant.plan} plan · ${moduleCount} enabled modules · /remit/${tenant.slug}`,
     };
   });
 }
@@ -152,6 +197,18 @@ function renderActiveTenantCard() {
         ${escapeHtml(tenant.description)}
       </p>
 
+      <div class="mt-4 grid gap-2 text-xs text-slate-400">
+        <div class="flex items-center justify-between gap-3">
+          <span>Slug</span>
+          <span class="font-bold text-slate-200">/remit/${escapeHtml(tenant.slug)}</span>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <span>Plan</span>
+          <span class="font-bold text-slate-200">${escapeHtml(tenant.plan)}</span>
+        </div>
+      </div>
+
       <div class="mt-4 inline-flex rounded-full border ${styles.border} ${styles.background} px-3 py-1">
         <span class="text-[11px] font-bold uppercase tracking-[0.22em] ${styles.text}">
           ${escapeHtml(tenant.statusLabel)}
@@ -189,7 +246,7 @@ function renderTenantSwitcher() {
               </p>
 
               <p class="mt-1 text-xs text-slate-500">
-                ${escapeHtml(tenant.product)} · ${escapeHtml(tenant.statusLabel)}
+                ${escapeHtml(tenant.product)} · ${escapeHtml(tenant.plan)}
               </p>
             </div>
 
@@ -225,7 +282,7 @@ function renderTenantEcosystemList() {
               </p>
 
               <p class="mt-1 text-xs text-slate-400">
-                ${escapeHtml(tenant.product)} · ${escapeHtml(tenant.statusLabel)}
+                ${escapeHtml(tenant.product)} · ${escapeHtml(tenant.statusLabel)} · ${escapeHtml(tenant.plan)}
               </p>
             </div>
 
@@ -235,6 +292,10 @@ function renderTenantEcosystemList() {
           <p class="mt-3 text-xs leading-relaxed text-slate-500">
             ${escapeHtml(tenant.description)}
           </p>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            ${renderModulePills(tenant)}
+          </div>
 
           <button
             type="button"

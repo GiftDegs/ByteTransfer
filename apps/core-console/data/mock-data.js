@@ -1,4 +1,4 @@
-window.coreSections = {
+﻿window.coreSections = {
   dashboard: {
     eyebrow: "Dhemka Core",
     title: "Ecosystem Infrastructure Overview",
@@ -16,8 +16,8 @@ window.coreSections = {
       },
       {
         eyebrow: "Ecosystem",
-        title: "1 Active Tenant",
-        description: "ByteTransfer currently running under the Remit infrastructure layer.",
+        title: "Tenant-ready Core",
+        description: "ByteTransfer runs as the first Remit tenant inside the Dhemka Core architecture.",
       },
     ],
   },
@@ -95,23 +95,7 @@ window.coreSections = {
     eyebrow: "Tenants",
     title: "Remit Ecosystem",
     description: "Tenant management and operational ecosystem.",
-    cards: [
-      {
-        eyebrow: "Remit",
-        title: "ByteTransfer",
-        description: "First tenant running on top of the Remit infrastructure.",
-      },
-      {
-        eyebrow: "Provisioning",
-        title: "New Tenant Ready",
-        description: "Future tenants will receive branding, permissions and settings.",
-      },
-      {
-        eyebrow: "Customization",
-        title: "Branding as Upsell",
-        description: "Visual personalization is part of the tenant model from day one.",
-      },
-    ],
+    cards: [],
   },
 };
 
@@ -120,16 +104,86 @@ window.coreTenants = [
     id: "bytetransfer",
     product: "Remit",
     name: "ByteTransfer",
+    slug: "bytetransfer",
+    plan: "Founder",
     status: "operational",
     statusLabel: "Operational",
+    lifecycle: "live",
     description: "First operational tenant running inside the Remit infrastructure.",
+    branding: {
+      primaryColor: "cyan",
+      logoMode: "wordmark",
+      poweredByCore: true,
+    },
+    modules: {
+      tenantAdmin: {
+        enabled: true,
+        status: "planned",
+        label: "Tenant Admin",
+      },
+      quoteCenter: {
+        enabled: true,
+        status: "current",
+        label: "Quote Center",
+      },
+      publicCalculator: {
+        enabled: true,
+        status: "future-simple",
+        label: "Public Calculator",
+      },
+      branding: {
+        enabled: true,
+        status: "upsell-ready",
+        label: "Branding",
+      },
+      managers: {
+        enabled: true,
+        status: "future",
+        label: "Managers",
+      },
+    },
   },
   {
     id: "demo-remit",
     product: "Remit",
     name: "Demo Remit",
+    slug: "demo-remit",
+    plan: "Demo",
     status: "provisioning",
     statusLabel: "Provisioning",
+    lifecycle: "setup",
     description: "Example tenant slot prepared for future onboarding.",
+    branding: {
+      primaryColor: "amber",
+      logoMode: "placeholder",
+      poweredByCore: true,
+    },
+    modules: {
+      tenantAdmin: {
+        enabled: true,
+        status: "planned",
+        label: "Tenant Admin",
+      },
+      quoteCenter: {
+        enabled: true,
+        status: "planned",
+        label: "Quote Center",
+      },
+      publicCalculator: {
+        enabled: true,
+        status: "planned",
+        label: "Public Calculator",
+      },
+      branding: {
+        enabled: true,
+        status: "available",
+        label: "Branding",
+      },
+      managers: {
+        enabled: false,
+        status: "locked",
+        label: "Managers",
+      },
+    },
   },
 ];
