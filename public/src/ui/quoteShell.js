@@ -1,6 +1,7 @@
-// public/src/ui/quoteShell.js
+﻿// public/src/ui/quoteShell.js
 
 import { getQuoteThemeClasses } from "./quoteThemeClasses.js";
+import { getPublicOperationStatus } from "../state/publicOperation.js";
 
 export function renderQuoteShell({
   eyebrow,
@@ -20,7 +21,7 @@ export function renderQuoteShell({
       <div class="relative flex min-h-0 flex-1 flex-col">
         ${topbar || ""}
 
-        <div data-quote-topbar="1" class="shrink-0 mb-4 text-center sm:mb-6">
+        <div data-quote-title-block="1" class="shrink-0 mb-4 text-center sm:mb-6">
           <p class="text-[11px] uppercase tracking-[0.34em] ${themeClasses.accentText}">
             ${eyebrow || ""}
           </p>
@@ -102,13 +103,15 @@ export function renderQuoteTopbar({
       }
     </style>
 
-    <div data-quote-topbar="1" class="shrink-0 -mx-1 mb-5 flex min-h-[3.5rem] items-center justify-between gap-3 rounded-[1.35rem] border px-3 py-2 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 ${themeClasses.topbar}">
-      <div class="flex h-10 min-w-[5.5rem] items-center justify-start gap-2">
+    <div data-quote-topbar="1" class="shrink-0 -mx-1 mb-4 grid min-h-[3.5rem] grid-cols-[5.6rem_minmax(0,1fr)_auto] sm:grid-cols-[7.25rem_minmax(0,1fr)_7.25rem] items-center gap-2 rounded-[1.35rem] border px-3 py-2 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 ${themeClasses.topbar}">
+      <div class="flex h-10 min-w-0 items-center justify-start gap-2">
         ${renderTopbarIconButton("home", themeClasses, showHome, animateControls)}
         ${renderTopbarIconButton("back", themeClasses, showBack, animateControls)}
       </div>
 
-      <div class="ml-auto flex h-10 items-center justify-end">
+      ${renderPublicOperationHeaderStatusHost(themeClasses)}
+
+      <div class="flex h-10 min-w-0 items-center justify-end">
         <button
           type="button"
           data-quote-theme-toggle="1"
@@ -137,7 +140,7 @@ export function renderQuoteTopbar({
 
           <span
             data-quote-theme-label="1"
-            class="min-w-[2.8rem] text-left text-[9px] font-black uppercase tracking-[0.06em] ${themeClasses.themeSwitchLabel}"
+            class="hidden min-w-[2.8rem] text-left text-[9px] font-black uppercase tracking-[0.06em] sm:block ${themeClasses.themeSwitchLabel}"
           >
             ${isLight ? "Claro" : "Oscuro"}
           </span>
@@ -145,6 +148,223 @@ export function renderQuoteTopbar({
       </div>
     </div>
   `;
+}
+function renderPublicOperationHeaderStatusHost(themeClasses) {
+  return `
+    <div data-public-operation-header-host="1" class="flex min-w-0 justify-center px-1">
+      ${renderPublicOperationHeaderStatusContent(themeClasses)}
+    </div>
+  `;
+}
+
+
+function renderPublicOperationHeaderStatusContent(themeClasses) {
+  const status = getPublicOperationStatus();
+  const tone = getPublicOperationToneClasses(status?.tone || "success", themeClasses);
+  const label = getPublicOperationShortLabel(status);
+  const detail = String(status?.detail || status?.phrase || "").trim();
+  const progress = Number(status?.progress);
+  const showProgress =
+    Number.isFinite(progress) &&
+    (status?.status === "open" || status?.status === "closing_soon");
+
+  queueOperationHeaderFit();
+
+  return `
+    <div data-operation-fit-box="1" class="mx-auto flex w-full min-w-0 max-w-full flex-col items-center justify-center rounded-2xl border px-2 py-1.5 text-center backdrop-blur-xl sm:max-w-[18rem] sm:px-3 sm:py-2 ${tone.wrapper}">
+      <div
+        data-operation-fit-text="1"
+        data-fit-max="11.2"
+        data-fit-min="3.8"
+        data-fit-tracking="0.055em"
+        class="block max-w-full whitespace-nowrap text-center font-black uppercase leading-none ${tone.title}"
+      >
+        ${escapeHtml(label)}
+      </div>
+
+      <div
+        data-operation-fit-text="1"
+        data-fit-max="9.8"
+        data-fit-min="3.6"
+        data-fit-tracking="0em"
+        class="mt-1 block max-w-full whitespace-nowrap text-center font-bold leading-none ${tone.detail}"
+        title="${escapeHtml(detail)}"
+      >
+        ${escapeHtml(detail)}
+      </div>
+
+      ${showProgress ? `
+        <div class="mt-1.5 h-[2px] w-full max-w-full overflow-hidden rounded-full sm:max-w-[15rem] ${tone.progressTrack}">
+          <div
+            class="h-full rounded-full transition-all duration-500 ${tone.progressBar}"
+            style="width: ${Math.max(5, Math.min(100, Math.round(progress * 100)))}%;"
+          ></div>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function getPublicOperationShortLabel(status) {
+  if (status?.status === "closing_soon") return "Cerramos Pronto";
+  if (status?.status === "opening_soon") return "Abrimos Pronto";
+  if (status?.status === "closed_schedule") return "Cerrado";
+  if (status?.status === "closed_manual") return "Sin Servicio";
+  return "Abierto";
+}
+
+function getOperationDetailTextSize(value) {
+  const length = String(value || "").length;
+
+  if (length > 44) {
+    return "text-[4.7px] sm:text-[7.6px]";
+  }
+
+  if (length > 38) {
+    return "text-[5.1px] sm:text-[8px]";
+  }
+
+  if (length > 32) {
+    return "text-[5.6px] sm:text-[8.4px]";
+  }
+
+  if (length > 26) {
+    return "text-[6.2px] sm:text-[9px]";
+  }
+
+  if (length > 20) {
+    return "text-[7px] sm:text-[9.6px]";
+  }
+
+  return "text-[8px] sm:text-[10.5px]";
+}
+
+function getPublicOperationToneClasses(tone, themeClasses) {
+  const isLight = Boolean(themeClasses?.isLight);
+
+  if (tone === "danger") {
+    return {
+      wrapper: isLight ? "border-rose-300/35 bg-rose-50/35" : "border-rose-400/16 bg-rose-500/[0.055]",
+      title: isLight ? "text-rose-700" : "text-rose-200",
+      detail: isLight ? "text-rose-900/64" : "text-rose-100/66",
+      progressTrack: isLight ? "bg-rose-200/55" : "bg-rose-950/30",
+      progressBar: "bg-rose-400",
+    };
+  }
+
+  if (tone === "warning") {
+    return {
+      wrapper: isLight ? "border-amber-300/35 bg-amber-50/35" : "border-amber-300/16 bg-amber-400/[0.055]",
+      title: isLight ? "text-amber-700" : "text-amber-200",
+      detail: isLight ? "text-amber-900/64" : "text-amber-100/66",
+      progressTrack: isLight ? "bg-amber-200/55" : "bg-amber-950/30",
+      progressBar: "bg-amber-300",
+    };
+  }
+
+  if (tone === "info") {
+    return {
+      wrapper: isLight ? "border-sky-300/35 bg-sky-50/35" : "border-sky-300/16 bg-sky-400/[0.055]",
+      title: isLight ? "text-sky-700" : "text-sky-200",
+      detail: isLight ? "text-sky-900/64" : "text-sky-100/66",
+      progressTrack: isLight ? "bg-sky-200/55" : "bg-sky-950/30",
+      progressBar: "bg-sky-300",
+    };
+  }
+
+  if (tone === "muted") {
+    return {
+      wrapper: isLight ? "border-slate-300/40 bg-white/35" : "border-white/8 bg-white/[0.025]",
+      title: isLight ? "text-slate-700" : "text-slate-200",
+      detail: isLight ? "text-slate-700/64" : "text-slate-300/66",
+      progressTrack: isLight ? "bg-slate-200/55" : "bg-slate-900/35",
+      progressBar: isLight ? "bg-slate-500" : "bg-slate-300",
+    };
+  }
+
+  return {
+    wrapper: isLight ? "border-emerald-300/35 bg-emerald-50/35" : "border-brandTeal/16 bg-brandTeal/[0.045]",
+    title: isLight ? "text-emerald-700" : "text-cyan-100",
+    detail: isLight ? "text-emerald-900/64" : "text-cyan-50/66",
+    progressTrack: isLight ? "bg-emerald-200/55" : "bg-cyan-950/30",
+    progressBar: "bg-brandTeal",
+  };
+}
+
+let operationHeaderFitFrame = 0;
+let operationHeaderFitBound = false;
+
+function queueOperationHeaderFit() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  if (!operationHeaderFitBound) {
+    operationHeaderFitBound = true;
+    window.addEventListener("resize", queueOperationHeaderFit, { passive: true });
+    window.addEventListener("orientationchange", queueOperationHeaderFit, { passive: true });
+  }
+
+  if (operationHeaderFitFrame) {
+    window.cancelAnimationFrame(operationHeaderFitFrame);
+  }
+
+  operationHeaderFitFrame = window.requestAnimationFrame(() => {
+    operationHeaderFitFrame = 0;
+    fitOperationHeaderText();
+  });
+}
+
+function fitOperationHeaderText() {
+  document.querySelectorAll("[data-operation-fit-text]").forEach((el) => {
+    const box = el.closest("[data-operation-fit-box]");
+
+    if (!box) return;
+
+    const availableWidth = Math.max(12, Math.floor(box.clientWidth - 8));
+    const maxSize = Number(el.dataset.fitMax || 10);
+    const minSize = Number(el.dataset.fitMin || 4);
+    const tracking = el.dataset.fitTracking || "0em";
+
+    el.style.display = "inline-block";
+    el.style.maxWidth = "none";
+    el.style.whiteSpace = "nowrap";
+    el.style.fontSize = `${maxSize}px`;
+    el.style.letterSpacing = tracking;
+    el.style.transform = "scaleX(1)";
+    el.style.transformOrigin = "center center";
+
+    let size = maxSize;
+
+    while (size > minSize && el.scrollWidth > availableWidth) {
+      size = Math.max(minSize, size - 0.25);
+      el.style.fontSize = `${size}px`;
+    }
+
+    if (el.scrollWidth > availableWidth) {
+      const scale = Math.max(0.28, availableWidth / el.scrollWidth);
+      el.style.transform = `scaleX(${scale})`;
+    }
+  });
+}
+
+export function refreshQuotePublicOperationStatus() {
+  const themeClasses = getQuoteThemeClasses();
+
+  document
+    .querySelectorAll("[data-public-operation-header-host]")
+    .forEach((el) => {
+      el.innerHTML = renderPublicOperationHeaderStatusContent(themeClasses);
+    });
+
+  queueOperationHeaderFit();
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function renderTopbarIconButton(type, themeClasses, visible = true, animateControls = false) {
@@ -162,16 +382,8 @@ function renderTopbarIconButton(type, themeClasses, visible = true, animateContr
     : "";
 
   const iconSvg = isHome
-    ? `
-      <svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
-        <path d="M12 3.2 3.6 10v9.1c0 .8.6 1.4 1.4 1.4h4.5v-6.1c0-.7.6-1.3 1.3-1.3h2.4c.7 0 1.3.6 1.3 1.3v6.1H19c.8 0 1.4-.6 1.4-1.4V10L12 3.2Z"/>
-      </svg>
-    `
-    : `
-      <svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
-        <path d="M10 5.1 3.6 11.5 10 17.9l1.5-1.5-3.7-3.7h6.1c2.7 0 4.9 2.2 4.9 4.9v.7H21v-.7c0-3.9-3.2-7.1-7.1-7.1H7.8l3.7-3.7L10 5.1Z"/>
-      </svg>
-    `;
+    ? `<svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5"><path d="M12 3.2 3.6 10v9.1c0 .8.6 1.4 1.4 1.4h4.5v-6.1c0-.7.6-1.3 1.3-1.3h2.4c.7 0 1.3.6 1.3 1.3v6.1H19c.8 0 1.4-.6 1.4-1.4V10L12 3.2Z"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5"><path d="M10 5.1 3.6 11.5 10 17.9l1.5-1.5-3.7-3.7h6.1c2.7 0 4.9 2.2 4.9 4.9v.7H21v-.7c0-3.9-3.2-7.1-7.1-7.1H7.8l3.7-3.7L10 5.1Z"/></svg>`;
 
   return `
     <button
@@ -327,3 +539,6 @@ export function renderQuoteShellFooter({
     </div>
   `;
 }
+
+
+

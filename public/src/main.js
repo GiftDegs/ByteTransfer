@@ -1,6 +1,11 @@
 ﻿import { enableSharePreviewTools } from "./ui/sharePreview.js";
 import { initRipple } from "./ui/ripple.js";
 import { renderQuoteScreen } from "./ui/quoteScreens.js";
+import {
+  loadPublicOperationStatus,
+  startPublicOperationTicker,
+} from "./state/publicOperation.js";
+import { refreshQuotePublicOperationStatus } from "./ui/quoteShell.js";
 
 function iniciarCotizadorPublico() {
   const app = document.getElementById("app");
@@ -24,12 +29,18 @@ function shouldEnableSharePreviewTools() {
   );
 }
 
-window.onload = () => {
+window.onload = async () => {
   initRipple();
 
   if (shouldEnableSharePreviewTools()) {
     enableSharePreviewTools();
   }
 
+  await loadPublicOperationStatus();
+
   iniciarCotizadorPublico();
+
+  startPublicOperationTicker(() => {
+    refreshQuotePublicOperationStatus();
+  });
 };
