@@ -1,0 +1,73 @@
+:root {
+  --bg-primary: #020617;
+
+  --glass-bg: rgba(15, 23, 42, 0.72);
+  --glass-border: rgba(148, 163, 184, 0.10);
+
+  --cyan-soft: rgba(34,216,203,0.10);
+  --cyan-border: rgba(34,216,203,0.22);
+
+  --text-soft: rgb(148 163 184);
+  --text-muted: rgb(100 116 139);
+
+  --shadow-core:
+    inset 0 1px 0 rgba(255,255,255,0.03),
+    0 10px 30px rgba(0,0,0,0.28);
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(34,216,203,0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(59,130,246,0.10), transparent 22%),
+    var(--bg-primary);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-core);
+}
+
+.sidebar-item {
+  transition: all .18s ease;
+}
+
+.sidebar-item:hover {
+  transform: translateX(4px);
+  background: var(--cyan-soft);
+  border-color: var(--cyan-border);
+}
+
+.sidebar-item.active {
+  background: rgba(34,216,203,0.14);
+  border-color: rgba(34,216,203,0.30);
+  color: white;
+}
+
+.core-card {
+  transition: all .22s ease;
+}
+
+.core-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(34,216,203,0.25);
+}
+
+.status-dot {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: .45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: .45;
+  }
+}

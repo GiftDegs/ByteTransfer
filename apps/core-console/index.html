@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Dhemka Core — Infrastructure Console</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="./styles/theme.css" />
+  
+</head>
+
+<body class="min-h-screen text-slate-100">
+
+  <div class="flex min-h-screen">
+
+    <!-- SIDEBAR -->
+    <aside class="glass w-[310px] border-r border-white/10 p-6">
+
+      <!-- BRAND -->
+      <div>
+
+        <p class="text-[11px] font-bold uppercase tracking-[0.42em] text-cyan-300/70">
+          Dhemka Core
+        </p>
+
+        <h1 class="mt-3 text-4xl font-black tracking-tight">
+          Infrastructure
+        </h1>
+
+        <p class="text-2xl font-black text-slate-300">
+          Console
+        </p>
+
+        <p class="mt-3 text-sm leading-relaxed text-slate-400">
+          Central operational infrastructure for tenants, market engine and monitoring systems.
+        </p>
+
+      </div>
+
+      <!-- CORE -->
+      <div class="mt-10">
+
+        <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
+          Core Modules
+        </p>
+
+        <div class="space-y-2">
+
+          <button class="sidebar-item active w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Dashboard
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Ecosystem overview
+            </p>
+          </button>
+
+          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Operational Base
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Market snapshots & references
+            </p>
+          </button>
+
+          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Quote Engine
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Providers & aggregation
+            </p>
+          </button>
+
+          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Monitoring
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Polling & health systems
+            </p>
+          </button>
+
+          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Tenants
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Remit ecosystem
+            </p>
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- ACTIVE TENANT -->
+      <div class="mt-10">
+
+        <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
+          Active Tenant
+        </p>
+
+        <div class="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-5">
+
+          <div class="flex items-center justify-between">
+
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-cyan-300/70">
+                Remit
+              </p>
+
+              <h2 class="mt-2 text-2xl font-black">
+                ByteTransfer
+              </h2>
+            </div>
+
+            <div class="status-dot h-3 w-3 rounded-full bg-emerald-400"></div>
+
+          </div>
+
+          <p class="mt-3 text-sm text-slate-300">
+            First operational tenant running inside the Remit infrastructure.
+          </p>
+
+        </div>
+
+      </div>
+
+      <!-- FOOT -->
+      <div class="mt-10 rounded-3xl border border-white/5 bg-black/20 p-4">
+
+        <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">
+          Core Status
+        </p>
+
+        <div class="mt-4 space-y-3 text-sm">
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Runtime</span>
+            <span class="font-bold text-emerald-400">
+              Operational
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Workers</span>
+            <span class="font-bold text-cyan-300">
+              Active
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Environment</span>
+            <span class="font-bold text-slate-200">
+              Production
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="flex-1 p-8">
+
+      <!-- TOPBAR -->
+      <div class="glass flex items-center justify-between rounded-3xl px-6 py-5">
+
+        <div>
+
+          <p class="text-[11px] font-bold uppercase tracking-[0.35em] text-cyan-300/70">
+            Dhemka Core
+          </p>
+
+          <h2 class="mt-2 text-3xl font-black tracking-tight">
+            Ecosystem Infrastructure Overview
+          </h2>
+
+        </div>
+
+        <div class="flex items-center gap-4">
+
+          <div class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+            <p class="text-[10px] uppercase tracking-[0.25em] text-slate-500">
+              Snapshot
+            </p>
+
+            <p class="mt-1 font-bold text-slate-200">
+              Active
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+            <p class="text-[10px] uppercase tracking-[0.25em] text-slate-500">
+              Polling
+            </p>
+
+            <p class="mt-1 font-bold text-cyan-300">
+              Running
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+            <p class="text-[10px] uppercase tracking-[0.25em] text-slate-500">
+              Runtime
+            </p>
+
+            <p class="mt-1 font-bold text-emerald-400">
+              Healthy
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- GRID -->
+      <div class="mt-8 grid gap-6 lg:grid-cols-3">
+
+        <div class="core-card glass rounded-3xl p-6">
+
+          <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+            Operational Base
+          </p>
+
+          <h3 class="mt-4 text-3xl font-black">
+            Market Stable
+          </h3>
+
+          <p class="mt-3 text-sm leading-relaxed text-slate-400">
+            Global snapshot references are synchronized correctly across the ecosystem.
+          </p>
+
+        </div>
+
+        <div class="core-card glass rounded-3xl p-6">
+
+          <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+            Quote Engine
+          </p>
+
+          <h3 class="mt-4 text-3xl font-black">
+            Binance + BCV + PTAX
+          </h3>
+
+          <p class="mt-3 text-sm leading-relaxed text-slate-400">
+            Providers, aggregation and fallback systems currently operational.
+          </p>
+
+        </div>
+
+        <div class="core-card glass rounded-3xl p-6">
+
+          <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+            Ecosystem
+          </p>
+
+          <h3 class="mt-4 text-3xl font-black">
+            1 Active Tenant
+          </h3>
+
+          <p class="mt-3 text-sm leading-relaxed text-slate-400">
+            ByteTransfer currently running under the Remit infrastructure layer.
+          </p>
+
+        </div>
+
+      </div>
+
+      <!-- LOWER GRID -->
+      <div class="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+
+        <!-- ACTIVITY -->
+        <section class="glass rounded-3xl p-6">
+
+          <div class="flex items-center justify-between">
+
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                Core Activity
+              </p>
+
+              <h3 class="mt-2 text-2xl font-black">
+                Recent infrastructure events
+              </h3>
+            </div>
+
+            <button class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-bold text-cyan-200">
+              View Logs
+            </button>
+
+          </div>
+
+          <div class="mt-6 space-y-4">
+
+            <div class="rounded-2xl border border-white/5 bg-black/20 p-4">
+              <p class="text-sm font-semibold">
+                Snapshot updated successfully
+              </p>
+
+              <p class="mt-1 text-xs text-slate-500">
+                2 minutes ago
+              </p>
+            </div>
+
+            <div class="rounded-2xl border border-white/5 bg-black/20 p-4">
+              <p class="text-sm font-semibold">
+                Polling cycle completed
+              </p>
+
+              <p class="mt-1 text-xs text-slate-500">
+                4 minutes ago
+              </p>
+            </div>
+
+            <div class="rounded-2xl border border-white/5 bg-black/20 p-4">
+              <p class="text-sm font-semibold">
+                PTAX reference synchronized
+              </p>
+
+              <p class="mt-1 text-xs text-slate-500">
+                9 minutes ago
+              </p>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- TENANTS -->
+        <section class="glass rounded-3xl p-6">
+
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+              Tenants
+            </p>
+
+            <h3 class="mt-2 text-2xl font-black">
+              Active ecosystem
+            </h3>
+          </div>
+
+          <div class="mt-6 space-y-4">
+
+            <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+
+              <div class="flex items-center justify-between">
+
+                <div>
+                  <p class="font-bold">
+                    ByteTransfer
+                  </p>
+
+                  <p class="mt-1 text-xs text-slate-400">
+                    Operational tenant
+                  </p>
+                </div>
+
+                <div class="status-dot h-3 w-3 rounded-full bg-emerald-400"></div>
+
+              </div>
+
+            </div>
+
+            <div class="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4">
+
+              <p class="font-semibold text-slate-400">
+                New tenant slot
+              </p>
+
+              <p class="mt-1 text-xs text-slate-500">
+                Ready for provisioning
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+</body>
+</html>
