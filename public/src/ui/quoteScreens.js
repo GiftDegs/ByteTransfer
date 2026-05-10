@@ -304,6 +304,8 @@ function bindPublicOperationRestrictionUi(container) {
     clearPublicOperationModalSessionMemory();
     return;
   }
+
+  applyPublicOperationShareLocks(container, status);
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
   window.setTimeout(() => {
@@ -311,6 +313,86 @@ function bindPublicOperationRestrictionUi(container) {
   }, 30);
 }
 
+function applyPublicOperationShareLocks(container, status = getPublicOperationRestrictionStatus()) {
+  if (!container || !status) return;
+
+  const buttons = container.querySelectorAll(
+    "[data-reference-whatsapp], [data-rate-whatsapp], [data-remittance-whatsapp]",
+  );
+
+  buttons.forEach((button) => {
+    if (!button || button.dataset.publicOperationLocked === "1") return;
+
+    button.dataset.publicOperationLocked = "1";
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+    button.setAttribute("title", getPublicOperationBlockedActionText(status));
+
+    button.className = getPublicOperationBlockedActionButtonClass();
+    button.innerHTML = `
+      <span class="relative flex items-center justify-center gap-2">
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-current opacity-65"></span>
+        ${escapeOperationHtml(getPublicOperationBlockedActionLabel(status))}
+      </span>
+    `;
+
+    const notice = document.createElement("div");
+    notice.dataset.publicOperationShareNotice = "1";
+    notice.className = getPublicOperationBlockedActionNoticeClass();
+    notice.innerHTML = escapeOperationHtml(getPublicOperationBlockedActionText(status));
+
+    button.insertAdjacentElement("afterend", notice);
+  });
+}
+
+function getPublicOperationBlockedActionLabel(status) {
+  if (status?.status === "closed_manual") {
+    return "Compartir pausado";
+  }
+
+  if (status?.status === "opening_soon") {
+    return "Disponible al abrir";
+  }
+
+  return "Fuera de horario";
+}
+
+function getPublicOperationBlockedActionText(status) {
+  if (status?.status === "closed_manual") {
+    return "WhatsApp e imagen compartible estarán disponibles cuando el servicio vuelva a estar activo.";
+  }
+
+  if (status?.status === "opening_soon") {
+    return "Puedes consultar el resultado, pero compartir por WhatsApp se habilita al abrir.";
+  }
+
+  return "Puedes consultar valores referenciales, pero WhatsApp e imagen se habilitan en horario operativo.";
+}
+
+function getPublicOperationBlockedActionButtonClass() {
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+
+  return [
+    "mt-5 inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl border px-4 py-3.5 text-sm font-black uppercase tracking-[0.13em]",
+    "opacity-85 shadow-sm transition duration-200",
+    isLight
+      ? "border-slate-200 bg-slate-100/80 text-slate-500"
+      : "border-white/10 bg-white/[0.045] text-slate-300/70",
+  ].join(" ");
+}
+
+function getPublicOperationBlockedActionNoticeClass() {
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+
+  return [
+    "mx-auto mt-2 max-w-sm rounded-2xl border px-3 py-2 text-center text-[11px] font-semibold leading-relaxed",
+    isLight
+      ? "border-slate-200/80 bg-white/55 text-slate-500"
+      : "border-white/10 bg-white/[0.035] text-slate-300/62",
+  ].join(" ");
+}
 function clearPublicOperationModalSessionMemory() {
   if (typeof window === "undefined") return;
 
@@ -1858,6 +1940,50 @@ function renderRemittanceResultBody(result) {
   `;
 }
 
+function renderRemittanceReferenceOnlyBadge() {
+  const status = getPublicOperationRestrictionStatus();
+
+  if (!status) return "";
+
+  const themeClasses = getQuoteThemeClasses();
+  const isLight = Boolean(themeClasses?.isLight);
+  const isManual = status?.status === "closed_manual";
+
+  const wrapperClass = isManual
+    ? isLight
+      ? "border-rose-300/45 bg-rose-50/65 text-rose-950"
+      : "border-rose-400/18 bg-rose-500/[0.07] text-rose-50"
+    : isLight
+      ? "border-amber-300/50 bg-amber-50/70 text-amber-950"
+      : "border-amber-300/18 bg-amber-400/[0.07] text-amber-50";
+
+  const pillClass = isManual
+    ? isLight
+      ? "border-rose-300/60 bg-white/65 text-rose-700"
+      : "border-rose-300/20 bg-rose-400/10 text-rose-200"
+    : isLight
+      ? "border-amber-300/60 bg-white/65 text-amber-700"
+      : "border-amber-300/20 bg-amber-400/10 text-amber-200";
+
+  const title = isManual ? "Servicio pausado" : "Resultado referencial";
+  const detail = isManual
+    ? "No representa una cotización oficial mientras el servicio esté pausado."
+    : "No representa una cotización oficial fuera del horario operativo.";
+
+  return `
+    <div class="mt-4 overflow-hidden rounded-2xl border px-4 py-3 text-center shadow-sm backdrop-blur-xl ${wrapperClass}">
+      <div class="flex items-center justify-center">
+        <span class="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${pillClass}">
+          ${escapeOperationHtml(title)}
+        </span>
+      </div>
+
+      <p class="mx-auto mt-2 max-w-sm text-xs font-semibold leading-relaxed opacity-75">
+        ${escapeOperationHtml(detail)}
+      </p>
+    </div>
+  `;
+}
 function renderResultLine(label, amount, currencyLabel, highlight = false) {
   const themeClasses = getQuoteThemeClasses();
 
@@ -2110,6 +2236,8 @@ function renderComingSoon(container, session) {
 
   bindCommonNavigation(container);
 }
+
+
 
 
 
