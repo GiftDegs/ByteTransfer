@@ -172,9 +172,6 @@ function renderMonedas() {
       await obtenerMercadoLive(onProgress);
       renderMonitoreo();
 
-      const audit = await obtenerAuditoriaCotizaciones();
-      renderAuditoriaCotizaciones(audit);
-
       try {
         const refs = await obtenerReferenciasExternas();
         renderReferenciasExternas(refs);

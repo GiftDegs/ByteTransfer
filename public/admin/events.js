@@ -162,6 +162,13 @@ function bindUI() {
       datosPaises[fiat].venta = datos.venta;
     }
 
+    try {
+      const audit = await obtenerAuditoriaCotizaciones();
+      renderAuditoriaCotizaciones(audit);
+    } catch (e) {
+      console.warn("auditoría cotizaciones:", e.message);
+    }
+
     llamadasPendientes = 0;
 
     if (timerAdvertencia) clearTimeout(timerAdvertencia);

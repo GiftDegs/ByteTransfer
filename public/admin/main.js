@@ -111,7 +111,7 @@ let mercadoPaises = {};
 let referenciasMercado = null;
 let pollingActivo = true;
 let pollingInterval = null;
-let pollingMs = 60000;
+let pollingMs = 180000;
 let ultimoTick = null;
 
 let filtroMasivoOrigen = "";
