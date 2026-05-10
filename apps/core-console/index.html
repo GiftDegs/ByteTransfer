@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <link rel="stylesheet" href="./styles/theme.css" />
-  
+
 </head>
 
 <body class="min-h-screen text-slate-100">
@@ -49,7 +49,7 @@
 
         <div class="space-y-2">
 
-          <button class="sidebar-item active w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+          <button data-section="dashboard" class="sidebar-item active w-full rounded-2xl border border-transparent px-4 py-3 text-left">
             <p class="text-sm font-bold">
               Dashboard
             </p>
@@ -59,7 +59,7 @@
             </p>
           </button>
 
-          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+          <button data-section="operational-base" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
             <p class="text-sm font-bold">
               Operational Base
             </p>
@@ -69,7 +69,7 @@
             </p>
           </button>
 
-          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+          <button data-section="quote-engine" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
             <p class="text-sm font-bold">
               Quote Engine
             </p>
@@ -79,7 +79,7 @@
             </p>
           </button>
 
-          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+          <button data-section="monitoring" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
             <p class="text-sm font-bold">
               Monitoring
             </p>
@@ -89,7 +89,7 @@
             </p>
           </button>
 
-          <button class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+          <button data-section="tenants" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
             <p class="text-sm font-bold">
               Tenants
             </p>
@@ -395,6 +395,8 @@
     </main>
 
   </div>
+
+  <script src="./app.js"></script>
 
 </body>
 </html>
