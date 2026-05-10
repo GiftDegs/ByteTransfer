@@ -35,15 +35,15 @@ export function triggerQuoteHaptic(type = "tap") {
 
 export function getQuoteMotionClass(kind = "soft") {
   if (kind === "screen") {
-    return "motion-safe:animate-[quoteScreenIn_420ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none";
+    return "motion-safe:animate-[quoteScreenIn_260ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none";
   }
 
   if (kind === "card") {
-    return "motion-safe:animate-[quoteCardIn_360ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none";
+    return "motion-safe:animate-[quoteCardIn_220ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none";
   }
 
   if (kind === "result") {
-    return "motion-safe:animate-[quoteResultIn_520ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none";
+    return "motion-safe:animate-[quoteResultIn_320ms_cubic-bezier(0.22,1,0.36,1)_both] motion-reduce:animate-none";
   }
 
   if (kind === "fade") {

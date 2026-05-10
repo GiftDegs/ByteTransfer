@@ -50,44 +50,37 @@ function renderQuoteMotionStyles() {
       @keyframes quoteScreenIn {
         0% {
           opacity: 0;
-          transform: translateY(10px) scale(0.992);
-          filter: blur(3px);
+          transform: translateY(6px);
         }
         100% {
           opacity: 1;
-          transform: translateY(0) scale(1);
-          filter: blur(0);
+          transform: translateY(0);
         }
       }
 
       @keyframes quoteCardIn {
         0% {
           opacity: 0;
-          transform: translateY(8px) scale(0.985);
-          filter: blur(2px);
+          transform: translateY(5px);
         }
         100% {
           opacity: 1;
-          transform: translateY(0) scale(1);
-          filter: blur(0);
+          transform: translateY(0);
         }
       }
 
       @keyframes quoteResultIn {
         0% {
           opacity: 0;
-          transform: translateY(14px) scale(0.985);
-          filter: blur(4px);
+          transform: translateY(8px);
         }
-        70% {
+        75% {
           opacity: 1;
-          transform: translateY(-1px) scale(1.006);
-          filter: blur(0);
+          transform: translateY(-1px);
         }
         100% {
           opacity: 1;
-          transform: translateY(0) scale(1);
-          filter: blur(0);
+          transform: translateY(0);
         }
       }
 
