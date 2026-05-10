@@ -103,11 +103,8 @@ export function renderQuoteTopbar({
       }
     </style>
 
-    <div data-quote-topbar="1" class="shrink-0 -mx-1 mb-4 grid min-h-[3.5rem] grid-cols-[5.6rem_minmax(0,1fr)_auto] sm:grid-cols-[7.25rem_minmax(0,1fr)_7.25rem] items-center gap-2 rounded-[1.35rem] border px-3 py-2 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 ${themeClasses.topbar}">
-      <div class="flex h-10 min-w-0 items-center justify-start gap-2">
-        ${renderTopbarIconButton("home", themeClasses, showHome, animateControls)}
-        ${renderTopbarIconButton("back", themeClasses, showBack, animateControls)}
-      </div>
+    <div data-quote-topbar="1" class="shrink-0 -mx-1 mb-4 grid min-h-[3.5rem] grid-cols-[4.9rem_minmax(0,1fr)_4.9rem] items-center gap-2 rounded-[1.35rem] border px-3 py-2 backdrop-blur-xl sm:sticky sm:top-0 sm:z-20 sm:grid-cols-[7.25rem_minmax(0,1fr)_7.25rem] ${themeClasses.topbar}">
+      ${renderQuoteTopbarBrand(themeClasses)}
 
       ${renderPublicOperationHeaderStatusHost(themeClasses)}
 
@@ -145,6 +142,19 @@ export function renderQuoteTopbar({
             ${isLight ? "Claro" : "Oscuro"}
           </span>
         </button>
+      </div>
+    </div>
+  `;
+}
+function renderQuoteTopbarBrand(themeClasses) {
+  return `
+    <div class="flex h-10 min-w-0 items-center justify-start">
+      <div class="grid h-8 w-8 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[0.035] shadow-sm backdrop-blur-xl">
+        <img
+          src="logo.png"
+          alt="ByteTransfer"
+          class="h-5 w-5 select-none object-contain drop-shadow-[0_8px_16px_rgba(13,148,136,0.22)]"
+        />
       </div>
     </div>
   `;
@@ -401,9 +411,12 @@ function renderTopbarIconButton(type, themeClasses, visible = true, animateContr
 }
 
 export function animateQuoteTopbarExit(trigger, onComplete) {
-  const topbar = trigger?.closest?.("[data-quote-topbar]");
-  const buttons = topbar
-    ? Array.from(topbar.querySelectorAll("[data-quote-home], [data-quote-back]"))
+  const navHost =
+    trigger?.closest?.("[data-quote-topbar]") ||
+    trigger?.closest?.("[data-quote-footer-nav]");
+
+  const buttons = navHost
+    ? Array.from(navHost.querySelectorAll("[data-quote-home], [data-quote-back]"))
     : [];
 
   const visibleButtons = buttons.filter((button) => !button.disabled);
@@ -522,23 +535,34 @@ function createQuoteThemeTransitionOverlay(isLight) {
 export function renderQuoteShellFooter({
   logoSize = "h-10 w-10 sm:h-12 sm:w-12",
   paddingTop = "pt-4",
+  showHome = false,
+  showBack = false,
+  animateControls = false,
 } = {}) {
   const themeClasses = getQuoteThemeClasses();
 
   return `
-    <div class="shrink-0 flex flex-col items-center justify-end ${paddingTop}">
-      <img
-        src="logo.png"
-        alt="Logo ByteTransfer"
-        class="${logoSize} select-none object-contain drop-shadow-[0_14px_24px_rgba(13,148,136,0.24)]"
-      />
+    <div data-quote-footer-nav="1" class="shrink-0 grid grid-cols-[4rem_minmax(0,1fr)_4rem] items-end gap-3 ${paddingTop}">
+      <div class="flex justify-start">
+        ${renderTopbarIconButton("home", themeClasses, showHome, animateControls)}
+      </div>
 
-      <p class="mt-2 text-[10px] font-black uppercase tracking-[0.28em] ${themeClasses.accentText}">
-        ByteTransfer
-      </p>
+      <div class="flex min-w-0 flex-col items-center justify-end">
+        <img
+          src="logo.png"
+          alt="Logo ByteTransfer"
+          class="${logoSize} select-none object-contain drop-shadow-[0_14px_24px_rgba(13,148,136,0.24)]"
+        />
+
+        <p class="mt-2 text-[10px] font-black uppercase tracking-[0.28em] ${themeClasses.accentText}">
+          ByteTransfer
+        </p>
+      </div>
+
+      <div class="flex justify-end">
+        ${renderTopbarIconButton("back", themeClasses, showBack, animateControls)}
+      </div>
     </div>
   `;
 }
-
-
 

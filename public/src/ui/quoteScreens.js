@@ -27,6 +27,7 @@ import {
   animateQuoteThemeSwitch,
   animateQuoteTopbarExit,
   renderQuoteShell,
+  renderQuoteShellFooter,
   renderQuoteTopbar,
 } from "./quoteShell.js";
 
@@ -110,13 +111,15 @@ function renderScreenShell({ eyebrow, title, description, body }) {
       ${body || ""}
     `,
     topbar: renderQuoteTopbar({
-      showBack: true,
+      animateControls,
+    }),
+    footer: renderQuoteShellFooter({
       showHome: true,
+      showBack: true,
       animateControls,
     }),
   });
 }
-
 function bindCommonNavigation(container) {
   bindPublicOperationRestrictionUi(container);
 
@@ -2236,6 +2239,7 @@ function renderComingSoon(container, session) {
 
   bindCommonNavigation(container);
 }
+
 
 
 
