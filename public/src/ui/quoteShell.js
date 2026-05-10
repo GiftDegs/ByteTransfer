@@ -15,10 +15,11 @@ export function renderQuoteShell({
   const themeClasses = getQuoteThemeClasses();
 
   return `
+    ${renderQuoteMotionStyles()}
     <section class="${getQuoteShellSectionClass(themeClasses)}">
       ${renderQuoteShellBackground(themeClasses)}
 
-      <div class="relative flex min-h-0 flex-1 flex-col">
+      <div class="relative flex min-h-0 flex-1 flex-col ${getQuoteShellMotionClass()}">
         ${topbar || ""}
 
         <div data-quote-title-block="1" class="shrink-0 mb-4 text-center sm:mb-6">
@@ -41,6 +42,95 @@ export function renderQuoteShell({
       </div>
     </section>
   `;
+}
+
+function renderQuoteMotionStyles() {
+  return `
+    <style>
+      @keyframes quoteScreenIn {
+        0% {
+          opacity: 0;
+          transform: translateY(10px) scale(0.992);
+          filter: blur(3px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+
+      @keyframes quoteCardIn {
+        0% {
+          opacity: 0;
+          transform: translateY(8px) scale(0.985);
+          filter: blur(2px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+
+      @keyframes quoteResultIn {
+        0% {
+          opacity: 0;
+          transform: translateY(14px) scale(0.985);
+          filter: blur(4px);
+        }
+        70% {
+          opacity: 1;
+          transform: translateY(-1px) scale(1.006);
+          filter: blur(0);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+
+      @keyframes quoteFadeIn {
+        0% {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes quoteShimmer {
+        0% {
+          transform: translateX(-120%);
+        }
+        100% {
+          transform: translateX(120%);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        [class*="quoteScreenIn"],
+        [class*="quoteCardIn"],
+        [class*="quoteResultIn"],
+        [class*="quoteFadeIn"],
+        [class*="quoteShimmer"] {
+          animation: none !important;
+          transition: none !important;
+          transform: none !important;
+        }
+      }
+    </style>
+  `;
+}
+
+function getQuoteShellMotionClass() {
+  return [
+    "motion-safe:animate-[quoteScreenIn_420ms_cubic-bezier(0.22,1,0.36,1)_both]",
+    "motion-reduce:animate-none",
+  ].join(" ");
 }
 
 export function getQuoteShellSectionClass(themeClasses) {

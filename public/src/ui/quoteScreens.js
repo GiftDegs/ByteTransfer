@@ -21,6 +21,9 @@ import {
   renderQuoteLoadingPanel,
   renderQuoteErrorPanel,
   renderQuoteInfoPanel,
+  getQuoteMotionClass,
+  getQuoteStaggerStyle,
+  triggerQuoteHaptic,
 } from "./quoteComponents.js";
 
 import {
@@ -378,10 +381,10 @@ function getPublicOperationBlockedActionButtonClass() {
 
   return [
     "mt-5 inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl border px-4 py-3.5 text-sm font-black uppercase tracking-[0.13em]",
-    "opacity-85 shadow-sm transition duration-200",
+    "opacity-85 shadow-sm transition duration-200 motion-safe:animate-[quoteFadeIn_380ms_ease-out_both]",
     isLight
-      ? "border-slate-200 bg-slate-100/80 text-slate-500"
-      : "border-white/10 bg-white/[0.045] text-slate-300/70",
+      ? "border-slate-200 bg-slate-100/80 text-slate-500 shadow-[0_0_0_1px_rgba(255,255,255,0.25)]"
+      : "border-white/10 bg-white/[0.045] text-slate-300/70 shadow-[0_0_22px_rgba(255,255,255,0.035)]",
   ].join(" ");
 }
 
@@ -390,7 +393,7 @@ function getPublicOperationBlockedActionNoticeClass() {
   const isLight = Boolean(themeClasses?.isLight);
 
   return [
-    "mx-auto mt-2 max-w-sm rounded-2xl border px-3 py-2 text-center text-[11px] font-semibold leading-relaxed",
+    "mx-auto mt-2 max-w-sm rounded-2xl border px-3 py-2 text-center text-[11px] font-semibold leading-relaxed motion-safe:animate-[quoteFadeIn_520ms_ease-out_both]",
     isLight
       ? "border-slate-200/80 bg-white/55 text-slate-500"
       : "border-white/10 bg-white/[0.035] text-slate-300/62",
@@ -1251,7 +1254,7 @@ function renderRemittanceModeOption(option) {
     <button
       type="button"
       data-remittance-mode="${option.id}"
-      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")} ${getQuoteMotionClass("card")}"
     >
       <div class="relative flex items-center justify-between gap-4">
         <div class="min-w-0 flex-1">
@@ -1304,6 +1307,7 @@ function renderBcvReferenceSelectionScreen(container, session) {
 
   container.querySelectorAll("[data-bcv-reference]").forEach((btn) => {
     btn.addEventListener("click", () => {
+      triggerQuoteHaptic("soft");
       const bcvReferenceType = btn.dataset.bcvReference;
       const nextStep =
         bcvReferenceType === BCV_REFERENCE_TYPES.CUSTOM
@@ -1330,7 +1334,7 @@ function renderBcvReferenceOption(option) {
     <button
       type="button"
       data-bcv-reference="${option.id}"
-      class="${getQuoteSelectionCardClass(themeClasses, "p-5")}"
+      class="${getQuoteSelectionCardClass(themeClasses, "p-5")} ${getQuoteMotionClass("card")}"
     >
       <div class="pointer-events-none absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#23d4c3]/12 to-transparent opacity-0 transition group-hover:opacity-100"></div>
 
@@ -1455,7 +1459,10 @@ function renderCustomBcvRateScreen(container, session) {
     continueWithCustomBcvRate();
   });
 
-  btn?.addEventListener("click", continueWithCustomBcvRate);
+  btn?.addEventListener("click", () => {
+  triggerQuoteHaptic("tap");
+  continueWithCustomBcvRate();
+  });
 
   setTimeout(() => input?.focus(), 80);
 }
@@ -1564,7 +1571,10 @@ function renderRemittanceAmountScreen(container, session) {
     continueWithRemittanceAmount();
   });
 
-  btn?.addEventListener("click", continueWithRemittanceAmount);
+  btn?.addEventListener("click", () => {
+  triggerQuoteHaptic("tap");
+  continueWithRemittanceAmount();
+  });
 
   setTimeout(() => input?.focus(), 80);
 }
@@ -1841,6 +1851,7 @@ function renderRemittanceResultView(container, result) {
   container
   .querySelector("[data-remittance-whatsapp]")
   ?.addEventListener("click", async () => {
+    triggerQuoteHaptic("success");
     const shareResult = await enrichRemittanceResultForShare(result);
     const payload = buildRemittanceSharePayload(shareResult);
     await sharePremiumPayload(withQuoteTheme(payload));
@@ -1866,14 +1877,27 @@ function renderRemittanceResultBody(result) {
     const equivalente = renderVenezuelaUsdEquivalent(result.recibe);
 
     return `
-      <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl">
+      <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl ${getQuoteMotionClass("result")}">
         <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
           ${result.routeLabel}
         </div>
 
         <div class="mt-6 grid grid-cols-1 gap-3 text-left">
-          ${renderResultLine("El cliente envía", result.envia.amount, result.envia.currencyLabel)}
-          ${renderResultLine("El cliente recibe", result.recibe.amount, result.recibe.currencyLabel, true)}
+          ${renderResultLine(
+          "El cliente envía",
+          result.envia.amount,
+          result.envia.currencyLabel,
+          false,
+          0,
+        )}
+
+        ${renderResultLine(
+          "El cliente recibe",
+          result.recibe.amount,
+          result.recibe.currencyLabel,
+          true,
+          1,
+        )}
           ${equivalente}
         </div>
 
@@ -1887,14 +1911,27 @@ function renderRemittanceResultBody(result) {
     const equivalente = renderVenezuelaUsdEquivalent(result.recibe);
 
     return `
-      <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl">
+      <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl ${getQuoteMotionClass("result")}">
         <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
           ${result.routeLabel}
         </div>
 
         <div class="mt-6 grid grid-cols-1 gap-3 text-left">
-          ${renderResultLine("El cliente quiere recibir", result.recibe.amount, result.recibe.currencyLabel)}
-          ${renderResultLine("Debe enviar", result.debeEnviar.amount, result.debeEnviar.currencyLabel, true)}
+          ${renderResultLine(
+          "El cliente quiere recibir",
+          result.recibe.amount,
+          result.recibe.currencyLabel,
+          false,
+          0,
+        )}
+
+        ${renderResultLine(
+          "Debe enviar",
+          result.debeEnviar.amount,
+          result.debeEnviar.currencyLabel,
+          true,
+          1,
+        )}
           ${equivalente}
         </div>
 
@@ -1906,15 +1943,35 @@ function renderRemittanceResultBody(result) {
 
   if (result.type === "receive_bcv_usd") {
     return `
-      <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl">
+      <div class="rounded-[2rem] border border-brandTeal/20 bg-gradient-to-b from-white/[0.10] to-white/[0.04] p-6 text-center shadow-2xl ${getQuoteMotionClass("result")}">
         <div class="text-[11px] font-bold uppercase tracking-[0.22em] text-brandTeal">
           ${result.routeLabel}
         </div>
 
         <div class="mt-6 grid grid-cols-1 gap-3 text-left">
-          ${renderResultLine("El cliente quiere recibir", result.usdDeseados, "dólares")}
-          ${renderResultLine("Equivalente en Venezuela", result.vesObjetivo, "bolívares")}
-          ${renderResultLine("Debe enviar", result.debeEnviar.amount, result.debeEnviar.currencyLabel, true)}
+          ${renderResultLine(
+        "El cliente quiere recibir",
+        result.usdDeseados,
+        "dólares",
+        false,
+        0,
+      )}
+
+      ${renderResultLine(
+        "Equivalente en Venezuela",
+        result.vesObjetivo,
+        "bolívares",
+        false,
+        1,
+      )}
+
+      ${renderResultLine(
+        "Debe enviar",
+        result.debeEnviar.amount,
+        result.debeEnviar.currencyLabel,
+        true,
+        2,
+      )}
         </div>
 
         <div class="mt-4 rounded-2xl border ${
@@ -1987,15 +2044,25 @@ function renderRemittanceReferenceOnlyBadge() {
     </div>
   `;
 }
-function renderResultLine(label, amount, currencyLabel, highlight = false) {
+
+function renderResultLine(
+    label,
+    amount,
+    currencyLabel,
+    highlight = false,
+    motionIndex = 0,
+  ) {
   const themeClasses = getQuoteThemeClasses();
 
   return `
-    <div class="rounded-3xl border ${
-      highlight
+    <div
+  class="rounded-3xl border ${
+    highlight
         ? themeClasses.highlightedResultLine
         : themeClasses.resultLine
-    } p-4">
+    } p-4 ${getQuoteMotionClass("card")}"
+    ${getQuoteStaggerStyle(motionIndex)}
+  >
       <div class="text-xs font-bold uppercase tracking-[0.18em] ${
         highlight
           ? themeClasses.sectionEyebrow
@@ -2041,7 +2108,8 @@ function renderResultActions() {
     <button
       type="button"
       data-remittance-whatsapp="1"
-      class="${getQuoteActionButtonClass(themeClasses, "primary", "mt-5")}"
+      class="${getQuoteActionButtonClass(themeClasses, "primary", `mt-5 ${getQuoteMotionClass("fade")}`)}"
+style="animation-delay:220ms"
     >
       Enviar por WhatsApp
     </button>
