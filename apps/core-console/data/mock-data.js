@@ -251,3 +251,75 @@ window.coreOperationalBase = {
     },
   ],
 };
+
+window.coreQuoteEngine = {
+  owner: "Dhemka Core",
+  description: "Core-owned quote engine that resolves providers, aggregation strategies and fallbacks before tenant commercial rules apply.",
+  providers: [
+    {
+      name: "Binance P2P",
+      role: "Market liquidity source",
+      status: "active",
+      scope: "USDT buy/sell references",
+    },
+    {
+      name: "BCV",
+      role: "Official reference source",
+      status: "active",
+      scope: "VES official exchange reference",
+    },
+    {
+      name: "PTAX",
+      role: "Official BRL reference source",
+      status: "active",
+      scope: "BRL official reference",
+    },
+  ],
+  strategies: [
+    {
+      name: "Average",
+      status: "available",
+      description: "Uses average price across selected market samples.",
+    },
+    {
+      name: "Median",
+      status: "available",
+      description: "Protects against extreme prices by selecting the middle market value.",
+    },
+    {
+      name: "Trimmed Aggregation",
+      status: "available",
+      description: "Removes configured extremes before calculating the final reference.",
+    },
+  ],
+  fallbacks: [
+    {
+      name: "Last Good Reference",
+      status: "standby",
+      description: "Keeps a usable market reference when a provider becomes unstable.",
+    },
+    {
+      name: "Provider Degradation Warning",
+      status: "planned",
+      description: "Will flag weak provider quality before tenant pricing is affected.",
+    },
+  ],
+  tenantBoundary: [
+    {
+      label: "Tenants can adjust margins",
+      allowed: true,
+    },
+    {
+      label: "Tenants can adjust enabled routes",
+      allowed: true,
+    },
+    {
+      label: "Tenants cannot edit provider strategy",
+      allowed: false,
+    },
+    {
+      label: "Tenants cannot update global market base",
+      allowed: false,
+    },
+  ],
+};
