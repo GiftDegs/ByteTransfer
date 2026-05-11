@@ -75,6 +75,17 @@ function getAllModules(tenant) {
   return Object.values(tenant.modules || {});
 }
 
+function getTenantMetrics() {
+  const tenants = getTenants();
+
+  return {
+    totalTenants: tenants.length,
+    operationalTenants: tenants.filter((tenant) => tenant.status === "operational").length,
+    provisioningTenants: tenants.filter((tenant) => tenant.status === "provisioning").length,
+    enabledModules: tenants.reduce((total, tenant) => total + getEnabledModules(tenant).length, 0),
+  };
+}
+
 function renderModulePills(tenant, limit = 4) {
   const modules = getEnabledModules(tenant).slice(0, limit);
 
@@ -179,16 +190,25 @@ function setActiveSidebarItem(section) {
 }
 
 function buildTenantSectionCards() {
-  return getTenants().map((tenant) => {
-    const isActive = tenant.id === dhemkaState.activeTenantId;
-    const moduleCount = getEnabledModules(tenant).length;
+  const metrics = getTenantMetrics();
 
-    return {
-      eyebrow: `${tenant.product} · ${tenant.statusLabel}`,
-      title: tenant.name,
-      description: `${isActive ? "Selected in Core Console. " : ""}${tenant.plan} plan · ${moduleCount} enabled modules · /remit/${tenant.slug}`,
-    };
-  });
+  return [
+    {
+      eyebrow: "Tenant Network",
+      title: `${metrics.totalTenants} Tenants`,
+      description: "Configured tenant records inside the Remit ecosystem layer.",
+    },
+    {
+      eyebrow: "Operational Status",
+      title: `${metrics.operationalTenants} Live / ${metrics.provisioningTenants} Provisioning`,
+      description: "Core can distinguish live tenants from onboarding or setup tenants.",
+    },
+    {
+      eyebrow: "Module Surface",
+      title: `${metrics.enabledModules} Enabled Modules`,
+      description: "Tenant capabilities are modeled as configurable modules from the beginning.",
+    },
+  ];
 }
 
 function getSectionCards(section) {
@@ -338,13 +358,43 @@ function renderTenantSwitcher() {
     .join("");
 }
 
+function renderCreateTenantPlaceholder() {
+  return `
+    <div class="rounded-2xl border border-dashed border-cyan-400/20 bg-cyan-400/5 p-4">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="font-bold text-cyan-100">
+            Create Tenant
+          </p>
+
+          <p class="mt-1 text-xs leading-relaxed text-slate-500">
+            Future provisioning flow for adding a new remittance operator into Remit.
+          </p>
+        </div>
+
+        <span class="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-200">
+          Soon
+        </span>
+      </div>
+
+      <button
+        type="button"
+        disabled
+        class="mt-4 cursor-not-allowed rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-slate-500"
+      >
+        Provisioning flow locked
+      </button>
+    </div>
+  `;
+}
+
 function renderTenantEcosystemList() {
   const container = document.getElementById("tenant-ecosystem-list");
   if (!container) return;
 
   const tenants = getTenants();
 
-  container.innerHTML = tenants
+  const tenantCards = tenants
     .map((tenant) => {
       const isActive = tenant.id === dhemkaState.activeTenantId;
       const styles = getTenantStatusStyles(tenant.status);
@@ -388,6 +438,8 @@ function renderTenantEcosystemList() {
       `;
     })
     .join("");
+
+  container.innerHTML = `${tenantCards}${renderCreateTenantPlaceholder()}`;
 }
 
 function renderTenantDetailPanel() {
