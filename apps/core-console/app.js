@@ -71,6 +71,10 @@ function getEnabledModules(tenant) {
   return Object.values(tenant.modules || {}).filter((module) => module.enabled);
 }
 
+function getAllModules(tenant) {
+  return Object.values(tenant.modules || {});
+}
+
 function renderModulePills(tenant, limit = 4) {
   const modules = getEnabledModules(tenant).slice(0, limit);
 
@@ -87,6 +91,82 @@ function renderModulePills(tenant, limit = 4) {
       <span class="rounded-full border ${getModuleStatusStyles(module.status)} px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em]">
         ${escapeHtml(module.label)}
       </span>
+    `)
+    .join("");
+}
+
+function renderModuleRows(tenant) {
+  const modules = getAllModules(tenant);
+
+  if (!modules.length) {
+    return `
+      <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-500">
+        No modules configured.
+      </div>
+    `;
+  }
+
+  return modules
+    .map((module) => `
+      <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div>
+          <p class="text-sm font-bold text-slate-200">
+            ${escapeHtml(module.label)}
+          </p>
+
+          <p class="mt-1 text-xs text-slate-500">
+            ${module.enabled ? "Enabled" : "Disabled"}
+          </p>
+        </div>
+
+        <span class="rounded-full border ${getModuleStatusStyles(module.status)} px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em]">
+          ${escapeHtml(module.status)}
+        </span>
+      </div>
+    `)
+    .join("");
+}
+
+function buildAccessSurfaces(tenant) {
+  const slug = tenant.slug;
+
+  return [
+    {
+      label: "Tenant Admin",
+      path: `/remit/${slug}/admin`,
+      status: tenant.modules?.tenantAdmin?.status || "planned",
+    },
+    {
+      label: "Quote Center",
+      path: `/remit/${slug}/quote-center`,
+      status: tenant.modules?.quoteCenter?.status || "planned",
+    },
+    {
+      label: "Public Calculator",
+      path: `/remit/${slug}/public`,
+      status: tenant.modules?.publicCalculator?.status || "planned",
+    },
+  ];
+}
+
+function renderAccessSurfaceRows(tenant) {
+  return buildAccessSurfaces(tenant)
+    .map((surface) => `
+      <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div class="flex items-center justify-between gap-4">
+          <p class="text-sm font-bold text-slate-200">
+            ${escapeHtml(surface.label)}
+          </p>
+
+          <span class="rounded-full border ${getModuleStatusStyles(surface.status)} px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em]">
+            ${escapeHtml(surface.status)}
+          </span>
+        </div>
+
+        <p class="mt-2 font-mono text-xs text-cyan-200/80">
+          ${escapeHtml(surface.path)}
+        </p>
+      </div>
     `)
     .join("");
 }
@@ -310,10 +390,139 @@ function renderTenantEcosystemList() {
     .join("");
 }
 
+function renderTenantDetailPanel() {
+  const container = document.getElementById("tenant-detail-panel");
+  if (!container) return;
+
+  const tenant = getActiveTenant();
+
+  if (!tenant) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const styles = getTenantStatusStyles(tenant.status);
+  const branding = tenant.branding || {};
+
+  container.innerHTML = `
+    <div class="flex items-start justify-between gap-6">
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+          Tenant Detail
+        </p>
+
+        <h3 class="mt-2 text-3xl font-black">
+          ${escapeHtml(tenant.name)}
+        </h3>
+
+        <p class="mt-3 max-w-3xl text-sm leading-relaxed text-slate-400">
+          ${escapeHtml(tenant.name)} runs as a tenant inside Dhemka Core / ${escapeHtml(tenant.product)}. Core owns the infrastructure; this tenant owns its commercial configuration.
+        </p>
+      </div>
+
+      <div class="rounded-2xl border ${styles.border} ${styles.background} px-4 py-3 text-right">
+        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+          Lifecycle
+        </p>
+
+        <p class="mt-1 text-sm font-black ${styles.text}">
+          ${escapeHtml(tenant.lifecycle)}
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-6 grid gap-6 xl:grid-cols-3">
+      <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+          Tenant Profile
+        </p>
+
+        <div class="mt-5 space-y-4 text-sm">
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-slate-500">Product</span>
+            <span class="font-bold text-slate-200">${escapeHtml(tenant.product)}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-slate-500">Plan</span>
+            <span class="font-bold text-slate-200">${escapeHtml(tenant.plan)}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-slate-500">Slug</span>
+            <span class="font-mono text-xs font-bold text-cyan-200">/remit/${escapeHtml(tenant.slug)}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-slate-500">Status</span>
+            <span class="font-bold ${styles.text}">${escapeHtml(tenant.statusLabel)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+          Branding
+        </p>
+
+        <div class="mt-5 space-y-4 text-sm">
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-slate-500">Primary Color</span>
+            <span class="font-bold text-slate-200">${escapeHtml(branding.primaryColor || "not-set")}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-slate-500">Logo Mode</span>
+            <span class="font-bold text-slate-200">${escapeHtml(branding.logoMode || "not-set")}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-slate-500">Core Signature</span>
+            <span class="font-bold text-cyan-200">${branding.poweredByCore ? "Powered by Dhemka Core" : "Hidden"}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+          Access Surfaces
+        </p>
+
+        <div class="mt-5 space-y-3">
+          ${renderAccessSurfaceRows(tenant)}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+            Enabled Modules
+          </p>
+
+          <h4 class="mt-2 text-xl font-black">
+            Commercial configuration layer
+          </h4>
+        </div>
+
+        <p class="text-sm text-slate-500">
+          Tenant can configure commercial rules, not Core market base.
+        </p>
+      </div>
+
+      <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        ${renderModuleRows(tenant)}
+      </div>
+    </div>
+  `;
+}
+
 function renderTenantSurfaces() {
   renderActiveTenantCard();
   renderTenantSwitcher();
   renderTenantEcosystemList();
+  renderTenantDetailPanel();
 }
 
 function setActiveTenant(tenantId) {
