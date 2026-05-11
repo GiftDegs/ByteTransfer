@@ -1,24 +1,7 @@
-﻿const dhemkaState = {
-  activeSection: "dashboard",
-  activeTenantId: "bytetransfer",
-};
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function getTenants() {
-  return Array.isArray(window.coreTenants) ? window.coreTenants : [];
-}
-
-function getActiveTenant() {
-  return getTenants().find((tenant) => tenant.id === dhemkaState.activeTenantId) || null;
-}
+﻿const dhemkaState = window.dhemkaState;
+const escapeHtml = window.escapeHtml;
+const getTenants = window.getTenants;
+const getActiveTenant = window.getActiveTenant;
 
 function getTenantStatusStyles(status) {
   if (status === "operational") {
