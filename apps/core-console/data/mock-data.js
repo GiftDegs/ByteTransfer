@@ -323,3 +323,66 @@ window.coreQuoteEngine = {
     },
   ],
 };
+
+window.coreMonitoring = {
+  owner: "Dhemka Core",
+  description: "Core-owned monitoring layer for polling, workers, runtime health and global alerts.",
+  polling: {
+    label: "Market Polling",
+    status: "active",
+    interval: "180s",
+    owner: "Core",
+    description: "Core monitors market movement without depending on each tenant admin session.",
+  },
+  workers: [
+    {
+      name: "Market Polling Worker",
+      role: "Refreshes live market references on a controlled interval.",
+      status: "active",
+    },
+    {
+      name: "Quote Audit Worker",
+      role: "Runs provider quality checks without executing on every polling tick.",
+      status: "optimized",
+    },
+    {
+      name: "Future Cron Layer",
+      role: "Will allow scheduled background jobs without keeping the admin open.",
+      status: "planned",
+    },
+  ],
+  health: [
+    {
+      label: "Runtime",
+      status: "healthy",
+      detail: "Core Console mock runtime stable.",
+    },
+    {
+      label: "Polling Load",
+      status: "optimized",
+      detail: "Admin polling currently configured as lightweight 180s cycle.",
+    },
+    {
+      label: "Provider Audit",
+      status: "controlled",
+      detail: "Quote audit is separated from every polling tick.",
+    },
+  ],
+  alerts: [
+    {
+      label: "Market Degradation",
+      severity: "watch",
+      description: "Future global alert when providers degrade or references become stale.",
+    },
+    {
+      label: "Tenant Risk Signal",
+      severity: "planned",
+      description: "Future signal when tenant margins are exposed by market movement.",
+    },
+    {
+      label: "Worker Failure",
+      severity: "critical",
+      description: "Future alert when Core workers fail or stop reporting health.",
+    },
+  ],
+};
