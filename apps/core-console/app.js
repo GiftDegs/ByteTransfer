@@ -39,84 +39,11 @@ const getAlertSeverityStyles = window.getAlertSeverityStyles;
 const renderMonitoringAlertRows = window.renderMonitoringAlertRows;
 const renderMonitoringPanel = window.renderMonitoringPanel;
 
-function setActiveSidebarItem(section) {
-  document.querySelectorAll("[data-section]").forEach((button) => {
-    const isActive = button.dataset.section === section;
-    button.classList.toggle("active", isActive);
-  });
-}
-
-function buildTenantSectionCards() {
-  const metrics = getTenantMetrics();
-
-  return [
-    {
-      eyebrow: "Tenant Network",
-      title: `${metrics.totalTenants} Tenants`,
-      description: "Configured tenant records inside the Remit ecosystem layer.",
-    },
-    {
-      eyebrow: "Operational Status",
-      title: `${metrics.operationalTenants} Live / ${metrics.provisioningTenants} Provisioning`,
-      description: "Core can distinguish live tenants from onboarding or setup tenants.",
-    },
-    {
-      eyebrow: "Module Surface",
-      title: `${metrics.enabledModules} Enabled Modules`,
-      description: "Tenant capabilities are modeled as configurable modules from the beginning.",
-    },
-  ];
-}
-
-function getSectionCards(section) {
-  if (dhemkaState.activeSection === "tenants") {
-    return buildTenantSectionCards();
-  }
-
-  return section.cards || [];
-}
-
-function renderSectionContent() {
-  const section = window.coreSections[dhemkaState.activeSection];
-
-  if (!section) return;
-
-  const eyebrow = document.getElementById("page-eyebrow");
-  const title = document.getElementById("page-title");
-  const description = document.getElementById("page-description");
-
-  eyebrow.textContent = section.eyebrow;
-  title.textContent = section.title;
-  description.textContent = section.description;
-
-  renderSectionCards(getSectionCards(section));
-  renderOperationalBasePanel();
-  renderQuoteEnginePanel();
-  renderMonitoringPanel();
-}
-
-function renderSectionCards(cards = []) {
-  const container = document.getElementById("section-cards");
-  if (!container) return;
-
-  container.innerHTML = cards
-    .map((card) => `
-      <div class="core-card glass rounded-3xl p-6">
-        <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
-          ${escapeHtml(card.eyebrow)}
-        </p>
-
-        <h3 class="mt-4 text-3xl font-black">
-          ${escapeHtml(card.title)}
-        </h3>
-
-        <p class="mt-3 text-sm leading-relaxed text-slate-400">
-          ${escapeHtml(card.description)}
-        </p>
-      </div>
-    `)
-    .join("");
-}
+const setActiveSidebarItem = window.setActiveSidebarItem;
+const buildTenantSectionCards = window.buildTenantSectionCards;
+const getSectionCards = window.getSectionCards;
+const renderSectionContent = window.renderSectionContent;
+const renderSectionCards = window.renderSectionCards;
 
 function renderActiveTenantCard() {
   const container = document.getElementById("active-tenant-card");
