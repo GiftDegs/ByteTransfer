@@ -187,3 +187,67 @@ window.coreTenants = [
     },
   },
 ];
+
+window.coreOperationalBase = {
+  snapshot: {
+    label: "Global Snapshot",
+    status: "active",
+    owner: "Dhemka Core",
+    description: "Single source of truth for market references before tenant commercial rules apply.",
+    lastUpdated: "Mock · synced recently",
+  },
+  references: [
+    {
+      name: "BCV",
+      scope: "VES official reference",
+      status: "healthy",
+      owner: "Core",
+    },
+    {
+      name: "Binance P2P",
+      scope: "USDT market liquidity",
+      status: "healthy",
+      owner: "Core",
+    },
+    {
+      name: "PTAX",
+      scope: "BRL official reference",
+      status: "healthy",
+      owner: "Core",
+    },
+  ],
+  providers: [
+    {
+      name: "Binance Resolver",
+      role: "P2P aggregation",
+      status: "active",
+    },
+    {
+      name: "BCV Resolver",
+      role: "Official reference ingestion",
+      status: "active",
+    },
+    {
+      name: "Fallback Engine",
+      role: "Last good reference protection",
+      status: "standby",
+    },
+  ],
+  controls: [
+    {
+      label: "Update Global Base",
+      access: "Core only",
+      lockedForTenants: true,
+    },
+    {
+      label: "Provider Strategy",
+      access: "Core only",
+      lockedForTenants: true,
+    },
+    {
+      label: "Polling Workers",
+      access: "Core only",
+      lockedForTenants: true,
+    },
+  ],
+};
