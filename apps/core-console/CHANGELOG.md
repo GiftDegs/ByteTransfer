@@ -42,6 +42,10 @@ Cada vez que se haga algo importante:
 - Se documentaron reglas de auditoría obligatoria.
 - Se documentaron endpoints conceptuales futuros.
 - Se documentó un catálogo inicial de entidades conceptuales.
+- Se creó apps/core-console/UI_ARCHITECTURE.md para definir la jerarquía visual de Dhemka Core Console.
+- Se estableció que ByteTransfer no debe aparecer como protagonista global y debe vivir únicamente dentro de Remit > Tenants, salvo alertas o eventos accionables.
+- Se documentó que cada rama principal debe tener su propio dashboard y navegación interna.
+- Se documentó que el dashboard principal de Dhemka Core debe priorizar salud del motor, ramas activas, alertas, vencimientos, problemas críticos y acciones pendientes.
 
 ### Changed
 
@@ -89,3 +93,4 @@ Cada vez que se haga algo importante:
 - La Core Console no lee snapshots reales.
 - La Core Console no consume Binance, BCV ni PTAX reales.
 - La Core Console no modifica producción.
+

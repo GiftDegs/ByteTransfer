@@ -67,6 +67,7 @@ Tareas:
 - [x] Marcar visualmente la consola como `Prototype · Mock Data`.
 - [x] Crear `DATA_CONTRACT.md`.
 - [x] Relacionar `ARCHITECTURE.md` con `DATA_CONTRACT.md`.
+- [x] Crear UI_ARCHITECTURE.md para fijar la jerarquía visual de Dhemka Core, Remit, Tenants y ramas futuras.
 - [x] Mantener todo aislado dentro de `apps/core-console/`.
 
 Resultado:
@@ -323,3 +324,4 @@ Mientras Dhemka Core esté en construcción:
 - no usar `git add .`
 - trabajar por archivos específicos
 - validar cada bloque antes de avanzar
+
