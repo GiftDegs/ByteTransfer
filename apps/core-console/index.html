@@ -39,16 +39,15 @@
         </p>
 
         <p class="mt-3 text-sm leading-relaxed text-slate-400">
-          Central operational infrastructure for tenants, market engine and monitoring systems.
+          Central operating system for product branches, market engines, tenants and platform health.
         </p>
 
       </div>
-
-      <!-- CORE -->
+      <!-- MAIN NAVIGATION -->
       <div class="mt-10">
 
         <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
-          Core Modules
+          Command
         </p>
 
         <div class="space-y-2">
@@ -59,47 +58,7 @@
             </p>
 
             <p class="mt-1 text-xs text-slate-400">
-              Ecosystem overview
-            </p>
-          </button>
-
-          <button data-section="operational-base" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
-            <p class="text-sm font-bold">
-              Operational Base
-            </p>
-
-            <p class="mt-1 text-xs text-slate-400">
-              Market snapshots & references
-            </p>
-          </button>
-
-          <button data-section="quote-engine" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
-            <p class="text-sm font-bold">
-              Quote Engine
-            </p>
-
-            <p class="mt-1 text-xs text-slate-400">
-              Providers & aggregation
-            </p>
-          </button>
-
-          <button data-section="monitoring" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
-            <p class="text-sm font-bold">
-              Monitoring
-            </p>
-
-            <p class="mt-1 text-xs text-slate-400">
-              Polling & health systems
-            </p>
-          </button>
-
-          <button data-section="tenants" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
-            <p class="text-sm font-bold">
-              Tenants
-            </p>
-
-            <p class="mt-1 text-xs text-slate-400">
-              Remit ecosystem
+              Ecosystem command center
             </p>
           </button>
 
@@ -107,24 +66,122 @@
 
       </div>
 
-      <!-- ACTIVE TENANT -->
-      <div class="mt-10">
+      <div class="mt-8">
 
         <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
-          Active Tenant
+          Platform
         </p>
 
-        <div id="active-tenant-card"></div>
+        <div class="space-y-2">
 
-        <div class="mt-4">
-          <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
-            Tenant Switcher
-          </p>
+          <button data-section="core-platform" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Core Platform
+            </p>
 
-          <div id="tenant-switcher" class="space-y-2"></div>
+            <p class="mt-1 text-xs text-slate-400">
+              Engine, providers & health
+            </p>
+          </button>
+
         </div>
 
       </div>
+
+      <div class="mt-8">
+
+        <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
+          Products
+        </p>
+
+        <div class="space-y-2">
+
+          <button data-section="remit" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Remit
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Remittance branch
+            </p>
+          </button>
+
+          <button data-section="ledger" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Ledger
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Accounts & balances
+            </p>
+          </button>
+
+          <button data-section="lending" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Lending
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Loans & repayments
+            </p>
+          </button>
+
+          <button data-section="partner-network" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Partner Network
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Shared liquidity
+            </p>
+          </button>
+
+          <button data-section="arbitrage" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Arbitrage
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Market opportunities
+            </p>
+          </button>
+
+        </div>
+
+      </div>
+
+      <div class="mt-8">
+
+        <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-slate-500">
+          System
+        </p>
+
+        <div class="space-y-2">
+
+          <button data-section="billing" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Billing
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Plans, trials & access
+            </p>
+          </button>
+
+          <button data-section="identity" class="sidebar-item w-full rounded-2xl border border-transparent px-4 py-3 text-left">
+            <p class="text-sm font-bold">
+              Identity
+            </p>
+
+            <p class="mt-1 text-xs text-slate-400">
+              Users, roles & permissions
+            </p>
+          </button>
+
+        </div>
+
+      </div>
+
 
       <!-- FOOT -->
       <div class="mt-10 rounded-3xl border border-white/5 bg-black/20 p-4">
@@ -152,7 +209,7 @@
           <div class="flex items-center justify-between">
             <span class="text-slate-400">Environment</span>
             <span class="font-bold text-slate-200">
-              Production
+              Mock Prototype
             </span>
           </div>
 
@@ -231,9 +288,8 @@
 
       <!-- MONITORING DETAIL -->
       <section id="monitoring-panel" class="mt-6 hidden glass rounded-3xl p-6"></section>
-
-      <!-- LOWER GRID -->
-      <div class="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <!-- DASHBOARD SUPPORT -->
+      <section id="dashboard-support-panel" class="mt-6 grid gap-6 lg:grid-cols-[1.35fr_1fr]">
 
         <!-- ACTIVITY -->
         <section class="glass rounded-3xl p-6">
@@ -292,60 +348,113 @@
 
         </section>
 
-        <!-- TENANTS -->
+        <!-- ACTION SIGNALS -->
         <section class="glass rounded-3xl p-6">
 
           <div>
             <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
-              Tenants
+              Action Signals
             </p>
 
             <h3 class="mt-2 text-2xl font-black">
-              Tenant Registry
+              Nothing urgent
             </h3>
+
+            <p class="mt-3 text-sm leading-relaxed text-slate-400">
+              Tenants, demos or clients should only appear here when something requires attention.
+            </p>
           </div>
 
-          <div id="tenant-ecosystem-list" class="mt-6 space-y-4">
+          <div class="mt-6 space-y-4">
 
-            <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
-
-              <div class="flex items-center justify-between">
-
+            <div class="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-4">
+              <div class="flex items-center justify-between gap-4">
                 <div>
-                  <p class="font-bold">
-                    ByteTransfer
+                  <p class="text-sm font-bold text-slate-200">
+                    Core engine
                   </p>
 
-                  <p class="mt-1 text-xs text-slate-400">
-                    Operational tenant
+                  <p class="mt-1 text-xs text-slate-500">
+                    Runtime and provider mocks are stable.
                   </p>
                 </div>
 
-                <div class="status-dot h-3 w-3 rounded-full bg-emerald-400"></div>
-
+                <span class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                  Healthy
+                </span>
               </div>
-
             </div>
 
-            <div class="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4">
+            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="text-sm font-bold text-slate-200">
+                    Remit branch
+                  </p>
 
-              <p class="font-semibold text-slate-400">
-                New tenant slot
-              </p>
+                  <p class="mt-1 text-xs text-slate-500">
+                    Tenant details live inside Remit, not on the Core dashboard.
+                  </p>
+                </div>
 
-              <p class="mt-1 text-xs text-slate-500">
-                Ready for provisioning
-              </p>
+                <span class="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-200">
+                  Active
+                </span>
+              </div>
+            </div>
 
+            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="text-sm font-bold text-slate-200">
+                    Billing signals
+                  </p>
+
+                  <p class="mt-1 text-xs text-slate-500">
+                    No trial, payment or suspension signal is being surfaced.
+                  </p>
+                </div>
+
+                <span class="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Clear
+                </span>
+              </div>
             </div>
 
           </div>
 
         </section>
 
-      </div>
-      <!-- TENANT DETAIL -->
-      <section id="tenant-detail-panel" class="mt-6 glass rounded-3xl p-6"></section>
+      </section>
+
+      <!-- REMIT BRANCH DETAIL -->
+      <section id="remit-branch-panel" class="mt-6 hidden grid gap-6 xl:grid-cols-[0.95fr_1.4fr]">
+
+        <!-- TENANTS -->
+        <section class="glass rounded-3xl p-6">
+
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+              Remit / Tenants
+            </p>
+
+            <h3 class="mt-2 text-2xl font-black">
+              Tenant Registry
+            </h3>
+
+            <p class="mt-3 text-sm leading-relaxed text-slate-400">
+              Remittance operators live here. They are records inside Remit, never global Core modules.
+            </p>
+          </div>
+
+          <div id="tenant-ecosystem-list" class="mt-6 space-y-4"></div>
+
+        </section>
+
+        <!-- TENANT DETAIL -->
+        <section id="tenant-detail-panel" class="glass rounded-3xl p-6"></section>
+
+      </section>
 
     </main>
 
@@ -364,4 +473,6 @@
 
 </body>
 </html>
+
+
 

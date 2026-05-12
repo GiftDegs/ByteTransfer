@@ -43,6 +43,19 @@
     return section.cards || [];
   }
   
+  function setPanelVisibility(panelId, isVisible) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+
+    panel.classList.toggle("hidden", !isVisible);
+  }
+
+  function renderContextPanels() {
+    const section = dhemkaState.activeSection;
+
+    setPanelVisibility("dashboard-support-panel", section === "dashboard");
+    setPanelVisibility("remit-branch-panel", section === "remit");
+  }
   function renderSectionContent() {
     const section = window.coreSections[dhemkaState.activeSection];
   
@@ -60,6 +73,7 @@
     renderOperationalBasePanel();
     renderQuoteEnginePanel();
     renderMonitoringPanel();
+    renderContextPanels();
   }
   
   function renderSectionCards(cards = []) {
@@ -92,4 +106,5 @@
   window.renderSectionContent = renderSectionContent;
   window.renderSectionCards = renderSectionCards;
 })();
+
 

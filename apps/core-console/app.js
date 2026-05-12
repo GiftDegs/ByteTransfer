@@ -12,7 +12,7 @@ function setActiveTenant(tenantId) {
 
   renderTenantSurfaces();
 
-  if (dhemkaState.activeSection === "tenants") {
+  if (dhemkaState.activeSection === "remit") {
     renderSectionContent();
   }
 }
@@ -46,4 +46,5 @@ document.addEventListener("DOMContentLoaded", () => {
   setActiveSidebarItem(dhemkaState.activeSection);
   renderSectionContent();
 });
+
 

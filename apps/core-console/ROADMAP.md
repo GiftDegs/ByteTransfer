@@ -111,6 +111,18 @@ Reglas de seguridad:
 
 ## V2 — Core / Tenant Visual Separation
 
+Estado: iniciado.
+
+Avance actual:
+- [x] Reorganizar sidebar principal por ramas de Dhemka Core.
+- [x] Quitar Tenant Registry del dashboard global.
+- [x] Mover Tenant Registry y Tenant Detail dentro de Remit.
+- [x] Mantener ByteTransfer únicamente dentro de Remit > Tenants.
+- [x] Cambiar Environment de Production a Mock Prototype.
+- [ ] Crear subnavegación interna formal para Remit.
+- [ ] Crear subnavegación interna formal para Core Platform.
+- [ ] Convertir ramas futuras en placeholders más limpios.
+
 Estado: future
 
 Objetivo:
@@ -324,4 +336,5 @@ Mientras Dhemka Core esté en construcción:
 - no usar `git add .`
 - trabajar por archivos específicos
 - validar cada bloque antes de avanzar
+
 

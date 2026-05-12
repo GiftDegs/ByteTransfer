@@ -1,23 +1,207 @@
 ﻿window.coreSections = {
   dashboard: {
     eyebrow: "Dhemka Core",
-    title: "Ecosystem Infrastructure Overview",
-    description: "Global operational visibility across the infrastructure.",
+    title: "Core Command Center",
+    description: "Global command center for product branches, platform health, billing signals and system alerts.",
+    cards: [
+      {
+        eyebrow: "Core Platform",
+        title: "Engine Healthy",
+        description: "Base providers, snapshots, polling and runtime health are represented as Core-owned infrastructure.",
+      },
+      {
+        eyebrow: "Product Branches",
+        title: "Remit Active",
+        description: "Remit is the first active product branch. Ledger, Lending, Partner Network and Arbitrage remain future branches.",
+      },
+      {
+        eyebrow: "Action Signals",
+        title: "No Critical Alerts",
+        description: "The dashboard should only surface tenants, demos or clients when there is a risk, expiration, support request or pending action.",
+      },
+    ],
+  },
+
+  "core-platform": {
+    eyebrow: "Core Platform",
+    title: "Core Engine & Infrastructure",
+    description: "Base infrastructure owned by Dhemka Core: providers, snapshots, polling, runtime health, fallbacks and audit.",
     cards: [
       {
         eyebrow: "Operational Base",
-        title: "Market Stable",
-        description: "Global snapshot references are synchronized correctly across the ecosystem.",
+        title: "Snapshots & References",
+        description: "Global market references are controlled by Core and treated as the source of truth before tenant rules apply.",
       },
       {
-        eyebrow: "Quote Engine",
-        title: "Binance + BCV + PTAX",
-        description: "Providers, aggregation and fallback systems currently operational.",
+        eyebrow: "Core Quote Engine",
+        title: "Providers & Aggregation",
+        description: "Binance, BCV, PTAX and future providers belong to the Core engine, not to individual tenants.",
       },
       {
-        eyebrow: "Ecosystem",
-        title: "Tenant-ready Core",
-        description: "ByteTransfer runs as the first Remit tenant inside the Dhemka Core architecture.",
+        eyebrow: "Monitoring",
+        title: "Runtime Health",
+        description: "Polling, workers, fallbacks and alerts are monitored from the Core layer.",
+      },
+    ],
+  },
+
+  remit: {
+    eyebrow: "Remit",
+    title: "Remittance Product Branch",
+    description: "Remit contains remittance tenants, quote centers, public calculators, roles, limits and operational workflows.",
+    cards: [
+      {
+        eyebrow: "Remit Dashboard",
+        title: "Branch Overview",
+        description: "This branch should summarize Remit health, tenant activity, onboarding, alerts and pending actions.",
+      },
+      {
+        eyebrow: "Tenants",
+        title: "Tenant Registry Lives Here",
+        description: "ByteTransfer and future remeseros belong inside Remit > Tenants, not in the global Core sidebar.",
+      },
+      {
+        eyebrow: "Access Surfaces",
+        title: "Quote Center + Public Calculator",
+        description: "Internal quote centers and simple public calculators are Remit surfaces scoped to each tenant.",
+      },
+    ],
+  },
+
+  ledger: {
+    eyebrow: "Ledger",
+    title: "Accounts & Balances",
+    description: "Future branch for balances, movements, expenses, commissions, settlements and reconciliation.",
+    cards: [
+      {
+        eyebrow: "Accounts",
+        title: "Future Ledger Accounts",
+        description: "Ledger will own real balances and account movements across products.",
+      },
+      {
+        eyebrow: "Movements",
+        title: "Entries & Payouts",
+        description: "Completed operations from Remit or other branches can later create ledger movements.",
+      },
+      {
+        eyebrow: "Commissions",
+        title: "Settlement Layer",
+        description: "Weekly commissions, expenses and owner allocation should be handled by Ledger logic in the future.",
+      },
+    ],
+  },
+
+  lending: {
+    eyebrow: "Lending",
+    title: "Loans & Repayments",
+    description: "Future branch for borrowers, loans, guarantees, interest, payments, delinquency and risk.",
+    cards: [
+      {
+        eyebrow: "Loans",
+        title: "Future Loan Book",
+        description: "Lending will track loans independently from Remit while optionally using Ledger for balances.",
+      },
+      {
+        eyebrow: "Payments",
+        title: "Repayment Control",
+        description: "Payment schedules, overdue signals and borrower activity will live inside this branch.",
+      },
+      {
+        eyebrow: "Risk",
+        title: "Guarantees & Delinquency",
+        description: "Risk signals should be branch-specific, not mixed into the Core dashboard unless actionable.",
+      },
+    ],
+  },
+
+  "partner-network": {
+    eyebrow: "Partner Network",
+    title: "Shared Liquidity Branch",
+    description: "Future branch for internal tenants, external partners, shared accounts, agreements and settlements.",
+    cards: [
+      {
+        eyebrow: "Partners",
+        title: "Internal + External",
+        description: "Partners can be Dhemka tenants or manually registered external allies.",
+      },
+      {
+        eyebrow: "Shared Liquidity",
+        title: "Coverage Between Operators",
+        description: "Tenants may use partner coverage while preserving percentages, commissions and debts.",
+      },
+      {
+        eyebrow: "Settlements",
+        title: "Partner Reconciliation",
+        description: "Balances and obligations between parties should be tracked as their own branch.",
+      },
+    ],
+  },
+
+  arbitrage: {
+    eyebrow: "Arbitrage",
+    title: "Market Opportunities",
+    description: "Future branch for provider comparison, liquidity opportunities, buy/sell signals and market alerts.",
+    cards: [
+      {
+        eyebrow: "Signals",
+        title: "Opportunity Detection",
+        description: "Arbitrage can consume Core provider data and Ledger balances to detect actionable opportunities.",
+      },
+      {
+        eyebrow: "Liquidity",
+        title: "Balance-Aware Suggestions",
+        description: "Future suggestions should consider available balances, not only market prices.",
+      },
+      {
+        eyebrow: "Alerts",
+        title: "Actionable Only",
+        description: "Only meaningful opportunities should reach the main dashboard.",
+      },
+    ],
+  },
+
+  billing: {
+    eyebrow: "Billing",
+    title: "Plans, Trials & Access",
+    description: "System branch for plans, trials, expirations, payments, module access and tenant commercial status.",
+    cards: [
+      {
+        eyebrow: "Plans",
+        title: "Module Access",
+        description: "Billing should control which modules each tenant has active, paused or locked.",
+      },
+      {
+        eyebrow: "Trials",
+        title: "Expiration Signals",
+        description: "Trials or demos should surface in the main dashboard only when they require action.",
+      },
+      {
+        eyebrow: "Commercial Status",
+        title: "Active / Past Due / Suspended",
+        description: "Tenant commercial lifecycle belongs to Billing and should not be confused with operational health.",
+      },
+    ],
+  },
+
+  identity: {
+    eyebrow: "Identity",
+    title: "Users, Roles & Permissions",
+    description: "System branch for login, users, roles, permissions, invitations, password resets, sessions and support access.",
+    cards: [
+      {
+        eyebrow: "Users",
+        title: "Core + Tenant Access",
+        description: "CoreOwner, TenantAdmin, Manager, Receiver and Processor access should be modeled here.",
+      },
+      {
+        eyebrow: "Permissions",
+        title: "Role Boundaries",
+        description: "Each role must have clear permissions before real authentication is implemented.",
+      },
+      {
+        eyebrow: "Support Access",
+        title: "Audited Entry",
+        description: "Core support access into tenants must be controlled and audit-ready.",
       },
     ],
   },
@@ -25,76 +209,28 @@
   "operational-base": {
     eyebrow: "Operational Base",
     title: "Market Snapshot Infrastructure",
-    description: "Global market references, snapshots and operational base.",
-    cards: [
-      {
-        eyebrow: "Snapshot",
-        title: "Global Base Active",
-        description: "Core market values are treated as the operational source of truth.",
-      },
-      {
-        eyebrow: "References",
-        title: "BCV / USDT / PTAX",
-        description: "External references feed the base layer before tenant rules apply.",
-      },
-      {
-        eyebrow: "Protection",
-        title: "Tenants Cannot Edit Base",
-        description: "Commercial adjustments must happen through tenant margins and rules.",
-      },
-    ],
+    description: "Legacy detail section kept temporarily until Core Platform subnavigation is implemented.",
+    cards: [],
   },
 
   "quote-engine": {
-    eyebrow: "Quote Engine",
+    eyebrow: "Core Quote Engine",
     title: "Providers & Aggregation",
-    description: "Aggregation systems, providers and fallback logic.",
-    cards: [
-      {
-        eyebrow: "Providers",
-        title: "Multi-source Engine",
-        description: "Binance, BCV, PTAX and future providers are resolved in Core.",
-      },
-      {
-        eyebrow: "Aggregation",
-        title: "Average / Median / Trim",
-        description: "The engine can adapt how prices are calculated and protected.",
-      },
-      {
-        eyebrow: "Fallbacks",
-        title: "Last Good Reference",
-        description: "Core keeps emergency fallbacks when external sources degrade.",
-      },
-    ],
+    description: "Legacy detail section kept temporarily until Core Platform subnavigation is implemented.",
+    cards: [],
   },
 
   monitoring: {
     eyebrow: "Monitoring",
     title: "Polling & Runtime Health",
-    description: "Infrastructure health, runtime and monitoring systems.",
-    cards: [
-      {
-        eyebrow: "Polling",
-        title: "Core-owned Monitoring",
-        description: "Polling belongs to Dhemka Core, not to each tenant.",
-      },
-      {
-        eyebrow: "Alerts",
-        title: "Future Notifications",
-        description: "Critical movements can later trigger system-level notifications.",
-      },
-      {
-        eyebrow: "Runtime",
-        title: "Health First",
-        description: "Infrastructure must remain stable before scaling tenants.",
-      },
-    ],
+    description: "Legacy detail section kept temporarily until Core Platform subnavigation is implemented.",
+    cards: [],
   },
 
   tenants: {
-    eyebrow: "Tenants",
-    title: "Remit Ecosystem",
-    description: "Tenant management and operational ecosystem.",
+    eyebrow: "Remit Tenants",
+    title: "Tenant Registry",
+    description: "Legacy detail section kept temporarily until Remit internal navigation is implemented.",
     cards: [],
   },
 };
@@ -386,3 +522,4 @@ window.coreMonitoring = {
     },
   ],
 };
+

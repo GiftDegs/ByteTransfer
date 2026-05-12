@@ -49,6 +49,14 @@ Cada vez que se haga algo importante:
 
 ### Changed
 
+- Se reorganizó la sidebar principal para separar Command, Platform, Products y System.
+- Se reemplazó la navegación anterior de Core Modules por ramas principales de Dhemka Core.
+- Se quitó Active Tenant y Tenant Switcher de la sidebar global.
+- Se movió Tenant Registry y Tenant Detail dentro de la rama Remit.
+- Se evitó que ByteTransfer aparezca como protagonista del dashboard principal.
+- Se cambió Environment de Production a Mock Prototype para evitar confusión con producción real.
+- Se agregó render contextual para mostrar paneles específicos según la rama activa.
+
 - Se actualizó `apps/core-console/ARCHITECTURE.md` para referenciar `DATA_CONTRACT.md`.
 - Se dejó clara la diferencia entre:
   - `ARCHITECTURE.md`: organización actual del shell visual.
@@ -93,4 +101,5 @@ Cada vez que se haga algo importante:
 - La Core Console no lee snapshots reales.
 - La Core Console no consume Binance, BCV ni PTAX reales.
 - La Core Console no modifica producción.
+
 
