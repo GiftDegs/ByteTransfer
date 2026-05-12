@@ -212,6 +212,252 @@ Debe mostrar resumen de la rama Remit:
 
 No debe mostrar todos los tenants como contenido principal si no hace falta.
 
+
+### Remit tenant management model
+
+Remit administra tenants.
+
+Un tenant no debe aparecer como protagonista global ni como rama principal.  
+Un tenant vive dentro de `Remit > Tenants`.
+
+La jerarquía correcta es:
+
+Dhemka Core
+└── Remit
+    └── Tenants
+        └── Tenant seleccionado
+            ├── Overview
+            ├── Setup
+            ├── Branding
+            ├── Users / Managers
+            ├── Modules
+            ├── Margins
+            ├── Limits
+            ├── Quote Center
+            ├── Public Calculator
+            ├── Shares
+            ├── Operations
+            ├── Billing
+            └── Audit
+
+---
+
+### Tenant creation flow
+
+Desde Remit debe poder crearse un tenant nuevo.
+
+El flujo futuro de creación debe contemplar:
+
+1. datos base del tenant
+2. branding inicial
+3. plan o tipo comercial
+4. módulos habilitados
+5. permisos iniciales
+6. monedas y cruces permitidos
+7. márgenes base
+8. límites mínimos y máximos
+9. usuarios iniciales
+10. superficies activas, como Quote Center y Public Calculator
+11. revisión final
+12. creación del tenant
+
+Después de creado, el tenant debe aparecer dentro de `Remit > Tenants`.
+
+El dashboard de Remit puede mostrar eventos relevantes como:
+
+- tenant creado recientemente
+- onboarding pendiente
+- trial por vencer
+- tenant suspendido
+- tenant con configuración incompleta
+- tenant con problema operativo
+- tenant con alerta de billing
+
+Pero no debe convertir cada tenant en protagonista permanente del overview.
+
+---
+
+### Remit > Tenants default view
+
+Al entrar en `Remit > Tenants`, si no hay tenant seleccionado, la vista debe priorizar el listado de tenants.
+
+Debe poder mostrar tenants:
+
+- activos
+- pausados
+- suspendidos
+- en trial
+- demo
+- vencidos
+- archivados
+- en onboarding
+- con configuración incompleta
+
+El formato visual puede ser tabla, lista compacta o cards compactas.  
+La decisión visual final queda abierta, pero la regla de jerarquía no cambia.
+
+Cada tenant debe mostrar solo los rasgos más importantes en la vista compacta, por ejemplo:
+
+- nombre
+- estado comercial
+- estado operativo
+- plan
+- módulos activos
+- onboarding
+- última actividad
+- alertas
+- acción para abrir
+
+La vista compacta debe poder evolucionar luego con búsqueda y filtros.
+
+Filtros futuros posibles:
+
+- estado comercial
+- estado operativo
+- plan
+- módulos activos
+- trial / demo / vencimiento
+- país o cobertura
+- onboarding pendiente
+- última actividad
+- riesgo o alerta
+- responsable o owner
+
+---
+
+
+### Tenant registry accordion pattern
+
+La vista `Remit > Tenants` debe funcionar preferiblemente como un accordion premium por fila.
+
+Patrón visual objetivo:
+
+Tenant A
+└── Workspace de Tenant A desplegado inline
+Tenant B
+Tenant C
+
+Reglas:
+
+- La fila completa del tenant debe ser clickeable.
+- No debe existir un botón genérico tipo `Open` fuera de la fila.
+- Si no hay tenant seleccionado, solo debe verse la lista compacta.
+- Al hacer clic en un tenant, su workspace se despliega inmediatamente debajo de su fila.
+- Al hacer clic otra vez en el mismo tenant, el workspace se contrae.
+- Al hacer clic en otro tenant, se cierra el workspace anterior y se abre el nuevo.
+- El workspace debe tener una acción clara de cierre, por ejemplo `X`.
+- La pantalla puede hacer scroll suave para centrar el workspace abierto.
+- Los tenants siguientes deben quedar debajo del workspace abierto, manteniendo la sensación de lista desplegable.
+
+Este patrón evita pantallas vacías, mantiene contexto y permite administrar varios tenants sin perder la jerarquía.
+
+---
+### Selected tenant workspace
+
+Al seleccionar un tenant, debe abrirse su espacio propio dentro de Remit.
+
+Ese espacio puede ser una vista dedicada, una ficha ampliada o una página interna.  
+No debe forzar que todos los recursos del tenant estén visibles al mismo tiempo.
+
+Dentro del tenant seleccionado deben vivir sus recursos:
+
+- Tenant Admin
+- Quote Center
+- Public Calculator
+- Branding Provisioning
+- Users / Managers
+- Account Holders / Receivers
+- Margins
+- Limits
+- Schedules
+- Messages
+- Shares
+- Operations
+- Billing status
+- Audit
+
+Cada recurso debe poder abrirse de forma independiente.
+
+Ejemplo correcto:
+
+Remit
+└── Tenants
+    └── ByteTransfer
+        └── Public Calculator
+
+Ejemplo incorrecto como flujo principal:
+
+Remit
+└── Public Calculators
+    └── ByteTransfer Public Calculator
+
+---
+
+### Resource hierarchy rule
+
+Los recursos del tenant no deben vivir visualmente por encima del tenant.
+
+Quote Center, Public Calculator, Margins, Limits, Branding, Users y Operations son recursos o configuraciones del tenant.
+
+Por defecto, deben aparecer dentro del tenant seleccionado.
+
+Pueden existir vistas transversales de monitoreo, pero no deben ser el flujo principal.
+
+Ejemplo de vista transversal permitida:
+
+- ver todos los Quote Centers activos
+- ver todas las Public Calculators activas
+- detectar superficies caídas
+- revisar leads recientes
+- revisar actividad por módulo
+- monitorear errores globales de Remit
+
+Pero la navegación principal debe seguir siendo:
+
+Remit
+└── Tenants
+    └── Tenant seleccionado
+        └── Recurso seleccionado
+
+---
+
+### Remit overview rule
+
+El overview de Remit debe ser un resumen ejecutivo de la rama.
+
+Debe mostrar información agregada, no fichas completas de tenants.
+
+Debe priorizar:
+
+- cantidad de tenants
+- tenants activos
+- tenants en trial
+- tenants suspendidos
+- tenants con onboarding pendiente
+- módulos Remit activos
+- quote centers activos
+- public calculators activos
+- leads o solicitudes recientes
+- operaciones pendientes, si el módulo operativo existe
+- alertas críticas
+- tareas de soporte
+- vencimientos
+- billing signals
+
+Un tenant individual solo debe aparecer en el overview de Remit si hay una razón accionable.
+
+Ejemplos:
+
+- trial por vencer
+- pago vencido
+- suspensión
+- configuración incompleta
+- solicitud de soporte
+- problema operativo
+- alerta de módulo
+- onboarding detenido
+
+---
 ### Remit > Tenants
 
 Aquí sí viven:
@@ -617,3 +863,5 @@ This UI architecture refactor must not:
 - create real tenants yet
 
 All work stays inside `apps/core-console/` until explicitly approved.
+
+

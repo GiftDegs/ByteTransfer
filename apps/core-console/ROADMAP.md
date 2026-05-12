@@ -119,7 +119,9 @@ Avance actual:
 - [x] Mover Tenant Registry y Tenant Detail dentro de Remit.
 - [x] Mantener ByteTransfer únicamente dentro de Remit > Tenants.
 - [x] Cambiar Environment de Production a Mock Prototype.
-- [ ] Crear subnavegación interna formal para Remit.
+- [x] Documentar jerarquia Remit > Tenants > Tenant > Recursos.
+- [x] Crear subnavegación interna formal para Remit.
+- [x] Implementar tenant registry como accordion inline.
 - [ ] Crear subnavegación interna formal para Core Platform.
 - [ ] Convertir ramas futuras en placeholders más limpios.
 
@@ -336,5 +338,7 @@ Mientras Dhemka Core esté en construcción:
 - no usar `git add .`
 - trabajar por archivos específicos
 - validar cada bloque antes de avanzar
+
+
 
 

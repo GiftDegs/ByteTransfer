@@ -426,35 +426,373 @@
         </section>
 
       </section>
-
       <!-- REMIT BRANCH DETAIL -->
-      <section id="remit-branch-panel" class="mt-6 hidden grid gap-6 xl:grid-cols-[0.95fr_1.4fr]">
+      <section id="remit-branch-panel" class="mt-6 hidden glass rounded-3xl p-6">
 
-        <!-- TENANTS -->
-        <section class="glass rounded-3xl p-6">
+        <div class="flex flex-col gap-6">
 
-          <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
-              Remit / Tenants
-            </p>
+          <div class="flex items-start justify-between gap-6">
 
-            <h3 class="mt-2 text-2xl font-black">
-              Tenant Registry
-            </h3>
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                Remit Branch
+              </p>
 
-            <p class="mt-3 text-sm leading-relaxed text-slate-400">
-              Remittance operators live here. They are records inside Remit, never global Core modules.
-            </p>
+              <h3 class="mt-2 text-2xl font-black">
+                Remit Control Surface
+              </h3>
+
+              <p class="mt-3 max-w-3xl text-sm leading-relaxed text-slate-400">
+                Remit creates, configures and supervises remittance tenants. Tenant resources live inside each selected tenant.
+              </p>
+            </div>
+
+            <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-right">
+              <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Branch
+              </p>
+
+              <p class="mt-1 text-sm font-black text-cyan-200">
+                Active
+              </p>
+            </div>
+
           </div>
 
-          <div id="tenant-ecosystem-list" class="mt-6 space-y-4"></div>
+          <div class="flex flex-wrap gap-2 border-y border-white/10 py-4">
 
-        </section>
+            <button type="button" data-remit-view="overview" class="remit-subnav-item rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-100 transition">
+              Overview
+            </button>
 
-        <!-- TENANT DETAIL -->
-        <section id="tenant-detail-panel" class="glass rounded-3xl p-6"></section>
+            <button type="button" data-remit-view="create-tenant" class="remit-subnav-item rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-200">
+              Create Tenant
+            </button>
+
+            <button type="button" data-remit-view="tenants" class="remit-subnav-item rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-200">
+              Tenants
+            </button>
+
+            <button type="button" data-remit-view="templates" class="remit-subnav-item rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-200">
+              Templates
+            </button>
+
+            <button type="button" data-remit-view="activity" class="remit-subnav-item rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-200">
+              Activity
+            </button>
+
+          </div>
+
+          <!-- REMIT OVERVIEW -->
+          <section data-remit-view-panel="overview" class="remit-view-panel grid gap-6 xl:grid-cols-3">
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Branch Summary
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Remit Overview
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                This view should summarize tenants, onboarding, active modules, alerts, billing signals and support tasks.
+              </p>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Tenant Model
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Tenants Contain Resources
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                Quote Center, Public Calculator, Branding, Users, Margins and Limits belong inside each tenant workspace.
+              </p>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Action Rule
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Surface Only What Matters
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                Individual tenants appear in the overview only for actionable reasons: risk, expiration, support, billing or onboarding.
+              </p>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5 xl:col-span-3">
+              <div class="grid gap-4 md:grid-cols-4">
+
+                <div class="rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-4">
+                  <p class="text-sm font-bold text-slate-200">
+                    Tenants
+                  </p>
+
+                  <p class="mt-2 text-2xl font-black text-cyan-100">
+                    2
+                  </p>
+
+                  <p class="mt-1 text-xs text-slate-500">
+                    Mock records
+                  </p>
+                </div>
+
+                <div class="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-4">
+                  <p class="text-sm font-bold text-slate-200">
+                    Active
+                  </p>
+
+                  <p class="mt-2 text-2xl font-black text-emerald-300">
+                    1
+                  </p>
+
+                  <p class="mt-1 text-xs text-slate-500">
+                    Live tenant
+                  </p>
+                </div>
+
+                <div class="rounded-2xl border border-amber-400/15 bg-amber-400/5 p-4">
+                  <p class="text-sm font-bold text-slate-200">
+                    Onboarding
+                  </p>
+
+                  <p class="mt-2 text-2xl font-black text-amber-300">
+                    1
+                  </p>
+
+                  <p class="mt-1 text-xs text-slate-500">
+                    Demo setup
+                  </p>
+                </div>
+
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p class="text-sm font-bold text-slate-200">
+                    Critical Alerts
+                  </p>
+
+                  <p class="mt-2 text-2xl font-black text-slate-200">
+                    0
+                  </p>
+
+                  <p class="mt-1 text-xs text-slate-500">
+                    Nothing urgent
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+          </section>
+
+          <!-- CREATE TENANT -->
+          <section data-remit-view-panel="create-tenant" class="remit-view-panel hidden grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+
+            <div class="rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300/70">
+                Future Flow
+              </p>
+
+              <h4 class="mt-3 text-2xl font-black">
+                Create Tenant
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                This will become the provisioning flow for bringing a remittance operator into Dhemka Core / Remit.
+              </p>
+
+              <button type="button" disabled class="mt-5 cursor-not-allowed rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-bold text-slate-500">
+                Provisioning locked in mock
+              </button>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Creation Checklist
+              </p>
+
+              <div class="mt-5 grid gap-3 md:grid-cols-2">
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">1. Base tenant data</div>
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">2. Branding request</div>
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">3. Plan and modules</div>
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">4. Permissions</div>
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">5. Currencies and routes</div>
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">6. Margins and limits</div>
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">7. Initial users</div>
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">8. Review and create</div>
+              </div>
+            </div>
+
+          </section>
+          <!-- REMIT TENANTS -->
+          <section data-remit-view-panel="tenants" class="remit-view-panel hidden">
+
+            <section class="rounded-3xl border border-white/10 bg-black/20 p-5">
+
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                    Remit / Tenants
+                  </p>
+
+                  <h3 class="mt-2 text-2xl font-black">
+                    Tenant Registry
+                  </h3>
+
+                  <p class="mt-3 max-w-3xl text-sm leading-relaxed text-slate-400">
+                    Select a tenant row to open its workspace. Tenant resources appear only after a tenant is selected.
+                  </p>
+                </div>
+
+                <button type="button" data-remit-view="create-tenant" class="shrink-0 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">
+                  New Tenant
+                </button>
+              </div>
+
+              <div class="mt-5 grid gap-3 lg:grid-cols-[1.4fr_0.7fr_0.9fr]">
+
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <p class="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                    Search
+                  </p>
+
+                  <input
+                    type="text"
+                    disabled
+                    placeholder="Name, slug, owner or country"
+                    class="mt-2 w-full bg-transparent text-sm font-bold text-slate-400 outline-none placeholder:text-slate-600"
+                  />
+                </div>
+
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <p class="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                    Status
+                  </p>
+
+                  <p class="mt-2 text-sm font-bold text-slate-200">
+                    All tenants
+                  </p>
+                </div>
+
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <p class="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                    Attention
+                  </p>
+
+                  <p class="mt-2 text-sm font-bold text-slate-200">
+                    All signals
+                  </p>
+                </div>
+
+              </div>
+
+              <div id="tenant-ecosystem-list" class="mt-6"></div>
+
+            </section>
+
+          </section>
+
+
+          <!-- TEMPLATES -->
+          <section data-remit-view-panel="templates" class="remit-view-panel hidden grid gap-6 xl:grid-cols-3">
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Defaults
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Tenant Templates
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                Future templates can speed up onboarding by reusing common module, margin, limit and surface configurations.
+              </p>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Examples
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Demo / Founder / Pro
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                Templates can define starting access without hardcoding every future tenant from scratch.
+              </p>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Status
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Planned
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                This is only a placeholder until real tenant provisioning is designed.
+              </p>
+            </div>
+
+          </section>
+
+          <!-- ACTIVITY -->
+          <section data-remit-view-panel="activity" class="remit-view-panel hidden grid gap-6 xl:grid-cols-[1fr_1fr]">
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Remit Activity
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Recent Branch Events
+              </h4>
+
+              <div class="mt-5 space-y-3">
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p class="text-sm font-bold text-slate-200">Tenant registry reviewed</p>
+                  <p class="mt-1 text-xs text-slate-500">Mock event</p>
+                </div>
+
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p class="text-sm font-bold text-slate-200">Demo onboarding pending</p>
+                  <p class="mt-1 text-xs text-slate-500">Mock event</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                Future Audit
+              </p>
+
+              <h4 class="mt-3 text-xl font-black">
+                Support + Configuration Changes
+              </h4>
+
+              <p class="mt-3 text-sm leading-relaxed text-slate-400">
+                Tenant creation, module access, branding provisioning, user changes and support access should be audit-ready.
+              </p>
+            </div>
+
+          </section>
+
+        </div>
 
       </section>
+
+
 
     </main>
 
@@ -473,6 +811,10 @@
 
 </body>
 </html>
+
+
+
+
 
 
 

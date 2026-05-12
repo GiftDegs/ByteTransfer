@@ -1,5 +1,9 @@
 ﻿window.dhemkaState = window.dhemkaState || {
   activeSection: "dashboard",
-  activeTenantId: "bytetransfer",
+  activeTenantId: null,
+  activeRemitView: "overview",
 };
+
+
+
 
