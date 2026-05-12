@@ -2,6 +2,11 @@
 
 Checkpoint interno de arquitectura para apps/core-console.
 
+Documento relacionado:
+- apps/core-console/DATA_CONTRACT.md define el contrato futuro de datos entre Dhemka Core, Remit, Tenants, modulos futuros, roles, permisos, cotizaciones, operaciones, Ledger, comisiones, auditoria y APIs conceptuales.
+- ARCHITECTURE.md describe la organizacion actual del shell visual.
+- DATA_CONTRACT.md describe las reglas futuras antes de conectar backend real.
+
 ## Estado actual
 
 La Core Console es una maqueta frontend aislada para la futura plataforma Dhemka Core.
@@ -163,3 +168,4 @@ Antes de conectar datos reales:
 3. Marcar visualmente que la data actual es mock.
 4. Disenar endpoints reales.
 5. Conectar datos por partes, nunca directo a produccion.
+
