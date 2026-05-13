@@ -59,6 +59,10 @@ Cada vez que se haga algo importante:
 - Se documentó que Remit administra tenants y que cada tenant contiene sus propios recursos: Quote Center, Public Calculator, Branding, Users, Margins, Limits, Operations, Billing y Audit.
 - Se documentó que las vistas transversales de Quote Centers o Public Calculators pueden existir como monitoreo, pero no deben ser el flujo principal de navegación.
 - Se implementó el tenant registry como accordion inline: la fila completa abre/cierra el workspace del tenant, con cierre por X y despliegue contextual debajo del tenant seleccionado.
+- Se pulió el workspace inline del tenant con resumen operativo, setup signals, resource launcher y acciones más realistas por recurso.
+- Se corrigió el conteo de módulos habilitados para soportar modules como objeto en el mock data.
+- Se pulió el workspace inline del tenant con resumen operativo, setup signals, resource launcher y acciones más realistas por recurso.
+- Se corrigió el conteo de módulos habilitados para soportar modules como objeto en el mock data.
 
 - Se actualizó `apps/core-console/ARCHITECTURE.md` para referenciar `DATA_CONTRACT.md`.
 - Se dejó clara la diferencia entre:
@@ -104,6 +108,8 @@ Cada vez que se haga algo importante:
 - La Core Console no lee snapshots reales.
 - La Core Console no consume Binance, BCV ni PTAX reales.
 - La Core Console no modifica producción.
+
+
 
 
 

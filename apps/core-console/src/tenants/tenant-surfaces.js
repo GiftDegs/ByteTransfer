@@ -166,18 +166,187 @@
     };
   }
 
+  function getTenantEnabledModuleCount(tenant) {
+    const modules = tenant.modules;
+
+    if (Array.isArray(modules)) {
+      return modules.filter((module) => module && module.enabled !== false).length;
+    }
+
+    if (modules && typeof modules === "object") {
+      return Object.values(modules).filter((module) => module && module.enabled === true).length;
+    }
+
+    if (Array.isArray(tenant.enabledModules)) {
+      return tenant.enabledModules.length;
+    }
+
+    if (Array.isArray(tenant.accessSurfaces)) {
+      return tenant.accessSurfaces.length;
+    }
+
+    return 0;
+  }
+  function getTenantResourceItems(tenant) {
+    return [
+      {
+        title: "Setup",
+        description: "Onboarding, base data and readiness checklist.",
+        status: tenant.status === "provisioning" ? "Needs setup" : "Ready",
+        tone: tenant.status === "provisioning" ? "warning" : "healthy",
+        action: tenant.status === "provisioning" ? "Continue setup" : "View setup",
+      },
+      {
+        title: "Branding",
+        description: "Logo, colors, public identity and Core-managed provisioning.",
+        status: "Core managed",
+        tone: "planned",
+        action: "View provisioning",
+      },
+      {
+        title: "Users",
+        description: "Tenant admins, managers, receivers and future processors.",
+        status: "Future",
+        tone: "neutral",
+        action: "Design later",
+      },
+      {
+        title: "Modules",
+        description: "Enabled services and tenant capabilities.",
+        status: `${getTenantEnabledModuleCount(tenant)} enabled`,
+        tone: "healthy",
+        action: "Review modules",
+      },
+      {
+        title: "Margins",
+        description: "Commercial rules, route margins and tenant configuration.",
+        status: "Future",
+        tone: "neutral",
+        action: "Configure later",
+      },
+      {
+        title: "Limits",
+        description: "Minimums, maximums and USDT-equivalent protection.",
+        status: "Future",
+        tone: "neutral",
+        action: "Design later",
+      },
+      {
+        title: "Quote Center",
+        description: "Internal quote surface for managers with login.",
+        status: "Current",
+        tone: "healthy",
+        action: "Open quote center",
+      },
+      {
+        title: "Public Calculator",
+        description: "Simple public client quote surface linked to this tenant.",
+        status: "Future-simple",
+        tone: "planned",
+        action: "Prepare public calculator",
+      },
+      {
+        title: "Billing",
+        description: "Plan, trial, payment status and module access.",
+        status: "Future",
+        tone: "neutral",
+        action: "View billing plan",
+      },
+      {
+        title: "Audit",
+        description: "Support access, configuration changes and sensitive actions.",
+        status: "Future",
+        tone: "neutral",
+        action: "View audit trail",
+      },
+    ];
+  }
+
+  function getResourceToneClasses(tone) {
+    const tones = {
+      healthy: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+      warning: "border-amber-400/20 bg-amber-400/10 text-amber-300",
+      planned: "border-cyan-400/20 bg-cyan-400/10 text-cyan-200",
+      neutral: "border-white/10 bg-black/20 text-slate-400",
+    };
+
+    return tones[tone] || tones.neutral;
+  }
+
+  function renderTenantResourceLauncher(tenant) {
+    return getTenantResourceItems(tenant)
+      .map((item) => `
+        <button
+          type="button"
+          class="group rounded-3xl border border-white/10 bg-black/20 p-4 text-left transition hover:border-cyan-400/25 hover:bg-cyan-400/[0.04]"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-black text-slate-100">
+                ${escapeHtml(item.title)}
+              </p>
+
+              <p class="mt-2 text-xs leading-relaxed text-slate-500">
+                ${escapeHtml(item.description)}
+              </p>
+            </div>
+
+            <span class="shrink-0 rounded-full border ${getResourceToneClasses(item.tone)} px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]">
+              ${escapeHtml(item.status)}
+            </span>
+          </div>
+
+          <p class="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600 transition group-hover:text-cyan-300">
+            ${escapeHtml(item.action || "Open resource")}
+          </p>
+        </button>
+      `)
+      .join("");
+  }
+
+  function renderTenantSetupSignals(tenant) {
+    const signals = tenant.status === "provisioning"
+      ? [
+          ["Base configuration", "Pending"],
+          ["Branding provisioning", "Pending"],
+          ["Initial users", "Pending"],
+          ["Quote surfaces", "Draft"],
+        ]
+      : [
+          ["Base configuration", "Ready"],
+          ["Branding provisioning", "Core managed"],
+          ["Initial users", "Future"],
+          ["Quote surfaces", "Available"],
+        ];
+
+    return signals
+      .map(([label, status]) => `
+        <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+          <p class="text-sm font-bold text-slate-200">
+            ${escapeHtml(label)}
+          </p>
+
+          <span class="text-xs font-bold text-slate-500">
+            ${escapeHtml(status)}
+          </span>
+        </div>
+      `)
+      .join("");
+  }
+
   function renderTenantWorkspace(tenant) {
     const styles = getTenantStatusStyles(tenant.status);
     const branding = tenant.branding || {};
+    const attention = getTenantAttention(tenant);
 
     return `
       <div
         data-tenant-workspace="${escapeHtml(tenant.id)}"
         class="border-t border-cyan-400/20 bg-cyan-400/[0.035] px-4 py-5"
       >
-        <div class="rounded-3xl border border-cyan-400/20 bg-black/30 p-5 shadow-2xl shadow-cyan-950/10">
+        <div class="rounded-[2rem] border border-cyan-400/20 bg-black/30 p-5 shadow-2xl shadow-cyan-950/10">
 
-          <div class="flex items-start justify-between gap-6">
+          <div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-cyan-300/70">
                 Remit / Tenants / Workspace
@@ -188,11 +357,11 @@
               </h3>
 
               <p class="mt-3 max-w-3xl text-sm leading-relaxed text-slate-400">
-                Tenant resources open from here: setup, branding, users, modules, margins, limits, quote center, public calculator, billing and audit.
+                Tenant workspace for setup, branding, users, modules, margins, limits, quote center, public calculator, billing and audit.
               </p>
             </div>
 
-            <div class="flex items-start gap-3">
+            <div class="flex flex-wrap items-start gap-3 xl:justify-end">
               <div class="rounded-2xl border ${styles.border} ${styles.background} px-4 py-3 text-right">
                 <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
                   Lifecycle
@@ -200,6 +369,16 @@
 
                 <p class="mt-1 text-sm font-black ${styles.text}">
                   ${escapeHtml(tenant.lifecycle)}
+                </p>
+              </div>
+
+              <div class="rounded-2xl border ${attention.classes} px-4 py-3 text-right">
+                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                  Attention
+                </p>
+
+                <p class="mt-1 text-sm font-black">
+                  ${escapeHtml(attention.label)}
                 </p>
               </div>
 
@@ -214,89 +393,92 @@
             </div>
           </div>
 
-          <div class="mt-6 grid gap-6 xl:grid-cols-3">
-            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                Tenant Profile
+          <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                Product
               </p>
 
-              <div class="mt-5 space-y-4 text-sm">
-                <div class="flex items-center justify-between gap-4">
-                  <span class="text-slate-500">Product</span>
-                  <span class="font-bold text-slate-200">${escapeHtml(tenant.product)}</span>
-                </div>
-
-                <div class="flex items-center justify-between gap-4">
-                  <span class="text-slate-500">Plan</span>
-                  <span class="font-bold text-slate-200">${escapeHtml(tenant.plan)}</span>
-                </div>
-
-                <div class="flex items-center justify-between gap-4">
-                  <span class="text-slate-500">Slug</span>
-                  <span class="font-mono text-xs font-bold text-cyan-200">/remit/${escapeHtml(tenant.slug)}</span>
-                </div>
-
-                <div class="flex items-center justify-between gap-4">
-                  <span class="text-slate-500">Status</span>
-                  <span class="font-bold ${styles.text}">${escapeHtml(tenant.statusLabel)}</span>
-                </div>
-              </div>
+              <p class="mt-2 text-lg font-black text-slate-100">
+                ${escapeHtml(tenant.product)}
+              </p>
             </div>
 
-            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                Branding Provisioning
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                Plan
               </p>
 
-              <div class="mt-5 space-y-4 text-sm">
-                <div class="flex items-center justify-between gap-4">
-                  <span class="text-slate-500">Primary Color</span>
-                  <span class="font-bold text-slate-200">${escapeHtml(branding.primaryColor || "not-set")}</span>
-                </div>
-
-                <div class="flex items-center justify-between gap-4">
-                  <span class="text-slate-500">Logo Mode</span>
-                  <span class="font-bold text-slate-200">${escapeHtml(branding.logoMode || "not-set")}</span>
-                </div>
-
-                <div class="flex items-center justify-between gap-4">
-                  <span class="text-slate-500">Managed By</span>
-                  <span class="font-bold text-cyan-200">Dhemka Core</span>
-                </div>
-              </div>
+              <p class="mt-2 text-lg font-black text-slate-100">
+                ${escapeHtml(tenant.plan)}
+              </p>
             </div>
 
-            <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                Tenant Resources
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                Slug
               </p>
 
-              <div class="mt-5 space-y-3">
-                ${renderAccessSurfaceRows(tenant)}
-              </div>
+              <p class="mt-2 font-mono text-sm font-black text-cyan-200">
+                /remit/${escapeHtml(tenant.slug)}
+              </p>
+            </div>
+
+            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                Branding
+              </p>
+
+              <p class="mt-2 text-lg font-black text-slate-100">
+                ${escapeHtml(branding.logoMode || "not-set")}
+              </p>
             </div>
           </div>
 
-          <div class="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  Modules
-                </p>
+          <div class="mt-6 grid gap-6 xl:grid-cols-[1fr_1.4fr]">
+            <section class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                    Setup Signals
+                  </p>
 
-                <h4 class="mt-2 text-xl font-black">
-                  Tenant-owned resources and capabilities
-                </h4>
+                  <h4 class="mt-2 text-xl font-black">
+                    Configuration readiness
+                  </h4>
+                </div>
+
+                <span class="rounded-full border ${attention.classes} px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]">
+                  ${escapeHtml(attention.label)}
+                </span>
               </div>
 
-              <p class="text-sm text-slate-500">
-                These resources belong to this tenant.
-              </p>
-            </div>
+              <div class="mt-5 space-y-3">
+                ${renderTenantSetupSignals(tenant)}
+              </div>
+            </section>
 
-            <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              ${renderModuleRows(tenant)}
-            </div>
+            <section class="rounded-3xl border border-white/10 bg-black/20 p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                    Resource Launcher
+                  </p>
+
+                  <h4 class="mt-2 text-xl font-black">
+                    Tenant-owned resources
+                  </h4>
+                </div>
+
+                <p class="max-w-xs text-right text-xs leading-relaxed text-slate-500">
+                  Resources belong to this tenant and should open from this workspace.
+                </p>
+              </div>
+
+              <div class="mt-5 grid gap-3 md:grid-cols-2">
+                ${renderTenantResourceLauncher(tenant)}
+              </div>
+            </section>
           </div>
 
         </div>
@@ -424,6 +606,10 @@
   window.renderTenantDetailPanel = renderTenantDetailPanel;
   window.renderTenantSurfaces = renderTenantSurfaces;
 })();
+
+
+
+
 
 
 

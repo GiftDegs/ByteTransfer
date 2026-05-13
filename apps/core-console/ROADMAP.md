@@ -122,6 +122,7 @@ Avance actual:
 - [x] Documentar jerarquia Remit > Tenants > Tenant > Recursos.
 - [x] Crear subnavegación interna formal para Remit.
 - [x] Implementar tenant registry como accordion inline.
+- [x] Pulir workspace inline del tenant con resource launcher, setup signals y conteo correcto de módulos.
 - [ ] Crear subnavegación interna formal para Core Platform.
 - [ ] Convertir ramas futuras en placeholders más limpios.
 
@@ -338,6 +339,7 @@ Mientras Dhemka Core esté en construcción:
 - no usar `git add .`
 - trabajar por archivos específicos
 - validar cada bloque antes de avanzar
+
 
 
 
