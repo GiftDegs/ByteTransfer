@@ -56,6 +56,11 @@ Cada vez que se haga algo importante:
 
 ### Changed
 
+- Se definió la separación Core Intelligence Universe vs Tenant Operational Feed: Core puede comparar muchas fuentes, pero tenants reciben solo fuentes aprobadas y limpias.
+- Se definió Binance P2P como fuente primaria tenant-grade para Remit y Bybit P2P como fuente complementaria para rutas base o huecos de cobertura.
+- Se definió que Opportunities sugiere revisión de fuentes/exchanges, no ejecución automática.
+- Se dejó Maker Strategy Simulator / Maker Arbitrage como idea futura, priorizando primero Taker Opportunity Scanner.
+
 - Se reorganizó la sidebar principal para separar Command, Platform, Products y System.
 - Se reemplazó la navegación anterior de Core Modules por ramas principales de Dhemka Core.
 - Se quitó Active Tenant y Tenant Switcher de la sidebar global.

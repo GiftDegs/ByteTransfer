@@ -25,7 +25,10 @@ Every idea must be debated before being built.
 
 ### Opportunity intelligence
 
+- Taker Opportunity Scanner across Binance, Bybit, KuCoin, OKX and future P2P sources.
 - Buy/sell opportunity detector.
+- Side-aware source comparison.
+- Exchange review recommendation.
 - Abnormal spread detector.
 - Arbitrage signal detector.
 - Route pause recommendation.
@@ -33,6 +36,8 @@ Every idea must be debated before being built.
 - Suggested rate update.
 - Best source comparison.
 - Stable bridge route suggestions.
+- Maker Strategy Simulator.
+- Maker Arbitrage Module.
 
 ### Commercial modules
 
@@ -45,6 +50,8 @@ Every idea must be debated before being built.
 
 ### Risk and control
 
+- Tenant-grade pricing source policy.
+- Core Intelligence vs Tenant Operational Feed separation.
 - Confidence scoring.
 - Stale quote protection.
 - Fallback activation audit.

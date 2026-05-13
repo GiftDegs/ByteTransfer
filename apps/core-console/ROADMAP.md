@@ -155,6 +155,9 @@ Goal: turn Core Platform into the visible heart of Dhemka Core.
 - [x] Define Core Market Engine / Core Pricing Engine as the crown jewel.
 - [x] Document no-hardcode rule for currencies, countries, routes, sources, providers, modules and tenant behavior.
 - [x] Document implementation debate protocol before building features.
+- [x] Define Core Intelligence Universe vs Tenant Operational Feed.
+- [x] Define Binance as primary tenant-grade source for Remit and Bybit as complementary source.
+- [x] Define Taker Opportunity Scanner as first opportunity mode and Maker Strategy as future module.
 - [ ] Rework Core Platform UI around internal subnavigation.
 - [ ] Replace old separated Operational Base / Quote Engine / Monitoring mental model with a unified Core Platform model.
 - [ ] Add Market Engine overview.

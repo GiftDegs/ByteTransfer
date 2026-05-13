@@ -292,24 +292,92 @@ A route should not exist because it was hardcoded in UI. It should exist because
 
 Detects useful market conditions.
 
+The Opportunity Engine does not execute operations and does not tell a tenant to move money through a specific exchange. It detects pricing differences and recommends review.
+
+Correct language:
+
+- review this source;
+- review this exchange;
+- possible better taker price;
+- possible spread opportunity;
+- possible route risk;
+- possible source degradation.
+
+Incorrect language:
+
+- send through this exchange;
+- execute automatically;
+- operate this route without review.
+
+The first version should focus on Taker Opportunity Scanner logic.
+
+Taker opportunities compare existing offers across approved intelligence sources.
+
+Example:
+
+- Binance P2P ARS/USDT;
+- Bybit P2P ARS/USDT;
+- KuCoin P2P ARS/USDT;
+- OKX P2P ARS/USDT;
+- future P2P sources where data access is reliable.
+
+The engine must be side-aware.
+
+Buying USDT with ARS is not the same as selling USDT for ARS.
+
+For buying USDT with local currency, the lower price is better.
+
+For selling USDT into local currency, the higher price is better.
+
 Examples:
 
-- buy opportunity;
-- sell opportunity;
-- abnormal spread;
+- buy USDT with ARS cheaper on Bybit than Binance;
+- sell USDT for ARS better on Binance than Bybit;
+- BRL missing or weak on Binance, review complementary source;
+- source spread abnormal, review before updating route;
+- tenant margin risk detected from current market movement;
 - stale reference warning;
-- tenant margin risk;
-- possible arbitrage;
-- better route through a stable asset;
 - price source degradation;
 - update recommendation;
 - route pause recommendation.
 
-This can become a premium module later.
+Opportunity signals may be Core-only or tenant-visible depending on module access and permissions.
+
+Maker logic is future.
+
+Maker Strategy Simulator and Maker Arbitrage should be treated as advanced future modules because they require liquidity, reputation, execution risk controls, payment method modeling and stronger audit.
 
 ### 9. Tenant Market Feed
 
 Tenants do not own the Core engine.
+
+The system must separate Core Intelligence Universe from Tenant Operational Feed.
+
+Core Intelligence Universe can inspect many sources:
+
+- Binance;
+- Bybit;
+- KuCoin;
+- OKX;
+- official sources;
+- exchange sources;
+- stable references;
+- manual/internal references;
+- future APIs.
+
+Tenant Operational Feed must stay clean and commercially controlled.
+
+For Remit tenants, the recommended tenant-grade source strategy is:
+
+- Binance P2P as primary source;
+- Bybit P2P as complementary source for base routes, missing coverage or validation gaps;
+- KuCoin, OKX and other sources as Core Intelligence by default, not tenant pricing by default.
+
+This prevents tenant pricing from becoming noisy or confusing.
+
+A tenant should not see every source the Core can inspect.
+
+A tenant should receive a clean Core-approved market base with confidence, warnings and route availability.
 
 Each tenant receives a filtered, processed feed according to:
 
@@ -322,15 +390,61 @@ Each tenant receives a filtered, processed feed according to:
 - tenant margins;
 - limits;
 - schedule;
-- risk settings.
+- risk settings;
+- approved tenant-grade sources;
+- source confidence;
+- Core-only warnings vs tenant-visible warnings.
 
 ### 10. Runtime / Workers
 
 Polling is important, but it is not the engine itself.
 
-Polling, workers and cron jobs are runtime mechanisms that keep the engine updated.
+Runtime is the machinery that keeps the Market Engine alive.
 
-They should live under runtime/health, not dominate the product concept.
+Workers are background tasks that execute engine jobs without depending on an admin clicking buttons.
+
+Examples:
+
+- Market Polling Worker;
+- Official Source Worker;
+- Provider Health Worker;
+- Opportunity Scanner Worker;
+- Quote Expiration Worker;
+- Tenant Feed Worker;
+- Snapshot Worker.
+
+Cron jobs or scheduled jobs run tasks at planned times.
+
+Examples:
+
+- refresh official references at publication windows;
+- scan P2P opportunities every few minutes;
+- expire quotes at end of day;
+- generate daily snapshots;
+- check provider health;
+- clean stale cache.
+
+Render paid uptime helps because the service does not sleep, but it does not replace scheduled jobs. A service can be awake and still need controlled timing rules.
+
+Refresh policies define how often each source or process updates.
+
+Examples:
+
+- Binance P2P every few minutes;
+- Bybit P2P every few minutes where enabled;
+- official sources daily or by publication window;
+- opportunity scanner every defined interval;
+- tenant feeds after meaningful source changes or scheduled regeneration.
+
+Cache stores short-lived results to avoid unnecessary provider calls.
+
+Fallback activation defines what happens when a primary source fails.
+
+Rate limits protect the engine from exceeding provider limits.
+
+Queues are future infrastructure for processing many jobs safely without overloading APIs or the server.
+
+Runtime should support the engine, not visually dominate Core Platform.
 
 ### 11. Audit Layer
 

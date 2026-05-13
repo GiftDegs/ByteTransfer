@@ -177,6 +177,12 @@ Tenant owns commercial configuration over the processed feed:
 
 Tenant does not own the Core Market Engine.
 
+Core Intelligence Universe may inspect many sources for internal comparison and opportunity detection.
+
+Tenant Operational Feed must only expose Core-approved tenant-grade pricing sources.
+
+For Remit tenants, Binance P2P is the primary tenant-grade source and Bybit P2P is a complementary source for base routes, missing coverage or validation gaps. KuCoin, OKX and other providers remain Core Intelligence by default unless explicitly approved for tenant-grade pricing.
+
 Principio rector:
 
 Core controla la verdad operativa base.  
@@ -1183,24 +1189,47 @@ Required direction:
 
 Represents a detected market condition.
 
+OpportunitySignal must suggest review, not execution.
+
 Required direction:
 
 - signal id;
 - signal type;
+- opportunity mode;
+- taker/maker mode;
+- side;
 - affected route;
 - affected source;
+- compared sources;
+- best source;
+- baseline source;
+- price difference;
+- percentage difference;
+- amount bracket;
+- payment method;
 - severity;
 - confidence;
 - description;
-- suggested action;
+- suggested review action;
+- execution allowed flag;
 - created at;
 - expiration;
 - visible to Core;
 - visible to tenant if allowed.
 
+Rules:
+
+- first supported mode should be taker opportunity;
+- maker opportunity remains future;
+- execution allowed should default to false;
+- tenant-visible signals require permission/module access;
+- source comparison must be side-aware.
+
 #### TenantMarketFeed
 
 Represents the filtered market data exposed to a tenant.
+
+TenantMarketFeed is not the same as Core Intelligence Universe.
 
 Required direction:
 
@@ -1209,13 +1238,104 @@ Required direction:
 - enabled currencies;
 - enabled routes;
 - allowed modules;
+- tenant-grade sources;
+- primary source;
+- complementary sources;
+- blocked intelligence-only sources;
 - route prices;
 - confidence summary;
 - warnings;
+- Core-only warnings;
+- tenant-visible warnings;
 - blocked routes;
 - expiration;
 - generated at.
 
+Rules:
+
+- tenants receive clean Core-approved pricing;
+- tenants do not receive every source the Core can inspect;
+- Remit tenants default to Binance P2P primary;
+- Bybit P2P can complement base routes or coverage gaps;
+- KuCoin, OKX and other providers stay Core Intelligence by default.
+
+#### RuntimeWorker
+
+Represents a background worker that keeps the engine alive.
+
+Required direction:
+
+- worker id;
+- worker type;
+- owner;
+- status;
+- schedule;
+- last run;
+- next run;
+- affected sources;
+- affected routes;
+- retry policy;
+- failure behavior.
+
+#### RefreshPolicy
+
+Defines how often a source or engine process should refresh.
+
+Required direction:
+
+- policy id;
+- target type;
+- target id;
+- interval;
+- allowed time window;
+- freshness threshold;
+- stale threshold;
+- priority;
+- enabled flag.
+
+#### CachePolicy
+
+Defines how long market data may be reused before a new provider call is needed.
+
+Required direction:
+
+- policy id;
+- target source;
+- ttl seconds;
+- stale after seconds;
+- invalidation rules;
+- allowed consumers.
+
+#### FallbackRule
+
+Defines what happens when a primary source fails or becomes unreliable.
+
+Required direction:
+
+- rule id;
+- primary source;
+- fallback source;
+- affected market;
+- affected route;
+- activation condition;
+- confidence impact;
+- audit required;
+- tenant visibility.
+
+#### RateLimitPolicy
+
+Defines provider call limits and protection rules.
+
+Required direction:
+
+- policy id;
+- provider id;
+- max calls;
+- time window;
+- backoff strategy;
+- queue behavior;
+- alert threshold;
+- block behavior.
 #### EngineAuditEvent
 
 Represents a sensitive Core Market Engine event.
