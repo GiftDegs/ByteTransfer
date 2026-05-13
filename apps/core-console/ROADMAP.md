@@ -145,7 +145,39 @@ Tareas:
 
 ---
 
-## V3 — Auth / Identity Design
+## V3 — Core Platform / Market Engine Blueprint
+
+Goal: turn Core Platform into the visible heart of Dhemka Core.
+
+### Approved direction
+
+- [x] Define Core Platform as the heart of Dhemka Core.
+- [x] Define Core Market Engine / Core Pricing Engine as the crown jewel.
+- [x] Document no-hardcode rule for currencies, countries, routes, sources, providers, modules and tenant behavior.
+- [x] Document implementation debate protocol before building features.
+- [ ] Rework Core Platform UI around internal subnavigation.
+- [ ] Replace old separated Operational Base / Quote Engine / Monitoring mental model with a unified Core Platform model.
+- [ ] Add Market Engine overview.
+- [ ] Add Source Network view.
+- [ ] Add Cross Engine view.
+- [ ] Add Opportunity Engine placeholder.
+- [ ] Add Runtime / Workers view.
+- [ ] Add Health view.
+- [ ] Add Audit view.
+- [ ] Keep current engine mock honest while pointing toward the future architecture.
+
+### Future priority after mock
+
+- Currency catalog.
+- Market/country catalog.
+- Source catalog.
+- Provider adapter contracts.
+- Route catalog.
+- Confidence model.
+- Opportunity signal model.
+- Tenant market feed model.
+
+## V4 — Auth / Identity Design
 
 Estado: future
 
@@ -168,7 +200,7 @@ Tareas:
 
 ---
 
-## V4 — API Contract Design
+## V5 — API Contract Design
 
 Estado: future
 
@@ -190,7 +222,7 @@ Tareas:
 
 ---
 
-## V5 — Real Tenant Foundation
+## V6 — Real Tenant Foundation
 
 Estado: future
 
@@ -211,7 +243,7 @@ Tareas:
 
 ---
 
-## V6 — Remit MVP
+## V7 — Remit MVP
 
 Estado: future
 
@@ -236,7 +268,7 @@ Tareas:
 
 ---
 
-## V7 — Remit Operations
+## V8 — Remit Operations
 
 Estado: future
 
@@ -259,7 +291,7 @@ Tareas:
 
 ---
 
-## V8 — Ledger / Accounts
+## V9 — Ledger / Accounts
 
 Estado: future
 
@@ -283,7 +315,7 @@ Tareas:
 
 ---
 
-## V9 — Partner Network / Partner Liquidity
+## V10 — Partner Network / Partner Liquidity
 
 Estado: future
 
@@ -305,7 +337,7 @@ Tareas:
 
 ---
 
-## V10 — Advanced Modules
+## V11 — Advanced Modules
 
 Estado: future
 
@@ -339,8 +371,3 @@ Mientras Dhemka Core esté en construcción:
 - no usar `git add .`
 - trabajar por archivos específicos
 - validar cada bloque antes de avanzar
-
-
-
-
-

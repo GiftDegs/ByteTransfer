@@ -29,6 +29,15 @@ Controla la base operativa, permisos globales, tenants, módulos, salud del sist
 Core no es una remesadora.  
 Core es la arquitectura donde pueden correr distintos productos y tenants.
 
+
+### Core Platform / Core Market Engine
+
+Core Platform is the heart of Dhemka Core.
+
+The Core Market Engine / Core Pricing Engine is the crown jewel of Core Platform. It owns market intelligence, source collection, official references, P2P references, exchange references, stable references, normalization, confidence scoring, cross calculation, opportunity signals and tenant market feeds.
+
+The engine must not be limited to what one tenant uses today. A tenant may activate only a subset of routes, currencies and modules, but Dhemka Core must be able to support broader markets by contract and catalog.
+
 ### Remit
 
 Remit es la rama/producto de Dhemka Core especializada en negocios de remesas.
@@ -132,6 +141,41 @@ Sistema global de usuarios, roles, permisos, login, sesiones, resets de contrase
 ---
 
 ## 3. Core vs Tenant Boundary
+
+### Core Market Engine Boundary
+
+Core owns:
+
+- currency catalog;
+- market/country catalog;
+- source catalog;
+- provider adapter contracts;
+- raw provider quotes;
+- normalized market quotes;
+- market snapshots;
+- confidence scores;
+- cross routes;
+- cross rates;
+- opportunity signals;
+- tenant market feeds;
+- fallback rules;
+- source health;
+- engine audit events.
+
+Tenant owns commercial configuration over the processed feed:
+
+- enabled routes;
+- enabled currencies;
+- visible prices;
+- commercial margins;
+- limits;
+- schedule;
+- messages;
+- users;
+- quote center behavior;
+- public calculator behavior.
+
+Tenant does not own the Core Market Engine.
 
 Principio rector:
 
@@ -977,6 +1021,217 @@ No implementar todavía.
 
 ## 28. Entity Catalog
 
+### Core Market Engine Entities
+
+These entities belong to Core Platform and must be rendered from contracts, not invented by frontend screens.
+
+#### CurrencyCatalogItem
+
+Represents a supported currency.
+
+Required direction:
+
+- code;
+- name;
+- symbol;
+- decimals;
+- country scope;
+- fiat/stable/crypto classification;
+- display precision;
+- operational precision;
+- status;
+- supported modules.
+
+#### MarketCatalogItem
+
+Represents a country, region or operational market.
+
+Required direction:
+
+- market id;
+- country code;
+- country name;
+- default currency;
+- timezone;
+- official reference source;
+- supported sources;
+- supported routes;
+- risk level;
+- market status.
+
+#### SourceCatalogItem
+
+Represents a market data source.
+
+Required direction:
+
+- source id;
+- source name;
+- source type;
+- provider id;
+- market/country;
+- currency pair;
+- refresh policy;
+- freshness threshold;
+- confidence rules;
+- fallback priority;
+- status.
+
+#### ProviderAdapter
+
+Represents the contract used to collect raw data from an external source.
+
+Required direction:
+
+- provider id;
+- provider name;
+- source type;
+- auth requirement;
+- fetch strategy;
+- rate limit;
+- parser;
+- health status;
+- fallback behavior.
+
+#### RawProviderQuote
+
+Represents data collected from a provider before normalization.
+
+Required direction:
+
+- provider id;
+- source id;
+- raw pair;
+- raw price;
+- raw side;
+- raw timestamp;
+- raw payload reference;
+- captured at.
+
+#### NormalizedMarketQuote
+
+Represents a processed price from any source.
+
+Required direction:
+
+- quote id;
+- source id;
+- provider id;
+- base currency;
+- quote currency;
+- side;
+- price;
+- captured at;
+- normalized at;
+- freshness;
+- confidence;
+- raw count;
+- used count;
+- spread;
+- warnings;
+- fallback flag.
+
+#### ConfidenceScore
+
+Represents the quality level of a price or route.
+
+Required direction:
+
+- score value;
+- score label;
+- source freshness;
+- liquidity quality;
+- spread quality;
+- fallback status;
+- manual override status;
+- warnings.
+
+#### CrossRoute
+
+Represents a possible route between two currencies or markets.
+
+Required direction:
+
+- route id;
+- origin market;
+- destination market;
+- source currency;
+- target currency;
+- stable bridge;
+- route status;
+- allowed tenants;
+- risk flags;
+- calculation strategy.
+
+#### CrossRate
+
+Represents the calculated rate for a route.
+
+Required direction:
+
+- route id;
+- base source;
+- target source;
+- bridge source;
+- calculated rate;
+- confidence;
+- timestamp;
+- warnings;
+- expiration.
+
+#### OpportunitySignal
+
+Represents a detected market condition.
+
+Required direction:
+
+- signal id;
+- signal type;
+- affected route;
+- affected source;
+- severity;
+- confidence;
+- description;
+- suggested action;
+- created at;
+- expiration;
+- visible to Core;
+- visible to tenant if allowed.
+
+#### TenantMarketFeed
+
+Represents the filtered market data exposed to a tenant.
+
+Required direction:
+
+- tenant id;
+- enabled markets;
+- enabled currencies;
+- enabled routes;
+- allowed modules;
+- route prices;
+- confidence summary;
+- warnings;
+- blocked routes;
+- expiration;
+- generated at.
+
+#### EngineAuditEvent
+
+Represents a sensitive Core Market Engine event.
+
+Required direction:
+
+- event id;
+- event type;
+- actor;
+- source;
+- affected entity;
+- before;
+- after;
+- reason;
+- created at.
+
 ### CoreTenant
 
 Representa un tenant dentro de Dhemka Core.
@@ -1344,3 +1599,34 @@ Mientras este contrato esté en etapa de diseño:
 - no hacer merge a main
 - trabajar únicamente en rama segura
 - usar archivos específicos en Git
+
+## 32. Core Market Engine Safety Rule
+
+No frontend screen should invent currencies, countries, providers, routes, opportunities, modules or permissions.
+
+Every item must come from one of these sources:
+
+- configuration;
+- catalog;
+- provider;
+- engine;
+- source;
+- tenant;
+- module;
+- data contract.
+
+Every new implementation must be debated before being built.
+
+The debate must define:
+
+- what it means;
+- where it lives;
+- how it works;
+- what data it needs;
+- what it produces;
+- who configures it;
+- who can only view it;
+- benefits;
+- risks;
+- priority;
+- whether new ideas go to ROADMAP, IDEAS, DATA_CONTRACT or UI_ARCHITECTURE.

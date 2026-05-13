@@ -23,6 +23,13 @@ Cada vez que se haga algo importante:
 ## 2026-05-12
 
 ### Added
+- Se documentó Core Platform como el corazón de Dhemka Core.
+- Se definió Core Market Engine / Core Pricing Engine como la joya principal de la plataforma.
+- Se estableció que el nuevo sistema no debe depender de monedas, países, cruces, providers, módulos ni reglas hardcodeadas.
+- Se documentó que todo debe venir de contratos, catálogos, fuentes, motor, configuración, tenant o módulos.
+- Se agregó protocolo obligatorio de debate antes de implementar nuevas funciones.
+- Se documentó una visión futura para fuentes oficiales, P2P, exchanges, stables, normalización, confidence engine, cross engine, opportunity engine, tenant feeds, runtime y audit.
+- Se creó backlog de ideas para expansión del motor.
 
 - Se creó `apps/core-console/DATA_CONTRACT.md`.
 - Se documentó el contrato inicial de datos entre Dhemka Core, Remit, Tenants, módulos futuros y experiencias públicas.
@@ -108,9 +115,3 @@ Cada vez que se haga algo importante:
 - La Core Console no lee snapshots reales.
 - La Core Console no consume Binance, BCV ni PTAX reales.
 - La Core Console no modifica producción.
-
-
-
-
-
-

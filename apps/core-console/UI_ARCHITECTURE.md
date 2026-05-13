@@ -126,48 +126,97 @@ Un tenant solo aparece en el dashboard principal si hay algo accionable:
 
 ## 4. Core Platform
 
-Core Platform representa el motor central de Dhemka Core.
+Core Platform is the heart of Dhemka Core.
 
-Debe contener:
-
-- Core Dashboard
-- Operational Base
-- Core Quote Engine
-- Monitoring
-- Providers
-- Snapshots
-- Runtime Health
-- Global Audit
-- Fallbacks
-- Workers / Cron, futuro
+It must not be presented as a generic technical panel. Its main visual and conceptual focus is the Core Market Engine / Core Pricing Engine: the living engine that feeds Remit, Ledger, Lending, Partner Network, Arbitrage, Billing and future products.
 
 ### Core Platform owns
 
-- motor base
-- providers
-- snapshots globales
-- referencias externas
-- polling
-- monitoring
-- health checks
-- runtime
-- auditoría global
-- reglas superiores
-- fallbacks
+- Core Market Engine / Core Pricing Engine
+- market source network
+- official references
+- P2P references
+- exchange references
+- stable references
+- normalization layer
+- confidence engine
+- cross engine
+- opportunity engine
+- provider adapters
+- snapshots and market base
+- polling, workers and runtime
+- provider health
+- global audit
+- fallback strategy
+- tenant market feeds
+
+### Core Platform internal navigation
+
+Core Platform should use internal navigation, not separate global sidebar entries.
+
+Recommended structure:
+
+- Overview
+- Market Engine
+- Sources
+- Cross Engine
+- Opportunities
+- Runtime
+- Health
+- Audit
+
+### Visual principle
+
+The interface should feel like a live command center for market intelligence, not a flat list of cards.
+
+Preferred patterns:
+
+- internal subnavigation;
+- contextual panels;
+- expandable engine layers;
+- source health maps;
+- route/cross explorers;
+- opportunity signals;
+- confidence indicators;
+- source lineage;
+- audit trail access;
+- clean separation between engine, runtime and tenant feeds.
+
+### Market Engine rule
+
+The Market Engine must not be designed around only the current 5 or 6 currencies.
+
+It must visually and structurally support a future where Dhemka Core can manage currencies, countries, sources, stables and routes across the Americas first, then more regions.
 
 ### Core Platform does not show as tenant content
 
-Core Platform no debe mostrar:
+Core Platform must not show:
 
-- Quote Center de tenant
-- calculadora pública de tenant
-- gestores de tenant
-- branding editable de tenant
-- historial comercial interno de tenant
+- ByteTransfer-specific logic;
+- tenant branding controls;
+- tenant margin editing;
+- tenant schedule editing;
+- tenant users as primary content;
+- tenant public calculator controls;
+- tenant-specific quote center controls.
 
-Puede mostrar métricas agregadas de tenants, pero no convertirlos en protagonistas.
+Those belong inside Remit > Tenants > Selected Tenant.
 
----
+### What must not happen
+
+- Do not make polling the protagonist.
+- Do not show provider calls as isolated technical trivia.
+- Do not hardcode currencies or routes in the UI.
+- Do not make tenant-specific controls appear as Core engine controls.
+- Do not place ByteTransfer logic inside Core Platform.
+- Do not design Core Platform as if the current ByteTransfer engine is the final engine.
+
+### Tenant boundary
+
+Tenants consume processed feeds from Core Platform.
+
+Tenants may configure commercial behavior, enabled routes, margins, limits and schedules, but they do not control the Core Market Engine.
+
 
 ## 5. Remit
 
@@ -863,5 +912,3 @@ This UI architecture refactor must not:
 - create real tenants yet
 
 All work stays inside `apps/core-console/` until explicitly approved.
-
-
