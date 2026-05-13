@@ -56,6 +56,10 @@ Cada vez que se haga algo importante:
 
 ### Changed
 
+- Se estableció que las cards no son la solución visual por defecto.
+- Se agregó regla obligatoria de debate de jerarquía y patrón UI antes de implementar pantallas, módulos, paneles o estructuras visuales.
+- Se definió que cada revisión de UI debe incluir sugerencias de mejora futura cuando el mock funcione pero todavía pueda evolucionar a un patrón más correcto.
+
 - Se definió la separación Core Intelligence Universe vs Tenant Operational Feed: Core puede comparar muchas fuentes, pero tenants reciben solo fuentes aprobadas y limpias.
 - Se definió Binance P2P como fuente primaria tenant-grade para Remit y Bybit P2P como fuente complementaria para rutas base o huecos de cobertura.
 - Se definió que Opportunities sugiere revisión de fuentes/exchanges, no ejecución automática.

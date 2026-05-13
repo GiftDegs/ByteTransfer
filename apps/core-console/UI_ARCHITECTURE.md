@@ -814,6 +814,74 @@ Sí mostrar ByteTransfer en Dashboard si:
 
 ---
 
+
+### UI pattern selection rule
+
+Cards are not the default solution.
+
+Before implementing any UI, panel, module, workspace, command center, configuration area or data structure, the hierarchy and the visual pattern must be debated first.
+
+The team must define:
+
+- what is the parent;
+- what is the child;
+- what is a resource;
+- what is a detail;
+- what is a signal;
+- what is an action;
+- what should be visible first;
+- what should be collapsed;
+- what should be secondary;
+- what should not compete at the same level.
+
+Then the correct UI pattern must be selected according to the function.
+
+Available patterns include, but are not limited to:
+
+- cards for independent summaries, metrics or status blocks;
+- accordion for sibling items that expand with contextual detail;
+- timeline for audit, history and sensitive events;
+- table/list for dense registries, users, sources, routes or tenants at scale;
+- command center for executive overview and high-priority signals;
+- flow or pipeline for engines, processes, pricing layers and dependencies;
+- wizard for creation, onboarding or guided configuration;
+- drawer for temporary contextual actions;
+- inspector panel for selected source, route, tenant or entity details;
+- tree for nested hierarchy and permissions;
+- map/grid for coverage by country, market, source or currency;
+- kanban only when items move through stages;
+- tabs/subnav for major internal views inside the same branch;
+- split view when a list and selected detail must be read together.
+
+The goal is not to create a carnival of different UI patterns.
+
+The goal is to avoid generic UI and select the pattern that best represents the function.
+
+A view should not become cards everywhere just because cards are easy to build.
+
+A view should not become tabs everywhere just because tabs are convenient.
+
+A view should not copy the tenant accordion pattern unless the function is actually similar.
+
+Every design must explain why the chosen pattern is better than the obvious generic alternative.
+
+### Review and future-improvement rule
+
+When reviewing an implemented mock or UI draft, the review must not stop at “it works”.
+
+The review must identify:
+
+- what is structurally correct;
+- what hierarchy is still weak;
+- what visual pattern is working;
+- what pattern is being overused;
+- what should be promoted, hidden, collapsed or converted;
+- what should become a better future version;
+- what should be documented as backlog if it is not priority.
+
+A working mock can be accepted as a step, but still marked for future improvement when the design pattern is not yet the best representation of the function.
+
+
 ## 16. Current UI Problems Detected
 
 Problemas detectados en la UI actual:

@@ -24,6 +24,22 @@ Cada vez que se haga algo importante:
 
 ---
 
+
+## UI / Product Design Debate Rule
+
+Before implementing UI or product structure, hierarchy and pattern selection must be debated.
+
+Cards are not the default solution.
+
+The implementation must define parent/child levels, information weight, visibility, secondary content and the best UI pattern for the job.
+
+Allowed patterns include cards, accordion, timeline, table/list, command center, flow/pipeline, wizard, drawer, inspector panel, tree, map/grid, kanban, tabs/subnav and split view.
+
+The goal is deliberate pattern selection, not a carnival of unrelated UI and not cards everywhere.
+
+Every review should include future-improvement suggestions when the current mock works but the pattern can evolve into a stronger version.
+
+
 ## Estado actual
 
 Rama de trabajo:
