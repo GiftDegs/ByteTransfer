@@ -392,7 +392,7 @@ Tenant-facing language should be simple:
 - source used to define rates when applicable;
 - amount band used to check market prices;
 - methods or banks considered;
-- aggressiveness level.
+- filtered example used to choose the base reference.
 
 Internal name:
 
@@ -404,11 +404,55 @@ The profile answers:
 - does the tenant calculate rates manually from Binance, Bybit or another source;
 - what amount band represents its normal pricing reference;
 - what methods or banks are part of its pricing reality;
-- whether it chooses conservative, balanced or aggressive references.
+- which filtered reference it normally takes as base before margin.
 
 The profile does not need to know the tenant exact balance today.
 
 Ledger may later improve this with real balances and movement history, but Ledger is not required for the first version.
+
+#### Pricing Capacity Onboarding V1
+
+Pricing Capacity Onboarding V1 captures how a tenant defines its no-profit operational base.
+
+It does not configure tenant margin.
+
+It does not register future operations.
+
+It does not ask for real balances.
+
+Approved V1 flow:
+
+1. Ask which currencies the tenant receives and delivers.
+2. Suggest possible routes/crosses based on those currencies.
+3. Allow advanced/other crosses with a warning to activate only routes the tenant actually operates.
+4. Ask how the tenant usually defines rates:
+   - copies market or another remesero;
+   - Binance P2P;
+   - Bybit P2P;
+   - other exchange/source;
+   - other/manual;
+   - not sure / needs guidance.
+5. If the tenant uses a market source, ask:
+   - usual amount used to consult the market;
+   - methods or banks considered.
+6. Core shows a filtered example of possible references and asks which one the tenant would normally use as base.
+
+Core must not ask abstract aggressiveness as the main question.
+
+Core infers the strategy profile from the selected reference behavior.
+
+Example reference behaviors:
+
+- best visible price within filters;
+- one of the best references while avoiding unusual offers;
+- best reference compatible with the tenant preferred method/bank;
+- average or median of top references;
+- more conservative reference;
+- manual review.
+
+Margin configuration belongs to the tenant commercial margin panel.
+
+Future margin recommendations may exist only as advisory output after profile analysis.
 
 ### 11. Tenant Base Resolver
 
@@ -420,7 +464,8 @@ Tenant Base Resolver combines:
 - enabled routes;
 - enabled methods;
 - selected source strategy;
-- aggressiveness level;
+- selected reference behavior;
+- inferred strategy profile;
 - confidence rules.
 
 Its question is not:
@@ -479,7 +524,7 @@ Examples:
 - your base is weaker because you selected only lower-paying methods;
 - adding Banesco or Banco de Venezuela could improve VES references;
 - using a larger pricing band may improve market reference, but only if it reflects how you actually operate;
-- aggressive mode can improve competitiveness but requires more frequent review;
+- choosing the best visible reference may require more frequent review;
 - copying market rates can work as a starting strategy, but Core should compare whether margin is being lost;
 - this route should not be activated if the tenant does not actually operate it.
 

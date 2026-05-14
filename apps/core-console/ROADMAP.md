@@ -177,6 +177,8 @@ Goal: turn Core Platform into the visible heart of Dhemka Core.
 - [x] Define Tenant Pricing Capacity Profile as the first model for tenant-specific base pricing.
 - [x] Define Tenant Base Resolver and Tenant Base Reference.
 - [x] Define Tenant Advisory Engine for pricing feedback and improvement suggestions.
+- [x] Define Pricing Capacity Onboarding V1 as a branching six-question flow.
+- [x] Define strategy inference from filtered reference behavior instead of abstract aggressiveness.
 - [ ] Rework Core Platform UI around internal subnavigation.
 - [ ] Replace old separated Operational Base / Quote Engine / Monitoring mental model with a unified Core Platform model.
 - [ ] Add Market Engine overview.
@@ -198,7 +200,7 @@ Goal: turn Core Platform into the visible heart of Dhemka Core.
 - Confidence model.
 - Opportunity signal model.
 - Tenant market feed model.
-- Tenant pricing capacity onboarding.
+- Tenant pricing capacity onboarding V1.
 - Market pricing curves by source, method, bank and amount band.
 - Tenant advisory signal model.
 

@@ -56,6 +56,10 @@ Cada vez que se haga algo importante:
 
 ### Changed
 
+- Se aprobó Pricing Capacity Onboarding V1 como flujo de 6 preguntas para entender cómo el tenant define su base sin ganancia.
+- Se aclaró que el margen queda fuera del onboarding de base y pertenece al panel comercial de márgenes.
+- Se reemplazó la pregunta abstracta de agresividad por una selección de referencia filtrada: Core muestra ejemplos compatibles y deduce el perfil según la referencia elegida.
+
 - Se definió el modelo Tenant Pricing Capacity Profile para calcular bases por tenant según cómo define sus tasas.
 - Se aclaró que Core Benchmark no es lo mismo que Tenant Base Reference.
 - Se definió que el tenant no registra operaciones futuras para recibir pricing: configura monedas, cruces, fuente, monto de consulta, métodos/bancos y agresividad.

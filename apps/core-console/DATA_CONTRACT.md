@@ -1265,7 +1265,9 @@ Required direction:
 - amount band used for pricing;
 - selected methods;
 - selected banks or payment rails;
-- aggressiveness level;
+- filtered example references;
+- selected reference behavior;
+- inferred strategy profile;
 - fallback strategy if the tenant copies market rates;
 - configuration completeness;
 - last reviewed at.
@@ -1281,7 +1283,16 @@ Allowed rate definition modes:
 
 If the tenant copies rates or does not know how to calculate them, the onboarding should not ask detailed market filters.
 
-If the tenant calculates manually from a source, the onboarding may ask source, amount band, methods/banks and aggressiveness.
+If the tenant calculates manually from a source, the onboarding may ask source, amount band and methods/banks, then show filtered references so the tenant selects what it normally uses as base.
+
+Onboarding V1 rules:
+
+- margin configuration is not part of Pricing Capacity Onboarding;
+- the base is the no-profit operational reference before tenant margin;
+- Core should show a filtered reference example after source, amount band and methods are selected;
+- the tenant chooses which reference it would normally use as base;
+- Core infers strategy from that behavior instead of asking abstract aggressiveness;
+- if the tenant copies market rates or does not know how to calculate them, the onboarding should avoid detailed market filters and use guided benchmark behavior.
 
 #### TenantBaseResolver
 
