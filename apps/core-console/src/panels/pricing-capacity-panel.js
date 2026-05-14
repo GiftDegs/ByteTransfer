@@ -575,7 +575,7 @@
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-500">
-                Remit / Pricing Setup
+                Remit / Tenant Setup Mock
               </p>
 
               <h2 class="mt-3 text-3xl font-black text-slate-50">
@@ -583,17 +583,21 @@
               </h2>
 
               <p class="mt-3 max-w-4xl text-sm leading-relaxed text-slate-400">
-                Mock wizard for Pricing Capacity Onboarding V1. It captures the tenant's no-profit base logic before margin, rounding or commercial strategy.
+                Mock wizard for Pricing Capacity Onboarding V1. It is shown at Remit level only for prototype clarity. In the real product, this setup belongs inside each tenant: Remit -> Tenant -> Tenant Setup -> Pricing Capacity.
               </p>
             </div>
 
             <div class="rounded-3xl border border-amber-400/20 bg-amber-400/10 px-5 py-4 text-right">
               <p class="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
-                Scope
+                Final placement
               </p>
 
               <p class="mt-1 text-sm font-black text-amber-200">
-                Base only · no margin
+                Inside each tenant
+              </p>
+
+              <p class="mt-2 max-w-xs text-xs leading-relaxed text-amber-100/70">
+                Prototype location only. Real path: Remit -> Tenant -> Tenant Setup.
               </p>
             </div>
           </div>
