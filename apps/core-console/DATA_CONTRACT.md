@@ -1225,6 +1225,145 @@ Rules:
 - tenant-visible signals require permission/module access;
 - source comparison must be side-aware.
 
+#### MarketPricingCurve
+
+Represents processed market pricing by source, method and amount band.
+
+Required direction:
+
+- curve id;
+- source id;
+- market;
+- currency;
+- side;
+- method;
+- bank or payment rail;
+- amount band;
+- aggregation strategy;
+- price;
+- confidence;
+- freshness;
+- raw count;
+- used count;
+- warnings;
+- generated at.
+
+#### TenantPricingCapacityProfile
+
+Represents how a tenant normally defines rates.
+
+Tenant-facing onboarding should be understandable and should avoid technical language.
+
+Required direction:
+
+- tenant id;
+- received currencies;
+- delivered currencies;
+- activated routes;
+- rate definition mode;
+- pricing source;
+- amount band used for pricing;
+- selected methods;
+- selected banks or payment rails;
+- aggressiveness level;
+- fallback strategy if the tenant copies market rates;
+- configuration completeness;
+- last reviewed at.
+
+Allowed rate definition modes:
+
+- copies market or another remesero;
+- Binance P2P;
+- Bybit P2P;
+- other exchange/source;
+- manual experience;
+- not sure / needs guidance.
+
+If the tenant copies rates or does not know how to calculate them, the onboarding should not ask detailed market filters.
+
+If the tenant calculates manually from a source, the onboarding may ask source, amount band, methods/banks and aggressiveness.
+
+#### TenantBaseResolver
+
+Represents the engine process that converts market intelligence into a tenant-specific base.
+
+Required direction:
+
+- resolver id;
+- tenant id;
+- route id;
+- side;
+- source strategy;
+- pricing capacity profile id;
+- matching market curves;
+- selected curve;
+- exclusion reasons;
+- confidence;
+- warnings;
+- generated at.
+
+Rules:
+
+- do not use the best global price if the tenant profile does not support it;
+- do not force one global pricing filter across all tenants;
+- do not require operation registration;
+- calculate the best realistic base according to tenant profile.
+
+#### TenantBaseReference
+
+Represents the base suggested to a tenant before commercial margins and final customer pricing.
+
+Required direction:
+
+- tenant id;
+- route id;
+- side;
+- base value;
+- benchmark value;
+- gap percentage;
+- source strategy;
+- amount band;
+- methods considered;
+- banks considered;
+- confidence;
+- warnings;
+- advisory signals;
+- generated at;
+- expiration.
+
+Rules:
+
+- this is not the final customer rate;
+- tenant margin, rounding, schedule and commercial strategy apply after this;
+- a better base does not guarantee a better final customer offer.
+
+#### TenantAdvisorySignal
+
+Represents a suggestion or explanation generated for a tenant.
+
+Required direction:
+
+- signal id;
+- tenant id;
+- route id;
+- signal type;
+- severity;
+- title;
+- explanation;
+- related profile fields;
+- suggested improvement;
+- visible to tenant;
+- created at;
+- expiration.
+
+Examples:
+
+- selected methods limit competitiveness;
+- amount band is too small for stronger market prices;
+- selected route may not represent actual operation;
+- tenant copies market rates and may be losing margin;
+- aggressive strategy requires more frequent updates;
+- adding a specific method or bank could improve the base.
 #### TenantMarketFeed
 
 Represents the filtered market data exposed to a tenant.

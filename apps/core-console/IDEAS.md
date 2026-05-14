@@ -39,6 +39,17 @@ Every idea must be debated before being built.
 - Maker Strategy Simulator.
 - Maker Arbitrage Module.
 
+### Tenant pricing capacity refinements
+
+- Ledger-inferred tenant pricing capacity from real balances and movement history.
+- Prioritized methods and banks per currency.
+- Custom pricing bands per tenant and route.
+- Margin target recommendations by route.
+- Tenant pricing simulator: conservative vs balanced vs aggressive.
+- Guided onboarding for tenants who copy market rates.
+- Educational mode for tenants who do not know how to calculate rates.
+- Future Partner Network suggestions, but not required for first version.
+
 ### Commercial modules
 
 - Premium market alerts.

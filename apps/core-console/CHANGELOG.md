@@ -56,6 +56,12 @@ Cada vez que se haga algo importante:
 
 ### Changed
 
+- Se definió el modelo Tenant Pricing Capacity Profile para calcular bases por tenant según cómo define sus tasas.
+- Se aclaró que Core Benchmark no es lo mismo que Tenant Base Reference.
+- Se definió que el tenant no registra operaciones futuras para recibir pricing: configura monedas, cruces, fuente, monto de consulta, métodos/bancos y agresividad.
+- Se definió Tenant Base Resolver como la capa que convierte curvas de mercado en una base realista para cada tenant.
+- Se definió Tenant Advisory Engine para explicar brechas de competitividad y sugerir mejoras.
+
 - Se estableció que las cards no son la solución visual por defecto.
 - Se agregó regla obligatoria de debate de jerarquía y patrón UI antes de implementar pantallas, módulos, paneles o estructuras visuales.
 - Se definió que cada revisión de UI debe incluir sugerencias de mejora futura cuando el mock funcione pero todavía pueda evolucionar a un patrón más correcto.

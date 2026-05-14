@@ -347,7 +347,148 @@ Maker logic is future.
 
 Maker Strategy Simulator and Maker Arbitrage should be treated as advanced future modules because they require liquidity, reputation, execution risk controls, payment method modeling and stronger audit.
 
-### 9. Tenant Market Feed
+### 9. Market Pricing Curves
+
+Core must not calculate a single flat market price and expose it to every tenant.
+
+The engine must build market curves by:
+
+- source;
+- market;
+- currency;
+- side;
+- method;
+- bank or payment rail when available;
+- amount band;
+- freshness;
+- confidence;
+- spread behavior.
+
+A market curve represents how the market behaves under specific filters.
+
+Example:
+
+- VES buy through Pago Movil for 100-200 USDT;
+- VES buy through Banesco for 200-500 USDT;
+- VES buy through Banco de Venezuela for 500-1000 USDT;
+- ARS buy or sell through selected payment methods and amount bands.
+
+The curve is not the tenant price.
+
+The curve is the raw processed intelligence that allows Dhemka Core to calculate a realistic base for each tenant.
+
+### 10. Tenant Pricing Capacity Profile
+
+A tenant should not register future operations in order to receive pricing.
+
+A tenant should configure how it normally defines rates.
+
+Tenant-facing language should be simple:
+
+- currencies received;
+- currencies delivered;
+- routes/crosses to activate;
+- how the tenant usually defines rates;
+- source used to define rates when applicable;
+- amount band used to check market prices;
+- methods or banks considered;
+- aggressiveness level.
+
+Internal name:
+
+Tenant Pricing Capacity Profile.
+
+The profile answers:
+
+- does the tenant copy market rates or another remesero;
+- does the tenant calculate rates manually from Binance, Bybit or another source;
+- what amount band represents its normal pricing reference;
+- what methods or banks are part of its pricing reality;
+- whether it chooses conservative, balanced or aggressive references.
+
+The profile does not need to know the tenant exact balance today.
+
+Ledger may later improve this with real balances and movement history, but Ledger is not required for the first version.
+
+### 11. Tenant Base Resolver
+
+Tenant Base Resolver combines:
+
+- Core Market Intelligence;
+- Market Pricing Curves;
+- Tenant Pricing Capacity Profile;
+- enabled routes;
+- enabled methods;
+- selected source strategy;
+- aggressiveness level;
+- confidence rules.
+
+Its question is not:
+
+What is the best price in the whole market?
+
+Its question is:
+
+What is the best realistic base this tenant can use according to how it normally defines rates?
+
+This prevents Dhemka Core from giving a small or limited tenant a base calculated from methods, bands or liquidity behavior that do not represent its operation.
+
+Core Benchmark is not Tenant Base Reference.
+
+### 12. Tenant Base Reference
+
+Tenant Base Reference is the base suggested to a tenant before commercial margin, rounding and tenant strategy are applied.
+
+It should be calculated per tenant, route, side and pricing profile.
+
+Tenant Base Reference may include:
+
+- base value;
+- source strategy;
+- amount band used;
+- methods considered;
+- confidence;
+- benchmark comparison;
+- competitiveness gap;
+- warnings;
+- advisory notes.
+
+The tenant final customer rate still belongs to tenant commercial configuration.
+
+Tenant final rate may differ because of:
+
+- margin;
+- rounding;
+- schedule;
+- commercial strategy;
+- promotional decisions;
+- risk tolerance;
+- manual override.
+
+A tenant with a better base does not automatically offer a better final rate.
+
+### 13. Tenant Advisory Engine
+
+Tenant Advisory Engine gives operational feedback based on the tenant pricing profile and Core market intelligence.
+
+It should help the tenant understand why its base is stronger or weaker.
+
+Examples:
+
+- your base is weaker because your selected amount band is small;
+- your base is weaker because you selected only lower-paying methods;
+- adding Banesco or Banco de Venezuela could improve VES references;
+- using a larger pricing band may improve market reference, but only if it reflects how you actually operate;
+- aggressive mode can improve competitiveness but requires more frequent review;
+- copying market rates can work as a starting strategy, but Core should compare whether margin is being lost;
+- this route should not be activated if the tenant does not actually operate it.
+
+The advisory engine should not overwhelm the tenant.
+
+It should provide useful suggestions based on configured currencies, routes, methods, pricing source, amount band and aggressiveness.
+
+Partner Network remains future and should not be required for the first tenant pricing capacity model.
+### 14. Tenant Market Feed
 
 Tenants do not own the Core engine.
 
@@ -395,7 +536,7 @@ Each tenant receives a filtered, processed feed according to:
 - source confidence;
 - Core-only warnings vs tenant-visible warnings.
 
-### 10. Runtime / Workers
+### 15. Runtime / Workers
 
 Polling is important, but it is not the engine itself.
 
@@ -446,7 +587,7 @@ Queues are future infrastructure for processing many jobs safely without overloa
 
 Runtime should support the engine, not visually dominate Core Platform.
 
-### 11. Audit Layer
+### 16. Audit Layer
 
 Every sensitive market change must be traceable.
 
@@ -472,8 +613,12 @@ Basic future flow:
 4. Snapshot layer stores the current market base.
 5. Cross engine calculates route references.
 6. Opportunity engine detects useful or risky conditions.
-7. Tenant feed layer exposes only what each tenant can use.
-8. Remit, Ledger, Lending and future modules consume the feed.
+7. Market pricing curves organize processed prices by source, method, bank and amount band.
+8. Tenant Pricing Capacity Profile describes how each tenant normally defines its rates.
+9. Tenant Base Resolver calculates a realistic base for that tenant.
+10. Tenant Advisory Engine explains gaps and possible improvements.
+11. Tenant feed layer exposes only what each tenant can use.
+12. Remit, Ledger, Lending and future modules consume the feed.
 9. Audit stores relevant changes and sensitive actions.
 
 ## Commercial Benefits
@@ -487,7 +632,9 @@ It can support:
 - premium alerts;
 - opportunity detection;
 - route expansion;
+- tenant-specific base references;
 - tenant-specific feeds;
+- pricing capacity advice;
 - safer operations;
 - better risk control;
 - future arbitrage tools;
