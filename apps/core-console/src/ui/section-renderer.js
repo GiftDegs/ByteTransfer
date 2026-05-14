@@ -2,6 +2,7 @@
   const dhemkaState = window.dhemkaState;
   const escapeHtml = window.escapeHtml;
   const getTenantMetrics = window.getTenantMetrics;
+  const renderCorePlatformPanel = window.renderCorePlatformPanel;
   const renderOperationalBasePanel = window.renderOperationalBasePanel;
   const renderQuoteEnginePanel = window.renderQuoteEnginePanel;
   const renderMonitoringPanel = window.renderMonitoringPanel;
@@ -36,6 +37,10 @@
   }
 
   function getSectionCards(section) {
+    if (dhemkaState.activeSection === "core-platform") {
+      return [];
+    }
+
     if (dhemkaState.activeSection === "tenants") {
       return buildTenantSectionCards();
     }
@@ -100,6 +105,7 @@
     description.textContent = section.description;
 
     renderSectionCards(getSectionCards(section));
+    renderCorePlatformPanel();
     renderOperationalBasePanel();
     renderQuoteEnginePanel();
     renderMonitoringPanel();
@@ -136,3 +142,4 @@
   window.renderSectionContent = renderSectionContent;
   window.renderSectionCards = renderSectionCards;
 })();
+
