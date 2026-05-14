@@ -471,6 +471,10 @@
             <button type="button" data-remit-view="create-tenant" class="remit-subnav-item rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-200">
               Create Tenant
             </button>
+            <button type="button" data-remit-view="pricing-capacity" class="remit-subnav-item rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-200">
+              Pricing Setup
+            </button>
+
 
             <button type="button" data-remit-view="tenants" class="remit-subnav-item rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-400/20 hover:text-cyan-200">
               Tenants
@@ -633,6 +637,10 @@
               </div>
             </div>
 
+          </section>
+          <!-- PRICING CAPACITY -->
+          <section data-remit-view-panel="pricing-capacity" class="remit-view-panel hidden">
+            <div id="pricing-capacity-panel"></div>
           </section>
           <!-- REMIT TENANTS -->
           <section data-remit-view-panel="tenants" class="remit-view-panel hidden">
@@ -806,6 +814,7 @@
   <script src="./src/tenants/tenant-selectors.js"></script>
   <script src="./src/tenants/tenant-ui.js"></script>
   <script src="./src/panels/core-platform-panel.js"></script>
+  <script src="./src/panels/pricing-capacity-panel.js"></script>
   <script src="./src/panels/operational-base-panel.js"></script>
   <script src="./src/panels/quote-engine-panel.js"></script>
   <script src="./src/panels/monitoring-panel.js"></script>
@@ -815,11 +824,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-
-

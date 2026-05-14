@@ -4,4 +4,5 @@
   activeRemitView: "overview",
   activeCorePlatformView: "overview",
   activeCorePlatformLayer: null,
+  activePricingCapacityStep: "currencies",
 };
