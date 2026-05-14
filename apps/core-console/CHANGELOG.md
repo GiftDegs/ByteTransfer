@@ -56,6 +56,8 @@ Cada vez que se haga algo importante:
 
 ### Changed
 
+- Se aclaró que Pricing Capacity se muestra en Remit solo como superficie de prototipo, pero su ubicación real será dentro de cada tenant: Remit -> Tenant -> Tenant Setup -> Pricing Capacity.
+
 - Se aprobó Pricing Capacity Onboarding V1 como flujo de 6 preguntas para entender cómo el tenant define su base sin ganancia.
 - Se aclaró que el margen queda fuera del onboarding de base y pertenece al panel comercial de márgenes.
 - Se reemplazó la pregunta abstracta de agresividad por una selección de referencia filtrada: Core muestra ejemplos compatibles y deduce el perfil según la referencia elegida.

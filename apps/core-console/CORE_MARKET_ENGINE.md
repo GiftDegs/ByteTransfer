@@ -454,6 +454,18 @@ Margin configuration belongs to the tenant commercial margin panel.
 
 Future margin recommendations may exist only as advisory output after profile analysis.
 
+Final placement:
+
+Pricing Capacity belongs inside each tenant setup.
+
+The Remit-level mock is only a prototype surface used to explain the onboarding flow before real tenant configuration exists.
+
+Real product path:
+
+Dhemka Core -> Remit -> Tenant -> Tenant Setup -> Pricing Capacity.
+
+This setup is tenant-scoped because each remesero may define rates using different currencies, routes, sources, amount bands, methods, banks and reference behavior.
+
 ### 11. Tenant Base Resolver
 
 Tenant Base Resolver combines:
